@@ -36,6 +36,43 @@ Django manages the auth, content type, session and admin log tables. The account
 initial migration is applied before admin log migrations so foreign keys reference
 the custom user from the start.
 
+## School configuration schema
+
+| Model | Relationship and purpose |
+| --- | --- |
+| School | One profile (primary key 1), contact details, currency and report preferences |
+| Section | Belongs to School; configurable name, description and display order |
+| AcademicYear | Belongs to School; named date range |
+| Term | Belongs to AcademicYear; name, sequence and contained date range |
+| AcademicClass | Belongs to Section; configurable name and display order |
+| Stream | Belongs to AcademicClass; optional subdivision of a class |
+
+The school profile holds nullable `current_academic_year` and `current_term`
+foreign keys. This gives one current period without distributed current-status
+flags. The term must be active and belong to the active current year. Both
+pointers change in one transaction; previous year and term records remain intact.
+
+All six models track creation/update timestamps and actors. Configuration records
+use `is_active`. Parent foreign keys use `PROTECT`, and parent reassignment is
+rejected after creation. The portal and Django admin expose no configuration
+delete action; admin inspection is read-only.
+
+Database constraints enforce the single profile, current-term/year presence,
+date ordering, positive term numbers, scoped term-number uniqueness and scoped
+case-insensitive name uniqueness. Model validation additionally checks period
+overlaps, containment, parent immutability and active-parent/child consistency.
+Date comparisons include both endpoints, and inactive historical periods still
+participate in date/overlap validation.
+
+Use `apps.schools.services` for writes. Services validate after obtaining the
+school row lock and record changes in `django_admin_log` within the transaction.
+The lock serializes cross-record checks in PostgreSQL. Direct ORM bulk updates
+bypass these application rules and are not a supported configuration workflow.
+SQLite checks pass; PostgreSQL concurrency still requires deployment validation.
+
+Ranking and fee-clearance preference fields are stored configuration only; the
+report and guardian modules will enforce them when implemented.
+
 ## Environment behavior
 
 - Development: SQLite in ignored `db.sqlite3`.
@@ -48,7 +85,6 @@ locking and concurrency behavior.
 
 ## Planned relationships
 
-School → sections, academic years, terms, academic classes and streams.
 Student → guardians and immutable enrollment history.
 Enrollment → academic context, assessments, marks and reports.
 Teaching assignment → teacher, subject, class/stream and academic period.

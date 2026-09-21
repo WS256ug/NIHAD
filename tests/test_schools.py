@@ -302,6 +302,8 @@ class ConfigurationViewTests(SchoolTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["form"].errors)
         self.assertContains(response, "Keep this input")
+        self.assertContains(response, "A section with this name already exists.")
+        self.assertNotContains(response, "schools_section_name_unique")
         self.assertEqual(Section.objects.filter(name__iexact="Primary").count(), 1)
 
     def test_current_period_form_and_htmx_choices_reject_mismatched_terms(self):

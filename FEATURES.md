@@ -13,8 +13,8 @@
 
 ## Planned
 
-Phase 3 starts school configuration. Subsequent phases add
-students/guardians, enrollment history, teachers/subjects,
+Phase 4 starts students/guardians and enrollment history. Subsequent phases add
+teachers/subjects,
 assessments, grading, reports, fees, guardian access policies, expenses, promotion,
 dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 
@@ -31,3 +31,16 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - One-hour reset expiry, single-use tokens and session invalidation
 - Console email for development; production SMTP configuration
 - 48 passing automated tests across the foundation and account workflows
+
+## Implemented in Phase 3
+
+- School profile, configurable contact/currency details and saved report preferences
+- School name displayed throughout the main portal layout
+- Sections, academic years, terms, classes and optional streams
+- Admin-only setup with searchable lists, pagination and confirmed status changes
+- One current academic year and optional term, with HTMX term selection
+- Scoped duplicate-name checks, unique term numbers and date/overlap validation
+- Protected parent relationships, active-parent checks and historical preservation
+- Audit fields and transactional configuration logs
+- Read-only configuration inspection in Django admin
+- 79 passing tests across Phases 1–3 plus isolated live HTTP workflow checks

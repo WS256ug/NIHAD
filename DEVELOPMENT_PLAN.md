@@ -7,8 +7,8 @@ starting the next. Always use `.venv` for Python and dependency commands.
 | --- | --- | --- |
 | 1 | Project foundation, custom user, settings, base layout | Complete |
 | 2 | Accounts, password management, permission helpers, role navigation | Complete |
-| 3 | School profile, sections, years, terms, classes and streams | Next |
-| 4 | Students, guardians, enrollment and history | Planned |
+| 3 | School profile, sections, years, terms, classes and streams | Complete |
+| 4 | Students, guardians, enrollment and history | Next |
 | 5 | Teachers, subjects and allocations | Planned |
 | 6 | Assessments and marks | Planned |
 | 7 | Configurable grading, aggregates and divisions | Planned |
@@ -71,8 +71,31 @@ starting the next. Always use `.venv` for Python and dependency commands.
   accounts were removed, and the development server serves the updated routes.
 - Browser visual checks and live PostgreSQL/SMTP integration remain outstanding.
 
+## Phase 3 deliverables and verification
+
+- School profile with contact details, currency, ranking preference and the future
+  guardian report-access policy; the configured school name appears in the portal.
+- Configurable sections, academic years, terms, classes and optional streams.
+- Searchable, paginated lists and creation/editing/status confirmation forms.
+- School Admin and Super Admin access checks on every configuration route.
+- One current year and optional term, saved together on the single school profile.
+- HTMX term choices restricted to the selected active academic year.
+- Valid date ranges, non-overlapping periods, scoped unique names and term numbers.
+- Parent relationships cannot be reassigned after creation. Referenced parents
+  use protected foreign keys; configuration is deactivated instead of deleted.
+- Active children and current periods prevent invalid parent deactivation.
+- Transactional writes, audit fields and Django admin log entries; Django admin
+  displays configuration read-only so edits use the validated portal.
+- Both school migrations are applied to local SQLite.
+- All 79 tests pass across Phases 1–3; system, migration and dependency checks pass.
+- Live HTTP checks passed against an isolated SQLite database for first-time setup,
+  record creation, current-period changes, date protection, activation, HTMX
+  search and role restrictions. No sample school data was added to development.
+- Production configuration and static collection checks pass. Browser visual
+  checks and live PostgreSQL/SMTP integration remain outstanding.
+
 ## Next phase
 
-Phase 3 adds the school profile, configurable sections, academic years, terms,
-classes and streams. Apply server-side role checks and object/queryset scopes as
-each domain becomes available. Do not add navigation to unimplemented modules.
+Phase 4 adds student registration, permanent student IDs, guardian profiles and
+links, enrollment history, and student search/filtering. Reference the school
+configuration records, allow classes without streams and preserve prior enrollment.

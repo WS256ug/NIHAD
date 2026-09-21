@@ -93,6 +93,7 @@ main:focus { outline: none; }
 .status-inactive { font-size: .8rem; color: #6e5b4a; }
 .header-actions a[aria-current="page"] { text-decoration: underline; font-weight: 600; }
 .brand { max-width: 25rem; }
+.brand > span:last-child { min-width: 0; overflow-wrap: anywhere; }
 .header-actions { flex-wrap: wrap; justify-content: flex-end; }
 .configuration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 1rem; margin: 1.5rem 0; }
 .configuration-count { font-size: 2rem; font-weight: 650; color: #225c4b; }

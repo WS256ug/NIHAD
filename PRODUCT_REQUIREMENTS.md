@@ -19,5 +19,6 @@ Preserve academic history through enrollment records. Configure grading, fees,
 school structure and guardian report-access policy. Use Decimal values for money,
 atomic financial/promotion operations and protected historical records.
 
-The foundation milestone provides authentication and project structure. Domain
-workflows remain planned and must be implemented in the guide's verified phases.
+Phases 1–3 provide authentication, role/account management, school configuration
+and academic structure. Student/guardian records and enrollment begin in Phase 4;
+remaining domain workflows follow the guide's verified phases.

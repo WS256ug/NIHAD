@@ -82,7 +82,7 @@ class Section(ConfigurationRecord):
 
     class Meta:
         ordering = ("sort_order", "name", "pk")
-        constraints = [models.UniqueConstraint(Lower("name"), "school", name="schools_section_name_unique")]
+        constraints = [models.UniqueConstraint(Lower("name"), "school", name="schools_section_name_unique", violation_error_message="A section with this name already exists.")]
 
     def __str__(self):
         return self.name
@@ -102,7 +102,7 @@ class AcademicYear(ConfigurationRecord):
     class Meta:
         ordering = ("-start_date", "name", "pk")
         constraints = [
-            models.UniqueConstraint(Lower("name"), "school", name="schools_year_name_unique"),
+            models.UniqueConstraint(Lower("name"), "school", name="schools_year_name_unique", violation_error_message="An academic year with this name already exists."),
             models.CheckConstraint(condition=models.Q(end_date__gte=models.F("start_date")), name="schools_year_dates_ordered"),
         ]
 
@@ -136,8 +136,8 @@ class Term(ConfigurationRecord):
     class Meta:
         ordering = ("-academic_year__start_date", "sequence", "pk")
         constraints = [
-            models.UniqueConstraint(Lower("name"), "academic_year", name="schools_term_name_unique"),
-            models.UniqueConstraint(fields=("academic_year", "sequence"), name="schools_term_sequence_unique"),
+            models.UniqueConstraint(Lower("name"), "academic_year", name="schools_term_name_unique", violation_error_message="A term with this name already exists in this academic year."),
+            models.UniqueConstraint(fields=("academic_year", "sequence"), name="schools_term_sequence_unique", violation_error_message="This term number is already used in this academic year."),
             models.CheckConstraint(condition=models.Q(sequence__gte=1), name="schools_term_sequence_positive"),
             models.CheckConstraint(condition=models.Q(end_date__gte=models.F("start_date")), name="schools_term_dates_ordered"),
         ]
@@ -170,7 +170,7 @@ class AcademicClass(ConfigurationRecord):
     class Meta:
         verbose_name_plural = "academic classes"
         ordering = ("section__sort_order", "sort_order", "name", "pk")
-        constraints = [models.UniqueConstraint(Lower("name"), "section", name="schools_class_name_unique")]
+        constraints = [models.UniqueConstraint(Lower("name"), "section", name="schools_class_name_unique", violation_error_message="A class with this name already exists in this section.")]
 
     def __str__(self):
         return f"{self.section} / {self.name}"
@@ -189,7 +189,7 @@ class Stream(ConfigurationRecord):
 
     class Meta:
         ordering = ("academic_class__section__sort_order", "academic_class__sort_order", "name", "pk")
-        constraints = [models.UniqueConstraint(Lower("name"), "academic_class", name="schools_stream_name_unique")]
+        constraints = [models.UniqueConstraint(Lower("name"), "academic_class", name="schools_stream_name_unique", violation_error_message="A stream with this name already exists in this class.")]
 
     def __str__(self):
         return f"{self.academic_class} / {self.name}"

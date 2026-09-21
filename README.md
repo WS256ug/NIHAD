@@ -1,7 +1,7 @@
 # NIHAD School Management
 
 A Django school management system being built in the verified phases defined in
-[AGENTS.md](AGENTS.md). Phases 1 and 2 provide the project foundation and accounts.
+[AGENTS.md](AGENTS.md). Phases 1–3 provide the foundation, accounts and school configuration.
 The guide was originally named `AGENTS(1).md` and is now named `AGENTS.md`.
 
 ## Stack
@@ -66,10 +66,40 @@ same `python -m pip` and `python manage.py` commands. Set environment values in
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-The 48 tests cover all six roles, login/logout, role access and navigation,
+The 79 tests cover all six roles, login/logout, role access and navigation,
 account creation/editing/deactivation, privilege escalation attempts, CSRF,
 password changes, reset expiry/reuse, session invalidation, HTMX responses,
-database constraints and environment settings. Tests use a separate test database.
+database constraints, environment settings and school configuration rules. Tests
+use a separate test database. School tests include period/date consistency, parent
+relationships, activation, audit rollback and protected configuration routes.
+
+## School setup
+
+Sign in as a School Admin or Super Admin and open **School setup**, or visit
+http://127.0.0.1:8000/school/.
+
+1. Save the school profile, contact details and currency code (default: UGX).
+2. Add sections, then classes within each section. Add streams only where needed.
+3. Add academic years and terms with the school's actual names and dates.
+4. Select the current academic year and, optionally, its current term.
+
+No sections, classes or periods are hard-coded or seeded automatically. A class
+may have no streams. Ranking and fee-clearance preferences are saved now for use
+when reports and the guardian portal are implemented.
+
+Years cannot overlap, and terms must fit inside their year without overlapping
+other terms in that year. Date boundaries are inclusive. Term numbers and names
+are unique within their year; section, class and stream names are unique within
+their parent. A year cannot be shortened past an existing term.
+
+Parent relationships remain fixed after creation to preserve history. Use a new
+record to represent a different parent. Deactivate children before their parent,
+and switch or clear the current period before deactivating a current year/term.
+Reactivation requires active parents. Existing records are preserved.
+
+The current year and term are stored together on the school profile. Configuration
+writes are validated, transactional and audited. Django admin provides a read-only
+view; use the School setup pages to make changes. The application supports one school.
 
 ## Accounts and roles
 
@@ -146,9 +176,10 @@ must use authorized download views when their modules are added.
 
 ## Current scope
 
-Accounts, password management, role workspaces and role-based navigation are
-available. School records, students, assessments, reports, finance and populated
-domain dashboards follow in subsequent phases. There is no public registration.
+Accounts, password management, role workspaces, school configuration and role-based
+navigation are available. Student/guardian records, enrollment, assessments,
+reports, finance and populated domain dashboards follow in subsequent phases.
+There is no public registration.
 
 See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for progress and
 [FEATURES.md](FEATURES.md) for implemented and planned functionality.
