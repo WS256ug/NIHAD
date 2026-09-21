@@ -24,8 +24,9 @@
     </a>
     {% if user.is_authenticated %}
       <nav class="header-actions" aria-label="Main navigation">
-        <a href="{% url 'dashboard:home' %}" aria-current="page">Workspace</a>
-        {% if user.is_staff %}<a href="{% url 'admin:index' %}">Administration</a>{% endif %}
+        {% for link in account_navigation %}
+          <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a>
+        {% endfor %}
         <form action="{% url 'accounts:logout' %}" method="post">
           {% csrf_token %}
           <button type="submit" class="outline small">Sign out</button>

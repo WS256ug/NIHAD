@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}My account{% endblock %}
+{% block content %}
+<section class="account-page workspace-card">
+  <span class="eyebrow">My account</span>
+  <h1>Your account</h1>
+  <dl class="account-details">
+    <div><dt>Name</dt><dd>{{ user.get_full_name|default:user.username }}</dd></div>
+    <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+    <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
+    <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
+  </dl>
+  <div class="form-actions"><a href="{% url 'accounts:password_change' %}" role="button">Change password</a></div>
+  <p class="muted">Contact your school administrator to update your details.</p>
+</section>
+{% endblock %}

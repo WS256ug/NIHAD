@@ -1,7 +1,7 @@
 # NIHAD School Management
 
 A Django school management system being built in the verified phases defined in
-[AGENTS.md](AGENTS.md). Phase 1 provides the project and authentication foundation.
+[AGENTS.md](AGENTS.md). Phases 1 and 2 provide the project foundation and accounts.
 The guide was originally named `AGENTS(1).md` and is now named `AGENTS.md`.
 
 ## Stack
@@ -23,7 +23,8 @@ python manage.py runserver
 ```
 
 Open http://127.0.0.1:8000/ and sign in with the account you created. Administration
-is at http://127.0.0.1:8000/admin/. No default passwords or accounts are seeded.
+is at http://127.0.0.1:8000/admin/ for Super Admins. The account-management portal
+is at http://127.0.0.1:8000/accounts/users/. No default passwords or accounts are seeded.
 
 If PowerShell blocks activation, use the environment's interpreter directly:
 
@@ -65,9 +66,54 @@ same `python -m pip` and `python manage.py` commands. Set environment values in
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-Tests cover all six role values, password hashing, login/logout, inactive users,
-CSRF protection, safe redirects, HTMX responses, admin access, database role
-constraints, and environment-specific settings. Tests use a separate test database.
+The 48 tests cover all six roles, login/logout, role access and navigation,
+account creation/editing/deactivation, privilege escalation attempts, CSRF,
+password changes, reset expiry/reuse, session invalidation, HTMX responses,
+database constraints and environment settings. Tests use a separate test database.
+
+## Accounts and roles
+
+After signing in, each user is redirected to their role workspace. A safe local
+`next` destination is preserved, and the destination still checks authorization.
+Users can view their own account and change their password from **My account**.
+
+| Role | Account administration |
+| --- | --- |
+| Super Admin | Manage ordinary accounts and School Admins; use Django admin for privileged accounts |
+| School Admin | Create/edit/activate/deactivate ordinary Headteacher, Teacher, Bursar and Guardian accounts |
+| Headteacher, Teacher, Bursar, Guardian | Own profile and password only |
+
+School Admins cannot manage themselves, other School Admins, Super Admins, or
+accounts with staff status, groups or explicit Django permissions. Portal forms
+cannot grant staff/superuser flags, groups or Django permissions. Django admin is
+restricted to active Super Admins, including its user/group permission editors.
+New Super Admins can be created with `createsuperuser`; an existing Super Admin
+can also assign the matching role, staff and superuser flags together in admin.
+
+Account creation, edits and status changes are recorded in Django admin's log.
+Deactivate accounts to remove access while retaining records. Domain permission
+checks for students, teaching assignments and finance will be added with those
+modules; the current project represents one school.
+
+## Password recovery
+
+**Forgot your password?** uses Django's reset tokens. Links expire in one hour and
+are single use. Unknown, inactive or unusable-password accounts receive the same
+public confirmation, without sending a reset email. An account needs an email
+address for recovery; portal account forms require one. Accounts without an email
+can be updated by an authorized administrator.
+
+In development, reset emails appear in the `runserver` console. When the server is
+started in the background by the development agent, they appear in the ignored
+`artifacts/server.stdout.log`. These links contain private recovery tokens.
+
+In production, set `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`,
+`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` and `EMAIL_USE_SSL` in the
+environment. Use either TLS or SSL, not both. SMTP delivery requires a configured
+mail service; tests use Django's in-memory email backend and send no external mail.
+
+Changing a password preserves the current session and invalidates other sessions.
+Resetting a password requires signing in again with the new password.
 
 ## Production configuration
 
@@ -100,11 +146,9 @@ must use authorized download views when their modules are added.
 
 ## Current scope
 
-Sign-in, POST sign-out, a protected personal workspace, and custom-user admin are
-available. Role names are stored; they do not automatically grant Django staff or
-superuser permissions. Domain permissions, password management, school records,
-students, assessment, reports and finance follow in subsequent phases. There is
-no public registration or password reset workflow yet.
+Accounts, password management, role workspaces and role-based navigation are
+available. School records, students, assessments, reports, finance and populated
+domain dashboards follow in subsequent phases. There is no public registration.
 
 See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for progress and
 [FEATURES.md](FEATURES.md) for implemented and planned functionality.

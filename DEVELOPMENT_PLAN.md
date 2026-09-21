@@ -6,8 +6,8 @@ starting the next. Always use `.venv` for Python and dependency commands.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Project foundation, custom user, settings, base layout | Complete |
-| 2 | Accounts, password management, permission helpers, role navigation | Next; basic sign-in/out already available |
-| 3 | School profile, sections, years, terms, classes and streams | Planned |
+| 2 | Accounts, password management, permission helpers, role navigation | Complete |
+| 3 | School profile, sections, years, terms, classes and streams | Next |
 | 4 | Students, guardians, enrollment and history | Planned |
 | 5 | Teachers, subjects and allocations | Planned |
 | 6 | Assessments and marks | Planned |
@@ -46,8 +46,33 @@ starting the next. Always use `.venv` for Python and dependency commands.
 - No connected browser was available; visual desktop/mobile verification remains
   outstanding. A live PostgreSQL integration check remains part of deployment work.
 
+## Phase 2 deliverables and verification
+
+- Six protected role workspaces, login redirects and role-specific navigation.
+- Shared role checks, route decorators and scoped account querysets.
+- Account list, search, role filter, pagination, creation and editing.
+- Confirmed activation/deactivation, with no account deletion in the portal.
+- School Admins manage ordinary Headteacher, Teacher, Bursar and Guardian accounts.
+- Super Admins additionally provision School Admins; privileged accounts and
+  Django permission editing are restricted to Super Admins in Django admin.
+- Profile display, password change and email-token password recovery.
+- Password reset tokens expire after one hour and cannot be reused.
+- Database constraint and form validation keep Super Admin role, superuser and
+  staff flags consistent.
+- Account mutations create Django admin audit entries inside the same transaction.
+- Development reset mail stays in the server console; production SMTP is configurable.
+- All 48 tests pass, including the cross-role access matrix, forged privileges,
+  scoped targets, CSRF, password validation, token expiry and session invalidation.
+- Django system, migration drift and dependency checks pass.
+- Migration 0002 is applied to local SQLite. Production deployment checks and
+  static collection pass with temporary configuration values.
+- Live HTTP checks pass for all six roles, account creation/editing/status changes,
+  password changes, password reset and rejected token reuse. Temporary test
+  accounts were removed, and the development server serves the updated routes.
+- Browser visual checks and live PostgreSQL/SMTP integration remain outstanding.
+
 ## Next phase
 
-Build password change/reset, role permission helpers and role navigation. Enforce
-authorization in views and querysets as modules become available. Role labels
-alone must never confer administrative access. Test each role before Phase 3.
+Phase 3 adds the school profile, configurable sections, academic years, terms,
+classes and streams. Apply server-side role checks and object/queryset scopes as
+each domain becomes available. Do not add navigation to unimplemented modules.

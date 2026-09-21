@@ -4,6 +4,8 @@ from django.db import IntegrityError, transaction
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from apps.accounts.permissions import dashboard_url
+
 User = get_user_model()
 
 
@@ -41,7 +43,9 @@ class AuthenticationFoundationTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.users = {
-            role: User.objects.create_user(role, password=cls.password, role=role)
+            role: (User.objects.create_superuser(role, password=cls.password)
+                   if role == User.Role.SUPER_ADMIN
+                   else User.objects.create_user(role, password=cls.password, role=role))
             for role in User.Role.values
         }
         cls.admin = User.objects.create_superuser("admin", password=cls.password)
@@ -63,15 +67,18 @@ class AuthenticationFoundationTests(TestCase):
                 response = client.post(reverse("accounts:login"), {
                     "username": user.username, "password": self.password,
                 })
-                self.assertRedirects(response, reverse("dashboard:home"))
-                response = client.get(reverse("dashboard:home"))
+                self.assertRedirects(response, dashboard_url(user))
+                response = client.get(reverse("dashboard:home"), follow=True)
                 self.assertContains(response, f"Welcome, {user.username}.")
                 self.assertContains(response, user.get_role_display())
-                self.assertNotContains(response, "Open administration")
+                if not user.is_superuser:
+                    self.assertNotContains(response, "Open administration")
                 self.assertIn("no-store", response.headers["Cache-Control"])
 
     def test_role_label_alone_does_not_grant_admin_access(self):
         for user in self.users.values():
+            if user.is_superuser:
+                continue
             with self.subTest(role=user.role):
                 self.client.force_login(user)
                 response = self.client.get(reverse("admin:accounts_user_changelist"))
@@ -80,7 +87,7 @@ class AuthenticationFoundationTests(TestCase):
 
     def test_superuser_can_manage_custom_users_in_admin(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get(reverse("dashboard:home")), "Open administration")
+        self.assertContains(self.client.get(reverse("dashboard:home"), follow=True), "Open administration")
         response = self.client.get(reverse("admin:accounts_user_changelist"))
         self.assertContains(response, "Bursar / Finance")
         response = self.client.get(reverse("admin:accounts_user_add"))
@@ -119,7 +126,7 @@ class AuthenticationFoundationTests(TestCase):
             "username": "teacher", "password": self.password,
             "next": "https://untrusted.example/",
         })
-        self.assertRedirects(response, reverse("dashboard:home"))
+        self.assertRedirects(response, dashboard_url(self.users[User.Role.TEACHER]))
 
     def test_htmx_login_returns_safe_full_page_redirect(self):
         response = self.client.post(reverse("accounts:login"), {
@@ -127,7 +134,7 @@ class AuthenticationFoundationTests(TestCase):
             "next": "https://untrusted.example/",
         }, headers={"HX-Request": "true"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers["HX-Redirect"], reverse("dashboard:home"))
+        self.assertEqual(response.headers["HX-Redirect"], dashboard_url(self.users[User.Role.TEACHER]))
         self.assertIn("_auth_user_id", self.client.session)
 
     def test_htmx_invalid_login_returns_replaceable_form(self):

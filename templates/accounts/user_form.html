@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<section class="account-page workspace-card">
+  <a href="{% url 'accounts:user_list' %}">← Accounts</a>
+  <h1>{{ page_title }}</h1>
+  <p class="muted">Enter the account holder's details and school role.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include 'includes/form_fields.html' %}
+    <div class="form-actions"><button type="submit">Save account</button><a href="{% url 'accounts:user_list' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

@@ -13,7 +13,21 @@
 
 ## Planned
 
-Phase 2 completes account workflows and role permissions. Subsequent phases add
-school configuration, students/guardians, enrollment history, teachers/subjects,
+Phase 3 starts school configuration. Subsequent phases add
+students/guardians, enrollment history, teachers/subjects,
 assessments, grading, reports, fees, guardian access policies, expenses, promotion,
 dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
+
+## Implemented in Phase 2
+
+- Separate protected workspaces and navigation for all six roles
+- Shared role permissions and scoped account-management querysets
+- Searchable, paginated account directory with HTMX search
+- Authorized account creation, editing and confirmed activation/deactivation
+- Server-side prevention of privilege changes through ordinary account forms
+- Super Admin-only Django administration and consistent superuser/role flags
+- Account-change audit entries in Django admin's log
+- Own profile display, password change and email-token password reset
+- One-hour reset expiry, single-use tokens and session invalidation
+- Console email for development; production SMTP configuration
+- 48 passing automated tests across the foundation and account workflows

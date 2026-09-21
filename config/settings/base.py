@@ -24,7 +24,7 @@ SECRET_KEY = required_env("DJANGO_SECRET_KEY")
 DEBUG = False
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "config.apps.SchoolAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -58,6 +58,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.accounts.context_processors.account_navigation",
             ],
         },
     },
@@ -73,6 +74,8 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "dashboard:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
+PASSWORD_RESET_TIMEOUT = 3600
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "NIHAD School <noreply@localhost>")
 
 LANGUAGE_CODE = "en"
 TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "Africa/Nairobi")

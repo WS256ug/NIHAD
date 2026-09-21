@@ -71,6 +71,27 @@ main:focus { outline: none; }
 .account-details div:last-child { border-bottom: 0; }
 .account-details dt { font-size: .75rem; color: #657068; margin-bottom: .25rem; }
 .account-details dd { margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+.account-page { width: calc(100% - 2rem); max-width: 640px; margin: 2.5rem auto; }
+.account-page h1 { font-size: 1.85rem; margin: 1rem 0; }
+.account-page form { margin-top: 1.5rem; }
+.form-field input[type="checkbox"] { width: auto; min-height: auto; }
+.form-field select { width: 100%; }
+.field-help { color: #657068; font-size: .78rem; margin-top: .4rem; }
+.field-help ul { padding-left: 1.2rem; }
+.form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
+.filter-form { display: flex; align-items: end; flex-wrap: wrap; gap: 1rem; }
+.filter-form > div:first-child { flex: 1; min-width: min(100%, 220px); }
+.filter-form input, .filter-form select { width: 100%; }
+.filter-form label { display: block; font-size: .8rem; margin-bottom: .4rem; }
+.table-scroll { overflow-x: auto; }
+.table-scroll table { width: 100%; text-align: left; }
+.table-scroll caption { text-align: left; margin-bottom: 1rem; }
+.table-secondary { display: block; color: #657068; font-weight: 400; overflow-wrap: anywhere; }
+.table-actions { white-space: nowrap; }
+.table-actions a + a { margin-left: 1rem; }
+.pagination { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
+.status-inactive { font-size: .8rem; color: #6e5b4a; }
+.header-actions a[aria-current="page"] { text-decoration: underline; font-weight: 600; }
 @media (max-width: 1150px) { .login-layout { margin-left: 1.5rem; margin-right: 1.5rem; } }
 @media (max-width: 760px) {
   .login-layout { grid-template-columns: 1fr; max-width: 520px; margin: 1.5rem auto; }

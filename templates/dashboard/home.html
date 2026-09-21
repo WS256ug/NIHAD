@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
-{% block title %}Your workspace{% endblock %}
+{% block title %}{{ workspace_title }}{% endblock %}
 {% block content %}
 <div class="workspace">
   <header class="page-heading">
     <div>
-      <span class="eyebrow">Your workspace</span>
+      <span class="eyebrow">{{ workspace_title }}</span>
       <h1>Welcome, {{ user.first_name|default:user.username }}.</h1>
-      <p class="muted">A place to start your school day.</p>
+      <p class="muted">{{ workspace_heading }}</p>
     </div>
     <span class="role-badge">{{ user.get_role_display }}</span>
   </header>
@@ -14,8 +14,11 @@
     <section class="workspace-card welcome-card" aria-labelledby="workspace-title">
       <span class="section-number" aria-hidden="true">01 / Welcome</span>
       <h2 id="workspace-title">You're in the right place.</h2>
-      <p>Your account is ready. School features will appear here as they become available.</p>
-      {% if user.is_staff %}
+      <p>{{ workspace_description }}</p>
+      {% if can_manage_accounts %}
+        <a href="{% url 'accounts:user_list' %}" role="button">Manage accounts <span aria-hidden="true">→</span></a>
+      {% endif %}
+      {% if user.is_superuser %}
         <a href="{% url 'admin:index' %}" role="button">Open administration <span aria-hidden="true">→</span></a>
         <p class="small-note">Manage accounts through school administration.</p>
       {% else %}
@@ -30,6 +33,7 @@
         <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
         <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
       </dl>
+      <a href="{% url 'accounts:password_change' %}">Change your password</a>
     </section>
   </div>
 </div>

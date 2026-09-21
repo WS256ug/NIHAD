@@ -43,7 +43,7 @@
       </button>
       <span id="sign-in-progress" class="htmx-indicator" role="status">Signing you in…</span>
     </form>
-    <p class="sign-in-help">Need access or help signing in?<br>Contact your school administrator.</p>
+    <p class="sign-in-help"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a><br>For account access, contact your school administrator.</p>
   </section>
 </div>
 {% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading">
+    <div><span class="eyebrow">School administration</span><h1>Accounts</h1><p class="muted">Manage access for your school community.</p></div>
+    <a href="{% url 'accounts:user_create' %}" role="button">Create account</a>
+  </header>
+  <section class="workspace-card">
+    <form method="get" class="filter-form" action="{% url 'accounts:user_list' %}"
+          hx-get="{% url 'accounts:user_list' %}" hx-target="#account-results" hx-select="#account-results"
+          hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
+      <div><label for="account-search">Search accounts</label><input type="search" id="account-search" name="q" value="{{ query }}" placeholder="Name, username or email"></div>
+      <div><label for="role-filter">Role</label><select id="role-filter" name="role"><option value="">All roles</option>{% for value, label in role_choices %}<option value="{{ value }}"{% if value == selected_role %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <button type="submit">Search</button>
+    </form>
+    <span id="search-progress" class="htmx-indicator" role="status">Searching accounts…</span>
+    <div id="account-results" aria-live="polite">
+      <div class="table-scroll">
+        <table>
+          <caption class="muted">{{ page_obj.paginator.count }} account{{ page_obj.paginator.count|pluralize }} you can manage</caption>
+          <thead><tr><th scope="col">Account</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+          <tbody>
+          {% for account in page_obj %}
+            <tr>
+              <th scope="row">{{ account.get_full_name|default:account.username }}<small class="table-secondary">{{ account.username }} · {{ account.email|default:'No email' }}</small></th>
+              <td>{{ account.get_role_display }}</td>
+              <td>{% if account.is_active %}<span class="role-badge">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
+              <td class="table-actions"><a href="{% url 'accounts:user_edit' account.pk %}" aria-label="Edit {{ account.username }}">Edit</a>
+                {% if account.is_active %}<a href="{% url 'accounts:user_deactivate' account.pk %}" aria-label="Deactivate {{ account.username }}">Deactivate</a>{% else %}<a href="{% url 'accounts:user_activate' account.pk %}" aria-label="Activate {{ account.username }}">Activate</a>{% endif %}
+              </td>
+            </tr>
+          {% empty %}<tr><td colspan="4">No accounts match your search.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.has_other_pages %}
+        <nav class="pagination" aria-label="Account pages">
+          {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&amp;role={{ selected_role|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+          <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&amp;role={{ selected_role|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+        </nav>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
