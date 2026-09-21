@@ -92,6 +92,14 @@ main:focus { outline: none; }
 .pagination { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
 .status-inactive { font-size: .8rem; color: #6e5b4a; }
 .header-actions a[aria-current="page"] { text-decoration: underline; font-weight: 600; }
+.brand { max-width: 25rem; }
+.header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.configuration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.configuration-count { font-size: 2rem; font-weight: 650; color: #225c4b; }
+.configuration-grid h2 { margin-top: .6rem; }
+.period-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.period-summary h2 { margin-top: 0; }
+.form-field textarea { width: 100%; }
 @media (max-width: 1150px) { .login-layout { margin-left: 1.5rem; margin-right: 1.5rem; } }
 @media (max-width: 760px) {
   .login-layout { grid-template-columns: 1fr; max-width: 520px; margin: 1.5rem auto; }

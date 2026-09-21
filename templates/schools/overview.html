@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}School setup{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading"><div><span class="eyebrow">School administration</span><h1>School setup</h1><p class="muted">Set up your school and its academic structure.</p></div><a href="{% url 'schools:profile' %}" role="button">{% if school %}Edit school profile{% else %}Set up school profile{% endif %}</a></header>
+  {% if school %}
+    <section class="workspace-card period-summary">
+      <div><span class="eyebrow">{{ school.name }}</span><h2>Current academic period</h2><p>{{ school.current_academic_year|default:'No current academic year' }} · {{ school.current_term.name|default:'No current term' }}</p></div>
+      <a href="{% url 'schools:current_period' %}" role="button" class="outline">Change current period</a>
+    </section>
+    <div class="configuration-grid">
+      {% for card in cards %}<section class="workspace-card"><span class="configuration-count">{{ card.count }}</span><h2>{{ card.label }}</h2><a href="{{ card.url }}">Manage {{ card.label|lower }} →</a></section>{% endfor %}
+    </div>
+    <p class="muted">Start with sections and academic years. Add classes within sections and terms within years. Streams are optional.</p>
+  {% else %}
+    <section class="workspace-card"><h2>Welcome to your school setup</h2><p>Create your school profile first. You can then add sections, academic years, terms, classes and optional streams.</p><p class="muted">Use the names and dates that match your school. No classes or periods are added automatically.</p></section>
+  {% endif %}
+</div>
+{% endblock %}

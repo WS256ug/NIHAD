@@ -48,6 +48,10 @@ def can_manage_accounts(user):
     return has_role(user, User.Role.SCHOOL_ADMIN)
 
 
+def can_manage_school(user):
+    return has_role(user, User.Role.SCHOOL_ADMIN)
+
+
 def assignable_roles(user):
     if not can_manage_accounts(user):
         return ()

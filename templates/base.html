@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="light">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
-  <title>{% block title %}Workspace{% endblock %} · NIHAD School</title>
+  <title>{% block title %}Workspace{% endblock %} · {{ school_display_name }}</title>
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'vendor/oat/oat.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
@@ -18,9 +18,9 @@
 <body hx-history="false">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="{% url 'dashboard:home' %}" aria-label="NIHAD School home">
+    <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
       <span class="brand-mark" aria-hidden="true">N</span>
-      <span>NIHAD <span class="brand-subtitle">School management</span></span>
+      <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
     </a>
     {% if user.is_authenticated %}
       <nav class="header-actions" aria-label="Main navigation">
@@ -48,7 +48,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
-    <span>NIHAD School</span>
+    <span>{{ school_display_name }}</span>
     <span>A little more time for what matters.</span>
   </footer>
 </body>

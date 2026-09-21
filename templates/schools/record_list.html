@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ spec.label }}{% endblock %}
+{% block content %}
+<div class="workspace">
+  <a href="{% url 'schools:overview' %}">← School setup</a>
+  <header class="page-heading"><div><span class="eyebrow">School setup</span><h1>{{ spec.label }}</h1></div><a href="{% url 'schools:record_create' kind %}" role="button">Create {{ spec.singular }}</a></header>
+  <section class="workspace-card">
+    <form method="get" class="filter-form" hx-get="{% url 'schools:record_list' kind %}" hx-target="#configuration-results" hx-select="#configuration-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
+      <div><label for="configuration-search">Search by name</label><input type="search" id="configuration-search" name="q" value="{{ query }}"></div>
+      <div><label for="configuration-status">Status</label><select id="configuration-status" name="status"><option value="">All records</option><option value="active"{% if selected_status == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if selected_status == 'inactive' %} selected{% endif %}>Inactive</option></select></div>
+      <button type="submit">Search</button>
+    </form>
+    <span id="search-progress" class="htmx-indicator" role="status">Searching…</span>
+    <div id="configuration-results" aria-live="polite">
+      <div class="table-scroll"><table>
+        <caption>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</caption>
+        <thead><tr><th scope="col">Name</th><th scope="col">Belongs to</th>{% if spec.dates %}<th scope="col">Dates</th>{% endif %}<th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+        <tbody>{% for row in rows %}<tr>
+          <th scope="row">{{ row.record.name }}{% if row.current %}<small class="table-secondary">Current</small>{% endif %}</th><td>{{ row.parent }}</td>
+          {% if spec.dates %}<td>{{ row.record.start_date|date:'j M Y' }} – {{ row.record.end_date|date:'j M Y' }}</td>{% endif %}
+          <td>{% if row.record.is_active %}<span class="role-badge">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
+          <td class="table-actions"><a href="{% url 'schools:record_edit' kind row.record.pk %}" aria-label="Edit {{ row.record.name }}">Edit</a>
+            {% if row.record.is_active %}<a href="{% url 'schools:record_deactivate' kind row.record.pk %}" aria-label="Deactivate {{ row.record.name }}">Deactivate</a>{% else %}<a href="{% url 'schools:record_activate' kind row.record.pk %}" aria-label="Activate {{ row.record.name }}">Activate</a>{% endif %}
+          </td>
+        </tr>{% empty %}<tr><td colspan="{% if spec.dates %}5{% else %}4{% endif %}">No records match your search.</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="Configuration pages">
+        {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&amp;status={{ selected_status|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&amp;status={{ selected_status|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+      </nav>{% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
