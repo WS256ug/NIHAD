@@ -73,6 +73,55 @@ SQLite checks pass; PostgreSQL concurrency still requires deployment validation.
 Ranking and fee-clearance preference fields are stored configuration only; the
 report and guardian modules will enforce them when implemented.
 
+## Student and guardian schema
+
+| Model | Relationship and purpose |
+| --- | --- |
+| Student | School, permanent unique student ID, identity/admission details, status and private photo |
+| StudentNumber | One counter per school; allocates sequential permanent IDs inside the school transaction |
+| Guardian | One-to-one protected User account, School, phone and address; name/email remain on User |
+| StudentGuardian | Protected Student and Guardian, relationship, primary/emergency flags and active status |
+| Enrollment | Protected Student, AcademicYear, Section, AcademicClass and optional Stream, dates and status |
+
+All domain records carry audit timestamps and actors. Guardian accounts must retain
+the Guardian role; account deactivation disables sign-in without deleting links.
+StudentGuardian pairs are unique, and a partial unique constraint allows only one
+active primary guardian per student. Deactivated links are retained for inspection.
+
+IDs use `STD-000001` formatting with a unique, nonempty database field. Allocation
+locks the school and increments StudentNumber atomically; failed creation rolls
+back the increment. IDs and school/account identities cannot be reassigned.
+Nonblank admission numbers are case-insensitively unique within the school.
+Database checks enforce birth/admission date ordering and valid status/gender values.
+
+Enrollment derives Section from AcademicClass and validates Stream against that
+class. The year/class/section/stream must belong to the student's school and be
+active for a new enrollment. A conditional database constraint allows one current
+enrollment per student/year. Current records have no completion date; all closed
+statuses require a completion date on or after enrollment. Date ranges must fit
+the academic year and cannot overlap within that student's year, inclusive of
+endpoints. Enrollment cannot predate admission.
+
+Enrollment's student, year, section, class, stream and enrollment date are fixed
+after creation. Closing changes only status/completion and audit metadata; closed
+records are immutable. New placements create new records, including subsequent
+placements in the same year after closure. The school current-year pointer is
+independent of each year's open/closed enrollment status. Historic enrollment can
+be entered with a closed status using active configuration. Parent dates and
+deactivation checks now protect enrollment context too.
+
+Use `apps.students.services` for all writes. Services authorize the actor, lock
+the school/student and relevant guardian account, revalidate relations and create
+audit entries atomically. PostgreSQL uses row locks; SQLite may reject competing
+writes with a retryable error. Raw ORM bulk mutations bypass application checks
+and are not a supported record-editing workflow. Django admin is read-only.
+
+Photos use PrivatePhotoStorage rooted at PRIVATE_MEDIA_ROOT, never a public media
+URL. Uploads are bounded, decoded and re-encoded without metadata. Authorized views
+return private, noncached FileResponses. New files are cleaned on write failure;
+old files are removed after successful replacement/removal commits. Filesystem and
+database backups must be coordinated; a process crash can still leave an orphaned file.
+
 ## Environment behavior
 
 - Development: SQLite in ignored `db.sqlite3`.
@@ -85,7 +134,6 @@ locking and concurrency behavior.
 
 ## Planned relationships
 
-Student → guardians and immutable enrollment history.
 Enrollment → academic context, assessments, marks and reports.
 Teaching assignment → teacher, subject, class/stream and academic period.
 Fee charges → payments/receipts and calculated balance.

@@ -101,6 +101,11 @@ main:focus { outline: none; }
 .period-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
 .period-summary h2 { margin-top: 0; }
 .form-field textarea { width: 100%; }
+.student-photo { width: 160px; height: 160px; object-fit: cover; border-radius: .65rem; margin-bottom: 1rem; }
+.history-card { margin-top: 1.5rem; }
+.relationship-card { padding: 1rem 0; border-bottom: 1px solid #e8ebe4; overflow-wrap: anywhere; }
+.relationship-card:last-child { border-bottom: 0; }
+.relationship-card .form-actions { margin-bottom: 0; }
 @media (max-width: 1150px) { .login-layout { margin-left: 1.5rem; margin-right: 1.5rem; } }
 @media (max-width: 760px) {
   .login-layout { grid-template-columns: 1fr; max-width: 520px; margin: 1.5rem auto; }

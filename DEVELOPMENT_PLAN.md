@@ -8,8 +8,8 @@ starting the next. Always use `.venv` for Python and dependency commands.
 | 1 | Project foundation, custom user, settings, base layout | Complete |
 | 2 | Accounts, password management, permission helpers, role navigation | Complete |
 | 3 | School profile, sections, years, terms, classes and streams | Complete |
-| 4 | Students, guardians, enrollment and history | Next |
-| 5 | Teachers, subjects and allocations | Planned |
+| 4 | Students, guardians, enrollment and history | Complete |
+| 5 | Teachers, subjects and allocations | Next |
 | 6 | Assessments and marks | Planned |
 | 7 | Configurable grading, aggregates and divisions | Planned |
 | 8 | Reports, review, publication and PDF/print | Planned |
@@ -94,8 +94,35 @@ starting the next. Always use `.venv` for Python and dependency commands.
 - Production configuration and static collection checks pass. Browser visual
   checks and live PostgreSQL/SMTP integration remain outstanding.
 
+## Phase 4 deliverables and verification
+
+- Student registration, permanent sequential IDs, profiles, admission numbers,
+  status changes and protected photos. Pillow validates and re-encodes uploads.
+- Guardian account/profile registration and reuse of existing Guardian accounts.
+- Multiple student/guardian links, relationship and emergency-contact details,
+  one active primary guardian per student, and confirmed link deactivation.
+- Enrollment by academic year, section, class and optional stream; historical
+  entries, one current enrollment per student/year, and explicit closure.
+- Enrollment context is immutable. Closed records cannot be reopened or changed.
+  Dates must fit the year, follow admission and not overlap within the same year.
+- Search, history-aware section/year/class/stream filters, pagination and HTMX
+  stream choices with ordinary form fallback.
+- School Admin/Super Admin management and Headteacher read-only student access.
+  Teacher, Bursar and Guardian student access awaits the corresponding scoped modules.
+- Transactions, audit entries, protected relationships and read-only Django admin.
+  School date/status changes cannot invalidate enrollment history.
+- The student migration is applied to development SQLite. All 122 tests pass;
+  system, migration-drift and dependency checks pass.
+- Production deployment checks and manifest static collection pass with temporary
+  configuration values, without connecting to a live PostgreSQL database.
+- Live HTTP checks passed against an isolated database for sign-in, registration,
+  guardian linking, enrollment, overlap rejection, preserved history, HTMX and
+  role restrictions. Verification data was cleared from that isolated database.
+- No browser was connected; visual desktop/mobile checks remain pending. Live
+  PostgreSQL concurrency and SMTP checks remain part of deployment verification.
+
 ## Next phase
 
-Phase 4 adds student registration, permanent student IDs, guardian profiles and
-links, enrollment history, and student search/filtering. Reference the school
-configuration records, allow classes without streams and preserve prior enrollment.
+Phase 5 adds teacher profiles/accounts, configurable subjects, teaching assignments,
+class-teacher assignments and assignment validation. Test authorization against
+the student's enrollment context before granting teachers access to student records.

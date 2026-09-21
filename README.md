@@ -1,7 +1,8 @@
 # NIHAD School Management
 
 A Django school management system being built in the verified phases defined in
-[AGENTS.md](AGENTS.md). Phases 1–3 provide the foundation, accounts and school configuration.
+[AGENTS.md](AGENTS.md). Phases 1–4 provide accounts, school configuration,
+student/guardian records and enrollment history.
 The guide was originally named `AGENTS(1).md` and is now named `AGENTS.md`.
 
 ## Stack
@@ -66,12 +67,14 @@ same `python -m pip` and `python manage.py` commands. Set environment values in
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-The 79 tests cover all six roles, login/logout, role access and navigation,
+The 122 tests cover all six roles, login/logout, role access and navigation,
 account creation/editing/deactivation, privilege escalation attempts, CSRF,
 password changes, reset expiry/reuse, session invalidation, HTMX responses,
 database constraints, environment settings and school configuration rules. Tests
 use a separate test database. School tests include period/date consistency, parent
 relationships, activation, audit rollback and protected configuration routes.
+Student tests cover permanent IDs, guardian registration/linking, enrollment
+history, private photos, date and uniqueness constraints, role boundaries and CSRF.
 
 ## School setup
 
@@ -101,6 +104,48 @@ The current year and term are stored together on the school profile. Configurati
 writes are validated, transactional and audited. Django admin provides a read-only
 view; use the School setup pages to make changes. The application supports one school.
 
+## Students, guardians and enrollment
+
+Open http://127.0.0.1:8000/students/ as School Admin or Super Admin. Headteachers
+can search and view student profiles/history but cannot change records. Teacher,
+Bursar and Guardian access will be added through their scoped domain modules.
+
+1. Complete school configuration, including an active year and class.
+2. Choose **Register student**. The permanent ID is generated, starting at
+   `STD-000001`; an optional separate admission number must be unique.
+3. Open **Guardians** and register an account/profile, or select **Use existing
+   account** for an ordinary active Guardian account. Edit names and email through
+   Accounts; phone/address are maintained on the guardian profile.
+4. On the student profile, choose **Link a guardian**. A guardian can have multiple
+   children and a student can have multiple guardians, with one active primary
+   guardian. Deactivating a link preserves the relationship and clears its primary
+   and emergency-contact flags. Account deactivation separately disables sign-in.
+5. Choose **Add enrollment** and select the year, class and optional stream.
+   The section is derived from the class. Use a completed status and completion
+   date when entering past enrollment; referenced configuration must be active.
+6. Close an enrollment before entering a later placement in the same year. Its
+   dates cannot overlap the previous placement (both endpoints are inclusive).
+   New years get new records; previous placements are preserved. Batch promotion
+   is a later phase. A current enrollment means open in its year, and the profile
+   separately identifies the school's selected current year.
+
+Enrollment identity, dates of entry and academic context cannot be reassigned;
+closed records cannot be reopened or overwritten. Close all current enrollments
+before marking a student transferred, withdrawn, graduated or inactive. A year
+cannot be shortened past enrollment dates, and configuration with current
+enrollments cannot be deactivated. There are no student or enrollment delete actions.
+
+Search accepts names, student IDs and admission numbers. Year, section, class and
+stream filters include past enrollment and must match the same enrollment record.
+
+Optional student photos accept JPEG, PNG and WebP up to 5 MB and 16 million pixels.
+Pillow re-encodes them as JPEG without original metadata. They are stored under
+ignored `private_media/`, outside public `/media/`, and served only through the
+authorized student-photo route. Keep this directory private and include it in
+encrypted backups; never configure a public web-server alias for it. Deployment
+must enforce upload request limits as well. Replacement/removal cleans the prior
+file after the database commit; failed writes clean the new file.
+
 ## Accounts and roles
 
 After signing in, each user is redirected to their role workspace. A safe local
@@ -122,8 +167,9 @@ can also assign the matching role, staff and superuser flags together in admin.
 
 Account creation, edits and status changes are recorded in Django admin's log.
 Deactivate accounts to remove access while retaining records. Domain permission
-checks for students, teaching assignments and finance will be added with those
-modules; the current project represents one school.
+checks for students are implemented; teaching-assignment and finance scopes follow
+with those modules. Accounts with guardian profiles retain the Guardian role to
+preserve their relationships. The current project represents one school.
 
 ## Password recovery
 
@@ -176,9 +222,10 @@ must use authorized download views when their modules are added.
 
 ## Current scope
 
-Accounts, password management, role workspaces, school configuration and role-based
-navigation are available. Student/guardian records, enrollment, assessments,
-reports, finance and populated domain dashboards follow in subsequent phases.
+Accounts, password management, role workspaces, school configuration, student and
+guardian records, enrollment history and role-based navigation are available.
+Teachers/subjects, assessments, reports, finance, the guardian portal, batch
+promotion and populated domain dashboards follow in subsequent phases.
 There is no public registration.
 
 See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for progress and

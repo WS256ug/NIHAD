@@ -92,6 +92,8 @@ class Section(ConfigurationRecord):
         self.check_parent_unchanged("school_id")
         if self.pk and not self.is_active and self.classes.filter(is_active=True).exists():
             raise ValidationError("Deactivate this section's active classes first.")
+        if self.pk and not self.is_active and self.enrollments.filter(status="current").exists():
+            raise ValidationError("Close current enrollments before deactivating their section.")
 
 
 class AcademicYear(ConfigurationRecord):
@@ -120,11 +122,15 @@ class AcademicYear(ConfigurationRecord):
                 raise ValidationError("Academic years for this school cannot overlap.")
             if self.pk and self.terms.filter(models.Q(start_date__lt=self.start_date) | models.Q(end_date__gt=self.end_date)).exists():
                 raise ValidationError("The academic year must contain all of its existing terms.")
+            if self.pk and self.enrollments.filter(models.Q(enrollment_date__lt=self.start_date) | models.Q(enrollment_date__gt=self.end_date) | models.Q(completion_date__gt=self.end_date)).exists():
+                raise ValidationError("The academic year must contain all of its existing enrollment dates.")
         if self.pk and not self.is_active:
             if School.objects.filter(current_academic_year_id=self.pk).exists():
                 raise ValidationError("Select a different current academic year or clear the current period first.")
             if self.terms.filter(is_active=True).exists():
                 raise ValidationError("Deactivate this year's active terms first.")
+            if self.enrollments.filter(status="current").exists():
+                raise ValidationError("Close current enrollments before deactivating their academic year.")
 
 
 class Term(ConfigurationRecord):
@@ -182,6 +188,8 @@ class AcademicClass(ConfigurationRecord):
             raise ValidationError("Active classes require an active section.")
         if self.pk and not self.is_active and self.streams.filter(is_active=True).exists():
             raise ValidationError("Deactivate this class's active streams first.")
+        if self.pk and not self.is_active and self.enrollments.filter(status="current").exists():
+            raise ValidationError("Close current enrollments before deactivating their class.")
 
 
 class Stream(ConfigurationRecord):
@@ -200,3 +208,5 @@ class Stream(ConfigurationRecord):
         if self.academic_class_id and self.is_active:
             if not self.academic_class.is_active or not self.academic_class.section.is_active:
                 raise ValidationError("Active streams require an active class and section.")
+        if self.pk and not self.is_active and self.enrollments.filter(status="current").exists():
+            raise ValidationError("Close current enrollments before deactivating their stream.")

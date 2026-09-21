@@ -13,8 +13,7 @@
 
 ## Planned
 
-Phase 4 starts students/guardians and enrollment history. Subsequent phases add
-teachers/subjects,
+Phase 5 starts teachers, subjects and assignments. Subsequent phases add
 assessments, grading, reports, fees, guardian access policies, expenses, promotion,
 dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 
@@ -44,3 +43,17 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - Audit fields and transactional configuration logs
 - Read-only configuration inspection in Django admin
 - 79 passing tests across Phases 1–3 plus isolated live HTTP workflow checks
+
+## Implemented in Phase 4
+
+- Student registration/profiles, permanent sequential IDs, admission numbers and statuses
+- Validated private photo uploads and authorized delivery
+- Guardian account/profile registration and reuse of existing Guardian accounts
+- Multiple guardian links, primary/emergency contacts and preserved inactive links
+- Enrollment with optional streams, closure, immutable context and historical entries
+- Date, status, duplicate, parent and overlap validation with database constraints
+- Student search, history-aware year/section/class/stream filters and pagination
+- HTMX search/stream choices and ordinary HTML form fallback
+- Administrator management, Headteacher read-only student access and audited writes
+- Read-only domain inspection in Django admin and protected account relationships
+- 122 tests across Phases 1–4, plus isolated live HTTP workflow verification

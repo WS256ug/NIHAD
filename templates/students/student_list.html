@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading"><div><span class="eyebrow">Student records</span><h1>Students</h1><p class="muted">Find students and their enrollment history.</p></div>{% if can_manage_students %}<a href="{% url 'students:create' %}" role="button">Register student</a>{% endif %}</header>
+  <section class="workspace-card">
+    <form method="get" class="filter-form" hx-get="{% url 'students:list' %}" hx-target="#student-results" hx-select="#student-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
+      <div><label for="student-search">Name, student ID or admission number</label><input type="search" id="student-search" name="q" value="{{ query }}"></div>
+      <div><label for="status-filter">Student status</label><select id="status-filter" name="status"><option value="">All statuses</option>{% for value, label in status_choices %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div><label for="year-filter">Academic year</label><select id="year-filter" name="year"><option value="">All years</option>{% for year in years %}<option value="{{ year.pk }}"{% if request.GET.year == year.pk|stringformat:'s' %} selected{% endif %}>{{ year.name }}</option>{% endfor %}</select></div>
+      <div><label for="section-filter">Section</label><select id="section-filter" name="section"><option value="">All sections</option>{% for section in sections %}<option value="{{ section.pk }}"{% if request.GET.section == section.pk|stringformat:'s' %} selected{% endif %}>{{ section.name }}</option>{% endfor %}</select></div>
+      <div><label for="class-filter">Class</label><select id="class-filter" name="class"><option value="">All classes</option>{% for classroom in classes %}<option value="{{ classroom.pk }}"{% if request.GET.class == classroom.pk|stringformat:'s' %} selected{% endif %}>{{ classroom }}</option>{% endfor %}</select></div>
+      <div><label for="stream-filter">Stream</label><select id="stream-filter" name="stream"><option value="">All streams</option>{% for stream in streams %}<option value="{{ stream.pk }}"{% if request.GET.stream == stream.pk|stringformat:'s' %} selected{% endif %}>{{ stream }}</option>{% endfor %}</select></div>
+      <button type="submit">Search</button><a href="{% url 'students:list' %}">Reset</a>
+    </form>
+    <span id="search-progress" class="htmx-indicator" role="status">Searching…</span>
+    <div id="student-results" aria-live="polite">
+      <div class="table-scroll"><table>
+        <caption>{{ page_obj.paginator.count }} student{{ page_obj.paginator.count|pluralize }} · Enrollment filters include history</caption>
+        <thead><tr><th scope="col">Student</th><th scope="col">Admission number</th><th scope="col">Status</th><th scope="col">Enrollments</th></tr></thead>
+        <tbody>{% for student in page_obj %}<tr>
+          <th scope="row"><a href="{% url 'students:detail' student.pk %}">{{ student.full_name }}</a><small class="table-secondary">{{ student.student_id }}</small></th>
+          <td>{{ student.admission_number|default:'—' }}</td><td><span class="role-badge">{{ student.get_status_display }}</span></td>
+          <td>{% for enrollment in student.listed_enrollments %}<div>{{ enrollment.academic_year.name }} · {{ enrollment.academic_class.name }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}<small class="table-secondary">{{ enrollment.get_status_display }}</small></div>{% empty %}Not enrolled{% endfor %}</td>
+        </tr>{% empty %}<tr><td colspan="4">No students match your search.{% if can_manage_students %} Register a student to get started.{% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% include 'students/pagination.html' %}
+    </div>
+  </section>
+</div>
+{% endblock %}

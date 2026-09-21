@@ -30,7 +30,7 @@ def write_record(record, actor, message, update_fields=None):
     record.save(update_fields=None if creating or update_fields is None else [*update_fields, "updated_at", "updated_by"])
     LogEntry.objects.create(
         user=actor, content_type=ContentType.objects.get_for_model(record),
-        object_id=str(record.pk), object_repr=str(record),
+        object_id=str(record.pk), object_repr=str(record)[:200],
         action_flag=ADDITION if creating else CHANGE, change_message=message,
     )
     return record

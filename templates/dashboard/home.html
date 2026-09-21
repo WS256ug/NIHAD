@@ -21,6 +21,9 @@
       {% if can_manage_school %}
         <a href="{% url 'schools:overview' %}" role="button" class="outline">School setup</a>
       {% endif %}
+      {% if can_view_students %}
+        <a href="{% url 'students:list' %}" role="button" class="outline">View students</a>
+      {% endif %}
       {% if user.is_superuser %}
         <a href="{% url 'admin:index' %}" role="button">Open administration <span aria-hidden="true">→</span></a>
         <p class="small-note">Manage accounts through school administration.</p>

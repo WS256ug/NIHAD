@@ -19,6 +19,9 @@ Preserve academic history through enrollment records. Configure grading, fees,
 school structure and guardian report-access policy. Use Decimal values for money,
 atomic financial/promotion operations and protected historical records.
 
-Phases 1–3 provide authentication, role/account management, school configuration
-and academic structure. Student/guardian records and enrollment begin in Phase 4;
-remaining domain workflows follow the guide's verified phases.
+Phases 1–4 provide authentication, role/account management, school configuration,
+academic structure, student/guardian records and enrollment history. Student IDs
+are permanent; enrollment context and closed history cannot be overwritten.
+School Admins manage records, and Headteachers have read-only student access.
+Teacher/student scope follows assignments in Phase 5, and the guardian-facing
+portal follows in Phase 10. Remaining workflows follow the guide's verified phases.

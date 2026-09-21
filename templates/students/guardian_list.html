@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Guardians{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading"><div><span class="eyebrow">Student contacts</span><h1>Guardians</h1></div><div class="form-actions"><a href="{% url 'students:guardian_register' %}" role="button">Register guardian</a><a href="{% url 'students:guardian_existing' %}">Use existing account</a></div></header>
+  <section class="workspace-card">
+    <form method="get" class="filter-form" hx-get="{% url 'students:guardian_list' %}" hx-target="#guardian-results" hx-select="#guardian-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
+      <div><label for="guardian-search">Name, username, email or phone</label><input type="search" id="guardian-search" name="q" value="{{ query }}"></div><button type="submit">Search</button>
+    </form><span id="search-progress" class="htmx-indicator" role="status">Searching…</span>
+    <div id="guardian-results" aria-live="polite"><div class="table-scroll"><table>
+      <caption>{{ page_obj.paginator.count }} guardian{{ page_obj.paginator.count|pluralize }}</caption><thead><tr><th scope="col">Guardian</th><th scope="col">Phone</th><th scope="col">Email</th><th scope="col">Account status</th></tr></thead>
+      <tbody>{% for guardian in page_obj %}<tr><th scope="row"><a href="{% url 'students:guardian_detail' guardian.pk %}">{{ guardian }}</a><small class="table-secondary">{{ guardian.user.username }}</small></th><td>{{ guardian.phone }}</td><td>{{ guardian.user.email|default:'Not provided' }}</td><td>{% if guardian.user.is_active %}Active{% else %}Inactive{% endif %}</td></tr>{% empty %}<tr><td colspan="4">No guardians match your search.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="Guardian pages">{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

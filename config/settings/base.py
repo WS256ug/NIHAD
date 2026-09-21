@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "apps.dashboard.apps.DashboardConfig",
     "apps.schools.apps.SchoolsConfig",
+    "apps.students.apps.StudentsConfig",
 ]
 
 MIDDLEWARE = [
@@ -90,6 +91,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

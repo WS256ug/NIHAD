@@ -25,6 +25,8 @@ class User(AbstractUser):
             raise ValidationError("The Super Admin role and superuser status must be assigned together.")
         if self.is_superuser and not self.is_staff:
             raise ValidationError("Super Admin accounts must have staff status.")
+        if self.pk and self.role != self.Role.GUARDIAN and hasattr(self, "guardian_profile"):
+            raise ValidationError("An account with a guardian profile must keep the Guardian role. Deactivate the account to remove access.")
 
     class Meta:
         constraints = [
