@@ -67,7 +67,7 @@ same `python -m pip` and `python manage.py` commands. Set environment values in
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-The 122 tests cover all six roles, login/logout, role access and navigation,
+The 123 tests cover all six roles, login/logout, role access and navigation,
 account creation/editing/deactivation, privilege escalation attempts, CSRF,
 password changes, reset expiry/reuse, session invalidation, HTMX responses,
 database constraints, environment settings and school configuration rules. Tests
@@ -91,7 +91,8 @@ may have no streams. Ranking and fee-clearance preferences are saved now for use
 when reports and the guardian portal are implemented.
 
 Years cannot overlap, and terms must fit inside their year without overlapping
-other terms in that year. Date boundaries are inclusive. Term numbers and names
+other terms in that year. Date boundaries are inclusive. Terms are ordered by
+start date within each year, without a separate sequence field. Term names
 are unique within their year; section, class and stream names are unique within
 their parent. A year cannot be shortened past an existing term.
 

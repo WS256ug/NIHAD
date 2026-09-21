@@ -43,7 +43,7 @@ the custom user from the start.
 | School | One profile (primary key 1), contact details, currency and report preferences |
 | Section | Belongs to School; configurable name, description and display order |
 | AcademicYear | Belongs to School; named date range |
-| Term | Belongs to AcademicYear; name, sequence and contained date range |
+| Term | Belongs to AcademicYear; name and contained date range; ordered by start date |
 | AcademicClass | Belongs to Section; configurable name and display order |
 | Stream | Belongs to AcademicClass; optional subdivision of a class |
 
@@ -58,9 +58,10 @@ rejected after creation. The portal and Django admin expose no configuration
 delete action; admin inspection is read-only.
 
 Database constraints enforce the single profile, current-term/year presence,
-date ordering, positive term numbers, scoped term-number uniqueness and scoped
-case-insensitive name uniqueness. Model validation additionally checks period
-overlaps, containment, parent immutability and active-parent/child consistency.
+date ordering and scoped case-insensitive name uniqueness. Terms are displayed
+within each year by start date; no sequence column is stored. Model validation
+additionally checks period overlaps, containment, parent immutability and
+active-parent/child consistency.
 Date comparisons include both endpoints, and inactive historical periods still
 participate in date/overlap validation.
 

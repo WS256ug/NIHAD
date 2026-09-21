@@ -486,6 +486,9 @@ Example:
 
 A term belongs to an academic year.
 
+Order terms by start date within their academic year; do not ask administrators
+for a separate sequence number. Keep dates non-overlapping and within the year.
+
 The system must prevent conflicting active academic periods where appropriate.
 
 ---

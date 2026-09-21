@@ -26,8 +26,8 @@ class SchoolTestCase(AccountTestCase):
         cls.nursery = Section.objects.create(school=cls.school, name="Nursery")
         cls.year = AcademicYear.objects.create(school=cls.school, name="2026", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
         cls.next_year = AcademicYear.objects.create(school=cls.school, name="2027", start_date=date(2027, 1, 1), end_date=date(2027, 12, 31))
-        cls.term = Term.objects.create(academic_year=cls.year, name="Term 1", sequence=1, start_date=date(2026, 2, 1), end_date=date(2026, 4, 30))
-        cls.next_term = Term.objects.create(academic_year=cls.next_year, name="Term 1", sequence=1, start_date=date(2027, 2, 1), end_date=date(2027, 4, 30))
+        cls.term = Term.objects.create(academic_year=cls.year, name="Term 1", start_date=date(2026, 2, 1), end_date=date(2026, 4, 30))
+        cls.next_term = Term.objects.create(academic_year=cls.next_year, name="Term 1", start_date=date(2027, 2, 1), end_date=date(2027, 4, 30))
         cls.academic_class = AcademicClass.objects.create(section=cls.primary, name="P.1")
         cls.stream = Stream.objects.create(academic_class=cls.academic_class, name="East")
 
@@ -43,7 +43,7 @@ class ConfigurationModelTests(SchoolTestCase):
             (AcademicYear, {"school": self.school, "name": "2026", "start_date": date(2028, 1, 1), "end_date": date(2028, 12, 31)}),
             (AcademicClass, {"section": self.primary, "name": "p.1"}),
             (Stream, {"academic_class": self.academic_class, "name": "east"}),
-            (Term, {"academic_year": self.year, "name": "TERM 1", "sequence": 2, "start_date": date(2026, 6, 1), "end_date": date(2026, 8, 1)}),
+            (Term, {"academic_year": self.year, "name": "TERM 1", "start_date": date(2026, 6, 1), "end_date": date(2026, 8, 1)}),
         ]
         for model, fields in duplicates:
             with self.subTest(model=model), self.assertRaises(IntegrityError), transaction.atomic():
@@ -51,12 +51,10 @@ class ConfigurationModelTests(SchoolTestCase):
         other_class = AcademicClass.objects.create(section=self.nursery, name="P.1")
         Stream.objects.create(academic_class=other_class, name="East")
 
-    def test_year_dates_and_term_sequence_have_database_constraints(self):
+    def test_year_and_term_dates_have_database_constraints(self):
         invalid = [
             (AcademicYear, {"school": self.school, "name": "Bad dates", "start_date": date(2030, 12, 1), "end_date": date(2030, 1, 1)}),
-            (Term, {"academic_year": self.year, "name": "Bad dates", "sequence": 2, "start_date": date(2026, 8, 1), "end_date": date(2026, 6, 1)}),
-            (Term, {"academic_year": self.year, "name": "Bad order", "sequence": 0, "start_date": date(2026, 6, 1), "end_date": date(2026, 8, 1)}),
-            (Term, {"academic_year": self.year, "name": "Duplicate order", "sequence": 1, "start_date": date(2026, 6, 1), "end_date": date(2026, 8, 1)}),
+            (Term, {"academic_year": self.year, "name": "Bad dates", "start_date": date(2026, 8, 1), "end_date": date(2026, 6, 1)}),
         ]
         for model, fields in invalid:
             with self.subTest(fields=fields), self.assertRaises(IntegrityError), transaction.atomic():
@@ -75,7 +73,7 @@ class ConfigurationModelTests(SchoolTestCase):
         ]
         for start, end, message in cases:
             with self.subTest(start=start):
-                term = Term(academic_year=self.year, name="Term 2", sequence=2, start_date=start, end_date=end)
+                term = Term(academic_year=self.year, name="Term 2", start_date=start, end_date=end)
                 with self.assertRaisesMessage(ValidationError, message):
                     term.full_clean()
 
@@ -246,7 +244,7 @@ class ConfigurationViewTests(SchoolTestCase):
         records = [
             ("sections", {"name": "Reception", "description": "Early years", "sort_order": 1}),
             ("years", {"name": "2028/29", "start_date": "2028-08-01", "end_date": "2029-06-30"}),
-            ("terms", {"academic_year": self.year.pk, "name": "Summer", "sequence": 2, "start_date": "2026-06-01", "end_date": "2026-08-31"}),
+            ("terms", {"academic_year": self.year.pk, "name": "Summer", "start_date": "2026-06-01", "end_date": "2026-08-31"}),
             ("classes", {"section": self.nursery.pk, "name": "Top", "sort_order": 2}),
             ("streams", {"academic_class": self.academic_class.pk, "name": "West"}),
         ]
@@ -259,6 +257,37 @@ class ConfigurationViewTests(SchoolTestCase):
                 self.assertEqual(obj.created_by, self.actor)
                 self.assertEqual(obj.updated_by, self.actor)
                 self.assertTrue(LogEntry.objects.filter(content_type__model=obj._meta.model_name, object_id=str(obj.pk), user=self.actor).exists())
+
+    def test_terms_follow_dates_on_creation_edit_and_period_choices(self):
+        create_url = reverse("schools:record_create", args=["terms"])
+        self.assertNotContains(self.client.get(create_url), 'name="sequence"')
+        for name, start, end in [
+            ("A later term", "2026-09-01", "2026-12-01"),
+            ("Z earlier term", "2026-06-01", "2026-08-01"),
+        ]:
+            response = self.client.post(create_url, {
+                "academic_year": self.year.pk, "name": name,
+                "start_date": start, "end_date": end,
+            })
+            self.assertRedirects(response, reverse("schools:record_list", args=["terms"]))
+        later = Term.objects.get(name="A later term")
+        earlier = Term.objects.get(name="Z earlier term")
+        response = self.client.get(reverse("schools:record_list", args=["terms"]))
+        self.assertEqual([row["record"].pk for row in response.context["rows"]], [self.next_term.pk, self.term.pk, earlier.pk, later.pk])
+        choices = CurrentPeriodForm({"academic_year": self.year.pk}, school=self.school).fields["term"].queryset
+        self.assertEqual(list(choices), [self.term, earlier, later])
+        set_current_period(self.actor, self.year, later)
+        edit_url = reverse("schools:record_edit", args=["terms", later.pk])
+        self.assertNotContains(self.client.get(edit_url), 'name="sequence"')
+        response = self.client.post(edit_url, {
+            "academic_year": self.year.pk, "name": later.name,
+            "start_date": "2026-01-01", "end_date": "2026-01-31",
+        })
+        self.assertRedirects(response, reverse("schools:record_list", args=["terms"]))
+        response = self.client.get(reverse("schools:term_options"), {"academic_year": self.year.pk}, headers={"HX-Request": "true"})
+        self.assertEqual(list(response.context["terms"]), [later, self.term, earlier])
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.current_term_id, later.pk)
 
     def test_profile_changes_update_identity_and_policy_values(self):
         response = self.client.post(reverse("schools:profile"), {
@@ -294,7 +323,7 @@ class ConfigurationViewTests(SchoolTestCase):
         form = StreamForm({"academic_class": self.academic_class.pk, "name": "West"}, school=self.school)
         self.assertFalse(form.is_valid())
         self.assertIn("academic_class", form.errors)
-        form = TermForm({"academic_year": 999999, "name": "Invalid", "sequence": 4, "start_date": "2026-09-01", "end_date": "2026-12-01"}, school=self.school)
+        form = TermForm({"academic_year": 999999, "name": "Invalid", "start_date": "2026-09-01", "end_date": "2026-12-01"}, school=self.school)
         self.assertFalse(form.is_valid())
 
     def test_duplicate_and_invalid_forms_keep_submitted_data(self):

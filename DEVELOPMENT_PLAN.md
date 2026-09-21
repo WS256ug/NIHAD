@@ -80,7 +80,7 @@ starting the next. Always use `.venv` for Python and dependency commands.
 - School Admin and Super Admin access checks on every configuration route.
 - One current year and optional term, saved together on the single school profile.
 - HTMX term choices restricted to the selected active academic year.
-- Valid date ranges, non-overlapping periods, scoped unique names and term numbers.
+- Valid date ranges, non-overlapping periods, scoped unique names and date-based term ordering.
 - Parent relationships cannot be reassigned after creation. Referenced parents
   use protected foreign keys; configuration is deactivated instead of deleted.
 - Active children and current periods prevent invalid parent deactivation.
@@ -111,7 +111,7 @@ starting the next. Always use `.venv` for Python and dependency commands.
   Teacher, Bursar and Guardian student access awaits the corresponding scoped modules.
 - Transactions, audit entries, protected relationships and read-only Django admin.
   School date/status changes cannot invalidate enrollment history.
-- The student migration is applied to development SQLite. All 122 tests pass;
+- The student migration is applied to development SQLite. All 123 tests pass;
   system, migration-drift and dependency checks pass.
 - Production deployment checks and manifest static collection pass with temporary
   configuration values, without connecting to a live PostgreSQL database.
@@ -120,6 +120,14 @@ starting the next. Always use `.venv` for Python and dependency commands.
   role restrictions. Verification data was cleared from that isolated database.
 - No browser was connected; visual desktop/mobile checks remain pending. Live
   PostgreSQL concurrency and SMTP checks remain part of deployment verification.
+
+## Term ordering refinement
+
+- Removed the Sequence form field, database column and sequence constraints.
+- Terms are ordered by start date within each academic year, including current-period choices.
+- Names, dates, active status and current-period relationships are retained.
+- Migration `schools.0003_terms_order_by_start_date` is applied to development SQLite.
+- Creation, date editing, list order and HTMX term choices are covered by the test suite.
 
 ## Next phase
 

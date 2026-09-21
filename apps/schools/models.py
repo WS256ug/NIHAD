@@ -1,7 +1,7 @@
 """One school's configurable structure. Relationships are preserved once created."""
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -135,16 +135,13 @@ class AcademicYear(ConfigurationRecord):
 
 class Term(ConfigurationRecord):
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT, related_name="terms")
-    sequence = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
     start_date = models.DateField()
     end_date = models.DateField()
 
     class Meta:
-        ordering = ("-academic_year__start_date", "sequence", "pk")
+        ordering = ("-academic_year__start_date", "start_date", "pk")
         constraints = [
             models.UniqueConstraint(Lower("name"), "academic_year", name="schools_term_name_unique", violation_error_message="A term with this name already exists in this academic year."),
-            models.UniqueConstraint(fields=("academic_year", "sequence"), name="schools_term_sequence_unique", violation_error_message="This term number is already used in this academic year."),
-            models.CheckConstraint(condition=models.Q(sequence__gte=1), name="schools_term_sequence_positive"),
             models.CheckConstraint(condition=models.Q(end_date__gte=models.F("start_date")), name="schools_term_dates_ordered"),
         ]
 

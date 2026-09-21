@@ -38,7 +38,7 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - Sections, academic years, terms, classes and optional streams
 - Admin-only setup with searchable lists, pagination and confirmed status changes
 - One current academic year and optional term, with HTMX term selection
-- Scoped duplicate-name checks, unique term numbers and date/overlap validation
+- Scoped duplicate-name checks, date-based term ordering and date/overlap validation
 - Protected parent relationships, active-parent checks and historical preservation
 - Audit fields and transactional configuration logs
 - Read-only configuration inspection in Django admin
@@ -56,4 +56,4 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - HTMX search/stream choices and ordinary HTML form fallback
 - Administrator management, Headteacher read-only student access and audited writes
 - Read-only domain inspection in Django admin and protected account relationships
-- 122 tests across Phases 1–4, plus isolated live HTTP workflow verification
+- 123 tests across Phases 1–4, plus isolated live HTTP workflow verification

@@ -59,7 +59,8 @@ class TermForm(ConfigurationForm):
 
     class Meta:
         model = Term
-        fields = ("academic_year", "name", "sequence", "start_date", "end_date")
+        fields = ("academic_year", "name", "start_date", "end_date")
+        help_texts = {"start_date": "Terms are ordered by their start date within the academic year."}
 
 
 class AcademicClassForm(ConfigurationForm):
