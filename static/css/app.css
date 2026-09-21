@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light;
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+  --primary: #225c4b;
+  --primary-foreground: #fff;
+  --background: #f8f9f6;
+  --foreground: #202e28;
+  --ring: #38735f;
+}
+body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: #f8f9f6; color: #202e28; }
+a { text-underline-offset: .2em; }
+button, a[role="button"] { cursor: pointer; }
+main { flex: 1; width: 100%; }
+main:focus { outline: none; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.3rem clamp(1.25rem, 5vw, 5rem); border-bottom: 1px solid #e2e6de; background: #fff; }
+.brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; color: #202e28; font-size: 1rem; font-weight: 750; letter-spacing: .08em; }
+.brand-mark { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; color: #fff; background: #225c4b; border-radius: .7rem .7rem .7rem 0; font-family: Georgia, serif; font-size: 1.75rem; }
+.brand-subtitle { display: block; font-size: .68rem; font-weight: 400; color: #67736b; letter-spacing: .015em; }
+.header-note { font-size: .8rem; color: #67736b; }
+.header-actions { display: flex; align-items: center; gap: 1.5rem; font-size: .85rem; }
+.header-actions a { color: #354a3f; }
+.header-actions form { margin: 0; }
+.site-footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5rem clamp(1.25rem, 5vw, 5rem); font-size: .75rem; color: #6a746c; }
+.login-layout { max-width: 1090px; margin: clamp(1.5rem, 5vw, 4rem) auto; display: grid; grid-template-columns: 1.05fr 1fr; background: #fff; border: 1px solid #e0e6dc; border-radius: 1rem; overflow: hidden; }
+.welcome-panel { display: flex; flex-direction: column; padding: 3.5rem 3rem 2rem; background: #e9efe3; position: relative; }
+.eyebrow { display: block; font-size: .68rem; text-transform: uppercase; font-weight: 700; letter-spacing: .14em; color: #52735a; margin-bottom: 1.2rem; }
+.welcome-panel h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.1rem, 3.6vw, 3.1rem); line-height: 1.13; font-weight: 400; letter-spacing: -.035em; margin: 0 0 1.25rem; color: #244632; }
+.welcome-panel p { max-width: 340px; font-size: .93rem; line-height: 1.8; color: #50614e; }
+.welcome-caption { font-size: .7rem; color: #56674f; margin-top: auto; padding-top: 1rem; }
+.sign-in-panel { padding: 3.8rem 3rem 2.5rem; align-self: center; }
+.sign-in-panel h2 { font-size: 1.7rem; letter-spacing: -.035em; margin: 0 0 .6rem; }
+.muted { color: #657068; font-size: .92rem; line-height: 1.7; }
+.sign-in-panel form { margin-top: 2rem; }
+.form-field { margin-bottom: 1.2rem; }
+.form-field label { display: block; margin-bottom: .45rem; font-size: .83rem; font-weight: 600; }
+.form-field input { width: 100%; min-height: 2.8rem; background: #fff; }
+.sign-in-button { width: 100%; justify-content: space-between; min-height: 2.8rem; margin-top: .5rem; background: #225c4b; color: #fff; }
+.sign-in-button:hover { background: #194937; }
+.sign-in-help { font-size: .78rem; color: #6a746c; line-height: 1.7; border-top: 1px solid #e5e8e0; padding-top: 1.4rem; margin: .8rem 0 0; }
+.form-error, .field-error { color: #9a3030; font-size: .85rem; }
+.form-error { padding: .8rem; background: #fff3f0; border-radius: .35rem; margin-bottom: 1rem; }
+.errorlist { margin: 0; padding: 0; list-style: none; }
+.htmx-indicator { display: block; min-height: 1.5rem; font-size: .75rem; margin-top: .3rem; }
+.notice { padding: 1rem; background: #edf4e9; border: 1px solid #d3e1ca; border-radius: .5rem; }
+.messages, .request-error { max-width: 1090px; margin: 1rem auto; }
+.request-error { color: #9a3030; background: #fff3f0; }
+.skip-link { position: fixed; top: -5rem; left: 1rem; background: white; padding: 1rem; z-index: 100; }
+.skip-link:focus { top: .5rem; }
+.school-illustration { height: 200px; margin-top: 1.5rem; position: relative; overflow: hidden; }
+.illustration-sun { position: absolute; height: 62px; width: 62px; border-radius: 50%; background: #d8c789; top: 12px; right: 30px; }
+.illustration-building { position: absolute; bottom: 17px; left: 12%; width: 74%; height: 108px; background: #f7f5e9; border: 1px solid #aebfa4; display: grid; grid-template-columns: repeat(4, 1fr); padding: 25px 20px; gap: 16px; }
+.illustration-roof { position: absolute; top: -43px; left: -5%; width: 110%; height: 45px; background: #6e876a; clip-path: polygon(50% 0, 100% 85%, 100% 100%, 0 100%, 0 85%); }
+.illustration-window { height: 29px; background: #bacbbb; border: 3px solid #81997d; }
+.illustration-door { position: absolute; bottom: 0; left: calc(50% - 14px); width: 28px; height: 34px; background: #81997d; }
+.illustration-ground { position: absolute; bottom: 16px; width: 100%; height: 1px; background: #a4b49a; }
+.workspace { max-width: 1120px; margin: 3rem auto; padding: 0 1.5rem; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 2.5rem; }
+.page-heading .eyebrow { margin-bottom: .6rem; }
+.page-heading h1 { font-size: 2.3rem; font-weight: 600; letter-spacing: -.04em; margin-bottom: .5rem; overflow-wrap: anywhere; }
+.role-badge { flex-shrink: 0; padding: .35rem .8rem; background: #e9efe3; color: #325c3e; border-radius: 1rem; font-size: .75rem; }
+.workspace-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.5rem; }
+.workspace-card { padding: 2.2rem; border: 1px solid #dfe5da; border-radius: .8rem; background: #fff; min-width: 0; }
+.workspace-card h2 { font-size: 1.4rem; margin: 1.5rem 0 1rem; }
+.workspace-card p { max-width: 380px; font-size: .9rem; line-height: 1.8; color: #596b58; }
+.welcome-card { background: #e9efe3; }
+.welcome-card a[role="button"] { margin: 1rem 0 .5rem; }
+.workspace-card .small-note { font-size: .77rem; }
+.section-number { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: #607359; }
+.account-details { margin: 0; }
+.account-details div { padding: .9rem 0; border-bottom: 1px solid #e8ebe4; }
+.account-details div:last-child { border-bottom: 0; }
+.account-details dt { font-size: .75rem; color: #657068; margin-bottom: .25rem; }
+.account-details dd { margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+@media (max-width: 1150px) { .login-layout { margin-left: 1.5rem; margin-right: 1.5rem; } }
+@media (max-width: 760px) {
+  .login-layout { grid-template-columns: 1fr; max-width: 520px; margin: 1.5rem auto; }
+  .welcome-panel { padding: 2rem; }
+  .welcome-panel h1 br { display: none; }
+  .welcome-panel h1 { font-size: 2rem; }
+  .welcome-panel p { margin-bottom: 0; }
+  .school-illustration, .welcome-caption { display: none; }
+  .sign-in-panel { padding: 2rem; }
+  .workspace-grid { grid-template-columns: 1fr; }
+  .page-heading { align-items: flex-start; flex-direction: column; gap: .5rem; }
+  .header-actions { gap: .75rem; flex-wrap: wrap; }
+  .site-header { flex-wrap: wrap; }
+  .site-footer { flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .login-layout { margin: 1rem; }
+  .sign-in-panel, .welcome-panel, .workspace-card { padding: 1.5rem; }
+  .header-note { display: none; }
+  .workspace { margin-top: 2rem; }
+}

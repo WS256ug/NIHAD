@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="login-layout">
+  <section class="welcome-panel" aria-labelledby="welcome-title">
+    <span class="eyebrow">Your school. Connected.</span>
+    <h1 id="welcome-title">Good days begin<br>with a clear view.</h1>
+    <p>A shared home for your school community. Sign in to access your workspace.</p>
+    <div class="school-illustration" aria-hidden="true">
+      <div class="illustration-sun"></div>
+      <div class="illustration-building">
+        <div class="illustration-roof"></div>
+        <span class="illustration-window"></span><span class="illustration-window"></span>
+        <span class="illustration-window"></span><span class="illustration-window"></span>
+        <span class="illustration-door"></span>
+      </div>
+      <div class="illustration-ground"></div>
+    </div>
+    <span class="welcome-caption">Built around the people who make a school.</span>
+  </section>
+  <section id="sign-in-panel" class="sign-in-panel" aria-labelledby="sign-in-title">
+    <span class="eyebrow">Welcome back</span>
+    <h2 id="sign-in-title">Sign in to your school</h2>
+    <p class="muted">Use the account provided by your school administrator.</p>
+    <form method="post" action="{% url 'accounts:login' %}"
+          hx-post="{% url 'accounts:login' %}" hx-select="#sign-in-panel"
+          hx-target="#sign-in-panel" hx-swap="outerHTML"
+          hx-disabled-elt="find button[type='submit']" hx-indicator="#sign-in-progress">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% if form.non_field_errors %}
+        <div role="alert" class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div class="form-field">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="sign-in-button">
+        Sign in <span aria-hidden="true">→</span>
+      </button>
+      <span id="sign-in-progress" class="htmx-indicator" role="status">Signing you in…</span>
+    </form>
+    <p class="sign-in-help">Need access or help signing in?<br>Contact your school administrator.</p>
+  </section>
+</div>
+{% endblock %}

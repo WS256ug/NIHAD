@@ -1,0 +1,54 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
+  <title>{% block title %}Workspace{% endblock %} · NIHAD School</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/oat/oat.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/oat/oat.min.js' %}" defer></script>
+  <script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body hx-history="false">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="{% url 'dashboard:home' %}" aria-label="NIHAD School home">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <span>NIHAD <span class="brand-subtitle">School management</span></span>
+    </a>
+    {% if user.is_authenticated %}
+      <nav class="header-actions" aria-label="Main navigation">
+        <a href="{% url 'dashboard:home' %}" aria-current="page">Workspace</a>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}">Administration</a>{% endif %}
+        <form action="{% url 'accounts:logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="outline small">Sign out</button>
+        </form>
+      </nav>
+    {% else %}
+      <span class="header-note">School portal</span>
+    {% endif %}
+  </header>
+  <main id="main-content" tabindex="-1">
+    {% if messages %}
+      <div class="messages" aria-live="polite">
+        {% for message in messages %}<div role="status" class="notice">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="request-error" class="notice request-error" role="alert" hidden>
+      We couldn't complete that request. Check your connection and try again.
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <span>NIHAD School</span>
+    <span>A little more time for what matters.</span>
+  </footer>
+</body>
+</html>

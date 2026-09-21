@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Your workspace{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">Your workspace</span>
+      <h1>Welcome, {{ user.first_name|default:user.username }}.</h1>
+      <p class="muted">A place to start your school day.</p>
+    </div>
+    <span class="role-badge">{{ user.get_role_display }}</span>
+  </header>
+  <div class="workspace-grid">
+    <section class="workspace-card welcome-card" aria-labelledby="workspace-title">
+      <span class="section-number" aria-hidden="true">01 / Welcome</span>
+      <h2 id="workspace-title">You're in the right place.</h2>
+      <p>Your account is ready. School features will appear here as they become available.</p>
+      {% if user.is_staff %}
+        <a href="{% url 'admin:index' %}" role="button">Open administration <span aria-hidden="true">→</span></a>
+        <p class="small-note">Manage accounts through school administration.</p>
+      {% else %}
+        <p class="small-note">For help with your account, contact your school administrator.</p>
+      {% endif %}
+    </section>
+    <section class="workspace-card account-card" aria-labelledby="account-title">
+      <span class="section-number" aria-hidden="true">02 / Your account</span>
+      <h2 id="account-title">Account details</h2>
+      <dl class="account-details">
+        <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+        <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
+        <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
+      </dl>
+    </section>
+  </div>
+</div>
+{% endblock %}
