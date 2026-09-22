@@ -1,5 +1,13 @@
 # Development plan
 
+UI correction: the shared request-error banner now stays hidden until an HTMX
+failure. An application CSS rule overrides Oat's alert display styling when the
+banner has the `hidden` attribute.
+
+Guardian registration refinement: capture an optional National Identification
+Number (NIN) when registering a student or adding a guardian contact. Authorized
+staff can view and update it on the guardian profile; existing records may remain blank.
+
 Follow the detailed sequence in AGENTS.md section 54. Verify each phase before
 starting the next. Always use `.venv` for Python and dependency commands.
 

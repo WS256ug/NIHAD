@@ -59,7 +59,7 @@ class PortalAccessForm(SetPasswordForm):
 class GuardianForm(forms.ModelForm):
     class Meta:
         model = Guardian
-        fields = ("first_name", "last_name", "phone", "email", "address")
+        fields = ("first_name", "last_name", "phone", "nin", "email", "address")
         widgets = {"address": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, school, **kwargs):
@@ -72,6 +72,7 @@ class GuardianContactFields(forms.Form):
     guardian_first_name = forms.CharField(max_length=150, required=False)
     guardian_last_name = forms.CharField(max_length=150, required=False)
     guardian_phone = forms.CharField(max_length=40, required=False)
+    guardian_nin = forms.CharField(max_length=50, required=False, label="Guardian NIN", help_text="National Identification Number, if available. For an existing guardian, update their profile.")
     guardian_email = forms.EmailField(required=False)
     guardian_address = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
     relationship = forms.CharField(max_length=60, label="Relationship to student")

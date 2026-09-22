@@ -77,7 +77,7 @@ def add_guardian_contact(student, data, actor, primary=False):
     if guardian:
         guardian = Guardian.objects.get(pk=guardian.pk, school=school)
     else:
-        guardian = Guardian(school=school, **{field: data.get(f"guardian_{field}", "") for field in ("first_name", "last_name", "phone", "email", "address")})
+        guardian = Guardian(school=school, **{field: data.get(f"guardian_{field}", "") for field in ("first_name", "last_name", "phone", "nin", "email", "address")})
         write_record(guardian, actor, "Captured guardian contact with student.")
     link = StudentGuardian(student=student, guardian=guardian, relationship=data.get("relationship", ""), is_primary=primary, is_emergency_contact=data.get("is_emergency_contact", False))
     return write_record(link, actor, "Linked guardian contact to student.")

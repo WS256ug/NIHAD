@@ -95,6 +95,7 @@ class Guardian(AuditedModel):
     last_name = models.CharField(max_length=150, default="")
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=40)
+    nin = models.CharField("National Identification Number (NIN)", max_length=50, blank=True)
     address = models.TextField(blank=True)
 
     class Meta:

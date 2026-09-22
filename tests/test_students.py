@@ -118,6 +118,23 @@ class StudentRecordTests(StudentTestCase):
 
 
 class GuardianRecordTests(StudentTestCase):
+    def test_registration_saves_guardian_nin_and_profile_can_update_it(self):
+        form = StudentRegistrationForm(self.student_data(existing_guardian="", guardian_first_name="Alice", guardian_last_name="Doe", guardian_phone="0700", guardian_nin="  CM123456789012  "), school=self.school)
+        self.assertTrue(form.is_valid(), form.errors)
+        student = services.save_student(form, self.actor)
+        guardian = student.guardian_links.get().guardian
+        self.assertEqual(guardian.nin, "CM123456789012")
+        edit = GuardianForm({"first_name": "Alice", "last_name": "Doe", "phone": "0700", "nin": "CF123456789012"}, instance=guardian, school=self.school)
+        self.assertTrue(edit.is_valid(), edit.errors)
+        services.save_guardian(edit, self.actor)
+        guardian.refresh_from_db()
+        self.assertEqual(guardian.nin, "CF123456789012")
+
+    def test_registration_rejects_nin_longer_than_storage_limit(self):
+        form = StudentRegistrationForm(self.student_data(existing_guardian="", guardian_first_name="Alice", guardian_last_name="Doe", guardian_phone="0700", guardian_nin="X" * 51), school=self.school)
+        self.assertFalse(form.is_valid())
+        self.assertIn("guardian_nin", form.errors)
+
     def test_registration_captures_guardian_without_creating_an_account(self):
         before = User.objects.count()
         form = StudentRegistrationForm(self.student_data(existing_guardian="", guardian_first_name="Alice", guardian_last_name="Doe", guardian_phone="0700", guardian_email="alice@example.test"), school=self.school)

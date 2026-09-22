@@ -44,6 +44,8 @@ main:focus { outline: none; }
 .notice { padding: 1rem; background: #edf4e9; border: 1px solid #d3e1ca; border-radius: .5rem; }
 .messages, .request-error { max-width: 1090px; margin: 1rem auto; }
 .request-error { color: #9a3030; background: #fff3f0; }
+/* Oat's alert component overrides its base-layer hidden rule. */
+.request-error[hidden] { display: none; }
 .skip-link { position: fixed; top: -5rem; left: 1rem; background: white; padding: 1rem; z-index: 100; }
 .skip-link:focus { top: .5rem; }
 .school-illustration { height: 200px; margin-top: 1.5rem; position: relative; overflow: hidden; }
