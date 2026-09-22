@@ -58,7 +58,7 @@ class FeeStructure(AuditedModel):
             return
         if self.term.academic_year.school_id != self.academic_class.section.school_id or (self.stream_id and self.stream.academic_class_id != self.academic_class_id):
             raise ValidationError('Fee structure school, class and stream must match.')
-        if self.is_active and not (self.term.is_active and self.term.academic_year.is_active and self.academic_class.is_active):
+        if self.is_active and (not (self.term.is_active and self.term.academic_year.is_active and self.academic_class.is_active and self.academic_class.section.is_active) or (self.stream_id and not self.stream.is_active)):
             raise ValidationError('Choose an active academic period and class.')
         if self.due_date and not self.term.start_date <= self.due_date <= self.term.end_date:
             raise ValidationError({'due_date': 'Due date must fall within the selected term.'})
@@ -87,6 +87,8 @@ class FeeCharge(ImmutableRecord):
                 raise ValidationError('The student enrollment must match the fee structure period, class and stream.')
             if self._state.adding and not template.is_active:
                 raise ValidationError('Select an active fee structure.')
+            if self.enrollment.enrollment_date > template.term.end_date or (self.enrollment.completion_date and self.enrollment.completion_date < template.term.start_date):
+                raise ValidationError('The student must have an enrollment covering the fee term.')
 
 
 class ChargeCancellation(ImmutableRecord):

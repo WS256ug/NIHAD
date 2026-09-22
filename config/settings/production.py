@@ -1,4 +1,4 @@
-"""Production foundation; deployment infrastructure is configured in Phase 15."""
+"""PostgreSQL production settings behind an explicitly trusted HTTPS proxy."""
 import os
 
 from django.core.exceptions import ImproperlyConfigured
@@ -41,6 +41,10 @@ SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+if os.environ.get('DJANGO_BEHIND_HTTPS_PROXY', 'false').lower() == 'true':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_AGE = 8 * 60 * 60
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {

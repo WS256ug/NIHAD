@@ -309,6 +309,7 @@ class PasswordManagementTests(AccountTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(client.post(response.url, {"new_password1": self.new_password, "new_password2": self.new_password}).status_code, 403)
 
+    @override_settings(RESET_REQUEST_LIMIT=20)
     def test_every_role_receives_a_valid_reset_link(self):
         for role, user in self.users.items():
             with self.subTest(role=role):

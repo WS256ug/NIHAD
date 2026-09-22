@@ -75,6 +75,9 @@ class ConfigurationRecord(AuditedModel):
         if not self.name:
             raise ValidationError({"name": "Enter a name."})
         if self.pk and not self.is_active:
+            fee_structures = getattr(self, 'fee_structures', None)
+            if fee_structures is not None and fee_structures.filter(is_active=True).exists():
+                raise ValidationError('Deactivate fee structures using this record first.')
             assessments = getattr(self, "assessments", None)
             if assessments is not None and assessments.exclude(status="closed").exists():
                 raise ValidationError("Close assessments using this record first.")
@@ -181,6 +184,8 @@ class Term(ConfigurationRecord):
                     raise ValidationError("Terms in the same academic year cannot overlap.")
                 if self.pk and self.assessments.filter(models.Q(date__lt=self.start_date) | models.Q(date__gt=self.end_date)).exists():
                     raise ValidationError("Term dates must contain all existing assessment dates.")
+                if self.pk and self.fee_structures.filter(models.Q(due_date__lt=self.start_date) | models.Q(due_date__gt=self.end_date)).exists():
+                    raise ValidationError('Term dates must contain existing fee due dates.')
         if self.pk and not self.is_active and School.objects.filter(current_term_id=self.pk).exists():
             raise ValidationError("Select a different current term or clear the current term first.")
 
