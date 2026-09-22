@@ -1,5 +1,14 @@
 # Development plan
 
+Dashboard statistics use responsive Oat UI cards with live values, badges and
+detail links. Published report averages include a percentage progress bar;
+counts and financial totals do not imply unrecorded targets or monthly trends.
+
+Signed-in navigation now uses the local Oat UI sidebar component, with role-scoped
+links, active-page highlighting, POST sign-out, a mobile menu toggle and Escape
+to close. Sidebar navigation is excluded from printed reports. The 30 account
+and dashboard tests pass after this layout change.
+
 UI correction: the shared request-error banner now stays hidden until an HTMX
 failure. An application CSS rule overrides Oat's alert display styling when the
 banner has the `hidden` attribute.

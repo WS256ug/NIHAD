@@ -28,8 +28,8 @@ def dashboard_metrics(user, role):
     school = School.objects.select_related('current_academic_year', 'current_term').first()
     result = {'school_period': school, 'metrics': [], 'tasks': []}
     cards = result['metrics']
-    def card(label, value, url):
-        cards.append({'label': label, 'value': value, 'url': url})
+    def card(label, value, url, description='Current records', progress=None):
+        cards.append({'label': label, 'value': value, 'url': url, 'description': description, 'progress': progress})
     if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
         card('Students', Student.objects.filter(school_id=1).count(), reverse('students:list'))
         card('Active classes', AcademicClass.objects.filter(section__school_id=1, is_active=True).count(), reverse('academics:overview'))
@@ -47,7 +47,8 @@ def dashboard_metrics(user, role):
             published = published.filter(assessment__term_id=school.current_term_id)
         averages = [Decimal(snapshot['average']) for snapshot in published.values_list('snapshot', flat=True).iterator() if snapshot.get('average') is not None]
         if averages:
-            card('Mean published report average', f'{sum(averages) / len(averages):.2f}%', reverse('reports:list') + '?status=published')
+            average = sum(averages) / len(averages)
+            card('Mean published report average', f'{average:.2f}%', reverse('reports:list') + '?status=published', description='Current term' if school and school.current_term_id else 'All published periods', progress=f'{average:.2f}')
     if role == User.Role.TEACHER:
         assignments = teacher_assignments(user)
         card('Assigned classes', assignments.values('academic_class_id', 'stream_id').distinct().count(), reverse('academics:record_list', args=['teaching']))
@@ -76,6 +77,6 @@ def dashboard_metrics(user, role):
         result['finance_summary'] = financial_summary()
         currency = school.currency_code if school else ''
         for label, key in [('Fees collected', 'paid'), ('Outstanding fees', 'balance'), ('Expenses', 'expenses'), ('Surplus / deficit', 'net')]:
-            card(label, f"{currency} {result['finance_summary'][key]:,.2f}", reverse('expenses:overview'))
+            card(label, f"{currency} {result['finance_summary'][key]:,.2f}", reverse('expenses:overview'), description='All recorded periods')
         result['recent_payments'] = Payment.objects.filter(charge__enrollment__student__school_id=1).select_related('reversal').order_by('-created_at')[:8]
     return result

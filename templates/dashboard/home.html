@@ -11,7 +11,24 @@
     <span class="role-badge">{{ user.get_role_display }}</span>
   </header>
   {% if school_period %}<p>Academic year: {{ school_period.current_academic_year|default:'Not selected' }} · Term: {{ school_period.current_term.name|default:'Not selected' }}</p>{% endif %}
-  {% if metrics %}<div class="configuration-grid">{% for metric in metrics %}<section class="workspace-card"><h2>{{ metric.label }}</h2><p class="configuration-count">{{ metric.value }}</p><a href="{{ metric.url }}">View details</a></section>{% endfor %}</div>{% endif %}
+  {% if metrics %}
+  <div class="container dashboard-stats">
+    <div class="row">
+      {% for metric in metrics %}
+      <article class="card col-4 stat-card" aria-labelledby="stat-{{ forloop.counter }}">
+        <header class="hstack justify-between items-center">
+          <h2 id="stat-{{ forloop.counter }}" class="stat-label">{{ metric.label }}</h2>
+          <span class="badge" data-variant="secondary">Live</span>
+        </header>
+        <p class="stat-value">{{ metric.value }}</p>
+        <p class="text-light stat-description">{{ metric.description|default:'Current records' }}</p>
+        {% if metric.progress != None %}<progress value="{{ metric.progress }}" max="100" aria-label="{{ metric.label }} percentage">{{ metric.progress }}%</progress>{% endif %}
+        <a class="stat-link" href="{{ metric.url }}" aria-label="View {{ metric.label|lower }}">View details</a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   {% if tasks %}<section class="workspace-card history-card"><h2>Tasks awaiting action</h2>{% for task in tasks %}<p><a href="{{ task.url }}">{{ task.label }}</a></p>{% endfor %}</section>{% endif %}
   {% if section_counts %}<section class="workspace-card history-card"><h2>Currently enrolled students by section</h2>{% for section in section_counts %}<p>{{ section.section__name }}: {{ section.total }}</p>{% endfor %}</section>{% endif %}
   {% if recent_payments %}<section class="workspace-card history-card"><h2>Recent payments</h2><div class="table-scroll"><table><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Status</th></tr></thead><tbody>{% for payment in recent_payments %}<tr><th scope="row"><a href="{% url 'finance:receipt' payment.pk %}">{{ payment.receipt_number }}</a></th><td>{{ payment.receipt.student }}</td><td>{{ payment.receipt.currency }} {{ payment.amount|floatformat:2 }}</td><td>{% if payment.reversal %}Reversed{% else %}Received{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}

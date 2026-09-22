@@ -17,26 +17,47 @@
 </head>
 <body hx-history="false">
   <a class="skip-link" href="#main-content">Skip to content</a>
+  {% if user.is_authenticated %}
+  <div data-sidebar-layout class="app-layout">
+    <aside data-sidebar id="app-sidebar" aria-label="School workspace">
+      <header>
+        <a class="brand" href="{% url 'dashboard:home' %}">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
+        </a>
+        <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" class="outline small sidebar-close">Close menu</button>
+      </header>
+      <nav aria-label="Main navigation">
+        <ul>
+          {% for link in account_navigation %}
+          <li><a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+      <footer>
+        <p class="sidebar-user">{{ user.get_full_name|default:user.username }}<span class="table-secondary">{{ user.get_role_display }}</span></p>
+        <form action="{% url 'accounts:logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="outline small sidebar-signout">Sign out</button>
+        </form>
+      </footer>
+    </aside>
+  {% else %}
   <header class="site-header">
     <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
       <span class="brand-mark" aria-hidden="true">N</span>
       <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
     </a>
-    {% if user.is_authenticated %}
-      <nav class="header-actions" aria-label="Main navigation">
-        {% for link in account_navigation %}
-          <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a>
-        {% endfor %}
-        <form action="{% url 'accounts:logout' %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="outline small">Sign out</button>
-        </form>
-      </nav>
-    {% else %}
       <span class="header-note">School portal</span>
-    {% endif %}
   </header>
+  {% endif %}
   <main id="main-content" tabindex="-1">
+    {% if user.is_authenticated %}
+    <div data-sidebar-header class="mobile-sidebar-header">
+      <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" class="outline small">Menu</button>
+      <span>{{ school_display_name }}</span>
+    </div>
+    {% endif %}
     {% if messages %}
       <div class="messages" aria-live="polite">
         {% for message in messages %}<div role="status" class="notice">{{ message }}</div>{% endfor %}
@@ -46,10 +67,11 @@
       We couldn't complete that request. Check your connection and try again.
     </div>
     {% block content %}{% endblock %}
-  </main>
   <footer class="site-footer">
     <span>{{ school_display_name }}</span>
     <span>A little more time for what matters.</span>
   </footer>
+  </main>
+  {% if user.is_authenticated %}</div>{% endif %}
 </body>
 </html>
