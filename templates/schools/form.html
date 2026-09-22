@@ -3,6 +3,6 @@
 {% block content %}
 <section class="account-page workspace-card">
   <a href="{{ cancel_url }}">← Back</a><h1>{{ page_title }}</h1>
-  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button type="submit">Save changes</button><a href="{{ cancel_url }}">Cancel</a></div></form>
+  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button type="submit">Save changes</button><a href="{{ cancel_url }}" role="button" class="outline small">Cancel</a></div></form>
 </section>
 {% endblock %}

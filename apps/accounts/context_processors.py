@@ -12,9 +12,9 @@ def account_navigation(request):
     if role is None:
         return {}
     labels = {
-        "super_admin": "Super Admin workspace", "school_admin": "School Admin workspace",
-        "headteacher": "Headteacher workspace", "teacher": "Teacher workspace",
-        "bursar": "Finance workspace", "student": "Student portal", "guardian": "Guardian portal",
+        "super_admin": "Dashboard", "school_admin": "Dashboard",
+        "headteacher": "Dashboard", "teacher": "Dashboard",
+        "bursar": "Dashboard", "student": "Student portal", "guardian": "Guardian portal",
     }
     links = [{"label": labels[role], "url": dashboard_url(request.user)}]
     if can_manage_accounts(request.user):

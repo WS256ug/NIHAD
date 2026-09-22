@@ -3,7 +3,7 @@
 {% block content %}
 <section class="account-page workspace-card"><a href="{% url 'schools:overview' %}">← School setup</a><h1>Current academic period</h1>
   <p class="muted">Choose the year and term for current school work. Leave the term blank between terms. Previous years and terms are preserved.</p>
-  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<span id="term-loading" class="htmx-indicator" role="status">Loading terms…</span><div class="form-actions"><button type="submit">Save current period</button><a href="{% url 'schools:overview' %}">Cancel</a></div></form>
+  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<span id="term-loading" class="htmx-indicator" role="status">Loading terms…</span><div class="form-actions"><button type="submit">Save current period</button><a href="{% url 'schools:overview' %}" role="button" class="outline small">Cancel</a></div></form>
   <noscript><p>Save the year with no current term, then reopen this page to select a term.</p></noscript>
 </section>
 {% endblock %}

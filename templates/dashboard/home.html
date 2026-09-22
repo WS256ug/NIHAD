@@ -1,29 +1,45 @@
 {% extends 'base.html' %}
 {% block title %}{{ workspace_title }}{% endblock %}
 {% block content %}
-<div class="workspace">
+<div class="workspace dashboard-workspace">
   <header class="page-heading">
     <div>
       <span class="eyebrow">{{ workspace_title }}</span>
       <h1>Welcome, {{ user.first_name|default:user.username }}.</h1>
       <p class="muted">{{ workspace_heading }}</p>
     </div>
-    <span class="role-badge">{{ user.get_role_display }}</span>
   </header>
-  {% if school_period %}<p>Academic year: {{ school_period.current_academic_year|default:'Not selected' }} · Term: {{ school_period.current_term.name|default:'Not selected' }}</p>{% endif %}
+  {% if school_period.current_academic_year and school_period.current_term %}
+  <p class="dashboard-period">{{ school_period.current_academic_year }} &middot; {{ school_period.current_term.name }}</p>
+  {% else %}
+  <div class="dashboard-setup" role="status">Select an academic year and term to complete school setup.
+    {% if can_manage_school %}<a href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
+  </div>
+  {% endif %}
+  {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}" role="button" class="outline small">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
   {% if metrics %}
-  <div class="container dashboard-stats">
+  {% for group in metric_groups %}
+  <section class="container dashboard-stats" data-group="{{ group.title }}" aria-labelledby="metric-group-{{ forloop.counter }}">
+    <h2 id="metric-group-{{ forloop.counter }}" class="dashboard-group-title">{{ group.title }}</h2>
     <div class="row">
-      {% for metric in metrics %}
-      <article class="card stat-card" aria-labelledby="stat-{{ forloop.counter }}">
-        <h2 id="stat-{{ forloop.counter }}" class="stat-label"><a href="{{ metric.url }}">{{ metric.label }}</a></h2>
+      {% for metric in group.cards %}
+      <article class="card stat-card" aria-labelledby="stat-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+        <div class="stat-heading">
+          <h3 id="stat-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="stat-label"><a href="{{ metric.url }}">{{ metric.label }}</a></h3>
+          <span class="stat-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            {% if group.title == 'Finance' %}<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18m-5 5h2"/>
+            {% elif group.title == 'Academic tasks' %}<path d="M4 4h6a2 2 0 0 1 2 2v15a3 3 0 0 0-3-3H4zm16 0h-6a2 2 0 0 0-2 2v15a3 3 0 0 1 3-3h5z"/>
+            {% else %}<path d="m3 10 9-7 9 7M5 9v12h14V9m-9 12v-6h4v6M9 10h6"/>{% endif %}
+          </svg></span>
+        </div>
         <p class="stat-value">{{ metric.value }}</p>
-        <p class="text-light stat-description"><span class="badge" data-variant="success">Live</span> {{ metric.description|default:'Current records' }}</p>
+        <p class="text-light stat-description">{{ metric.description|default:'Current records' }}</p>
         {% if metric.progress != None %}<progress value="{{ metric.progress }}" max="100" aria-label="{{ metric.label }} percentage">{{ metric.progress }}%</progress>{% endif %}
       </article>
       {% endfor %}
     </div>
-  </div>
+  </section>
+  {% endfor %}
   {% endif %}
   {% if tasks %}<section class="workspace-card history-card"><h2>Tasks awaiting action</h2>{% for task in tasks %}<p><a href="{{ task.url }}">{{ task.label }}</a></p>{% endfor %}</section>{% endif %}
   {% if section_counts %}<section class="workspace-card history-card"><h2>Currently enrolled students by section</h2>{% for section in section_counts %}<p>{{ section.section__name }}: {{ section.total }}</p>{% endfor %}</section>{% endif %}

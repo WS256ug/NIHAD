@@ -1,5 +1,37 @@
 # Development plan
 
+Action links across school, academic, student, account, report and finance pages
+use compact Oat outline buttons. Navigation and record-name links stay as links;
+table actions wrap to fit narrow screens.
+
+Shared footer stays at the bottom of short pages and follows content on longer
+pages without covering forms or tables. It remains hidden in printed reports.
+
+Sidebar refined to 220px wide, with only a centered 80px school logo in the
+gold header. The logo link retains an accessible school-name label.
+
+The sidebar logo header uses the logo-inspired golden yellow with dark text
+and a circular white logo image above the burgundy navigation.
+
+Visual theme refinement: burgundy sidebar with white text and gold active-link
+indicator, white logo panel, warm cream page background, solid primary quick
+action and category-colored stat icons/borders (school, academics, finance).
+
+Dashboard refinement: wider content, compact cards grouped into School overview,
+Academic tasks and Finance, role-specific quick actions, and an actionable
+academic-period setup notice. Repeated Live badges and the duplicate role badge
+were removed; figures continue to update on page load.
+
+NIHAD theme: Oat color tokens in static/css/app.css define deep red primary
+controls, gold accents, white cards and warm neutral backgrounds. Custom
+components share these tokens; success and error states retain semantic colors.
+
+The supplied Nihad school logo is stored locally in static/img/nihad-logo.jpg
+and used in the sidebar, sign-in header and browser tab.
+
+All staff roles use Dashboard as their sidebar link and page title. Role-specific
+content and the role shown beside the sidebar account name remain unchanged.
+
 Reusable avatars identify the signed-in account and students in lists/profiles.
 Student photos use existing authorized image routes; initials are shown when
 no photo is available. No external avatar service is used.

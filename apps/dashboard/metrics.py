@@ -79,4 +79,22 @@ def dashboard_metrics(user, role):
         for label, key in [('Fees collected', 'paid'), ('Outstanding fees', 'balance'), ('Expenses', 'expenses'), ('Surplus / deficit', 'net')]:
             card(label, f"{currency} {result['finance_summary'][key]:,.2f}", reverse('expenses:overview'), description='All recorded periods')
         result['recent_payments'] = Payment.objects.filter(charge__enrollment__student__school_id=1).select_related('reversal').order_by('-created_at')[:8]
+    academic_labels = {'Reports awaiting review', 'Approved reports', 'Draft promotion batches', 'Mean published report average', 'Open assessments', 'Marks to enter', 'Class-teacher comments due'}
+    finance_labels = {'Fees collected', 'Outstanding fees', 'Expenses', 'Surplus / deficit'}
+    groups = {'School overview': [], 'Academic tasks': [], 'Finance': []}
+    for metric in cards:
+        group = 'Finance' if metric['label'] in finance_labels else 'Academic tasks' if metric['label'] in academic_labels else 'School overview'
+        groups[group].append(metric)
+    result['metric_groups'] = [{'title': title, 'cards': values} for title, values in groups.items() if values]
+    actions = []
+    if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN):
+        actions.append({'label': 'Register student', 'url': reverse('students:create')})
+        actions.append({'label': 'Create assessment', 'url': reverse('academics:record_create', args=['assessments'])})
+    if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.BURSAR):
+        actions.append({'label': 'Record payment', 'url': reverse('finance:overview') + '?outstanding=1'})
+    if role == User.Role.HEADTEACHER:
+        actions.append({'label': 'Review reports', 'url': reverse('reports:list') + '?status=review'})
+    if role == User.Role.TEACHER:
+        actions.append({'label': 'Enter marks', 'url': reverse('academics:record_list', args=['assessments'])})
+    result['quick_actions'] = actions
     return result

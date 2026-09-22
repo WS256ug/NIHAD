@@ -8,7 +8,7 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
   <title>{% block title %}Workspace{% endblock %} · {{ school_display_name }}</title>
-  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'img/nihad-logo.jpg' %}" type="image/jpeg">
   <link rel="stylesheet" href="{% static 'vendor/oat/oat.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'vendor/oat/oat.min.js' %}" defer></script>
@@ -21,9 +21,8 @@
   <div data-sidebar-layout class="app-layout">
     <aside data-sidebar id="app-sidebar" aria-label="School workspace">
       <header>
-        <a class="brand" href="{% url 'dashboard:home' %}">
-          <span class="brand-mark" aria-hidden="true">N</span>
-          <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
+        <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
+          <img class="brand-logo" src="{% static 'img/nihad-logo.jpg' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
         </a>
       </header>
       <nav aria-label="Main navigation">
@@ -53,7 +52,7 @@
   {% else %}
   <header class="site-header">
     <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
-      <span class="brand-mark" aria-hidden="true">N</span>
+      <img class="brand-logo" src="{% static 'img/nihad-logo.jpg' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
       <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
     </a>
       <span class="header-note">School portal</span>

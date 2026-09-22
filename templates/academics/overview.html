@@ -1,4 +1,4 @@
 {% extends 'base.html' %}
 {% block title %}Academics{% endblock %}
 {% block content %}<div class="workspace"><header class="page-heading"><div><span class="eyebrow">Teaching and learning</span><h1>Academics</h1><p>Teachers, subjects and academic assignments.</p></div></header>
-<div class="configuration-grid">{% for kind, spec in resources.items %}<section class="workspace-card"><h2>{{ spec.label }}</h2><a href="{% url 'academics:record_list' kind %}">Open {{ spec.label|lower }}</a></section>{% endfor %}</div></div>{% endblock %}
+<div class="configuration-grid">{% for kind, spec in resources.items %}<section class="workspace-card"><h2>{{ spec.label }}</h2><a href="{% url 'academics:record_list' kind %}" role="button" class="outline small">Open {{ spec.label|lower }}</a></section>{% endfor %}</div></div>{% endblock %}

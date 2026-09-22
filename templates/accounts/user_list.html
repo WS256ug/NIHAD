@@ -4,7 +4,7 @@
 <div class="workspace">
   <header class="page-heading">
     <div><span class="eyebrow">School administration</span><h1>Accounts</h1><p class="muted">Manage access for your school community.</p></div>
-    <a href="{% url 'accounts:user_create' %}" role="button">Create account</a>
+    <a href="{% url 'accounts:user_create' %}" role="button" class="outline small">Create account</a>
   </header>
   <section class="workspace-card">
     <form method="get" class="filter-form" action="{% url 'accounts:user_list' %}"
@@ -26,8 +26,8 @@
               <th scope="row">{{ account.get_full_name|default:account.username }}<small class="table-secondary">{{ account.username }} · {{ account.email|default:'No email' }}</small></th>
               <td>{{ account.get_role_display }}</td>
               <td>{% if account.is_active %}<span class="role-badge">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
-              <td class="table-actions"><a href="{% url 'accounts:user_edit' account.pk %}" aria-label="Edit {{ account.username }}">Edit</a>
-                {% if account.is_active %}<a href="{% url 'accounts:user_deactivate' account.pk %}" aria-label="Deactivate {{ account.username }}">Deactivate</a>{% else %}<a href="{% url 'accounts:user_activate' account.pk %}" aria-label="Activate {{ account.username }}">Activate</a>{% endif %}
+              <td class="table-actions"><a href="{% url 'accounts:user_edit' account.pk %}" aria-label="Edit {{ account.username }}" role="button" class="outline small">Edit</a>
+                {% if account.is_active %}<a href="{% url 'accounts:user_deactivate' account.pk %}" aria-label="Deactivate {{ account.username }}" role="button" class="outline small">Deactivate</a>{% else %}<a href="{% url 'accounts:user_activate' account.pk %}" aria-label="Activate {{ account.username }}" role="button" class="outline small">Activate</a>{% endif %}
               </td>
             </tr>
           {% empty %}<tr><td colspan="4">No accounts match your search.</td></tr>{% endfor %}
