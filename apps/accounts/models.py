@@ -12,9 +12,10 @@ class User(AbstractUser):
         HEADTEACHER = "headteacher", "Headteacher"
         TEACHER = "teacher", "Teacher"
         BURSAR = "bursar", "Bursar / Finance"
-        GUARDIAN = "guardian", "Guardian"
+        STUDENT = "student", "Student portal"
 
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.GUARDIAN)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT)
+    must_change_password = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = UserManager()
@@ -25,8 +26,11 @@ class User(AbstractUser):
             raise ValidationError("The Super Admin role and superuser status must be assigned together.")
         if self.is_superuser and not self.is_staff:
             raise ValidationError("Super Admin accounts must have staff status.")
-        if self.pk and self.role != self.Role.GUARDIAN and hasattr(self, "guardian_profile"):
-            raise ValidationError("An account with a guardian profile must keep the Guardian role. Deactivate the account to remove access.")
+        if self.pk and hasattr(self, "portal_student"):
+            if self.role != self.Role.STUDENT or self.username != self.portal_student.student_id:
+                raise ValidationError("Student portal identity must match the student's permanent registration number.")
+        if self.pk and self.role != self.Role.TEACHER and hasattr(self, "teacher_profile"):
+            raise ValidationError("An account with a teacher profile must retain the Teacher role.")
 
     class Meta:
         constraints = [
@@ -39,8 +43,9 @@ class User(AbstractUser):
             ),
             models.CheckConstraint(
                 condition=models.Q(role__in=[
-                    "super_admin", "school_admin", "headteacher", "teacher", "bursar", "guardian",
+                    "super_admin", "school_admin", "headteacher", "teacher", "bursar", "student",
                 ]),
                 name="accounts_user_valid_role",
             ),
+            models.CheckConstraint(condition=~models.Q(role="student") | models.Q(is_staff=False, is_superuser=False), name="accounts_student_not_staff"),
         ]

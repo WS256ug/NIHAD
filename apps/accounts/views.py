@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, LogEntry
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -12,13 +12,14 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
 from django.views.decorators.debug import sensitive_post_parameters
 
-from .forms import AccountStatusForm, ManagedAccountChangeForm, ManagedAccountCreationForm
+from .forms import AccountStatusForm, ManagedAccountChangeForm, ManagedAccountCreationForm, StaffSignInForm
 from .models import User
 from .permissions import assignable_roles, dashboard_url, manageable_accounts, role_required
 
 
 class SignInView(LoginView):
     template_name = "registration/login.html"
+    authentication_form = StaffSignInForm
 
     def get_default_redirect_url(self):
         return dashboard_url(self.request.user)
@@ -28,6 +29,13 @@ class SignInView(LoginView):
         if self.request.headers.get("HX-Request") == "true":
             # Reload after authentication so the browser receives the rotated CSRF token.
             return HttpResponse(headers={"HX-Redirect": response.url})
+        return response
+
+
+class AccountPasswordChangeView(PasswordChangeView):
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        User.objects.filter(pk=self.request.user.pk).update(must_change_password=False)
         return response
 
 

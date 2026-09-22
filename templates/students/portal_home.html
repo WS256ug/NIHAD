@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.full_name }} · Student portal{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading"><div><span class="eyebrow">Student portal · {{ student.student_id }}</span><h1>{{ student.full_name }}</h1><p>{{ student.get_status_display }}</p></div>{% if student.photo %}<img class="student-photo" src="{% url 'students:portal_photo' %}" alt="{{ student.full_name }}">{% endif %}</header>
+  <div class="workspace-grid"><section class="workspace-card"><h2>Student profile</h2><dl class="account-details"><div><dt>Registration number</dt><dd>{{ student.student_id }}</dd></div><div><dt>Date of birth</dt><dd>{{ student.date_of_birth }}</dd></div><div><dt>Admission date</dt><dd>{{ student.admission_date }}</dd></div></dl></section>
+  <section class="workspace-card"><h2>Guardian contacts</h2>{% for link in guardian_links %}<p><strong>{{ link.guardian }}</strong><br>{{ link.relationship }} · {{ link.guardian.phone }}</p>{% empty %}<p>Contact the school to update guardian details.</p>{% endfor %}</section></div>
+  <section class="workspace-card history-card"><h2>Enrollment history</h2><div class="table-scroll"><table><thead><tr><th>Year</th><th>Class</th><th>Status</th></tr></thead><tbody>{% for enrollment in enrollments %}<tr><td>{{ enrollment.academic_year }}</td><td>{{ enrollment.academic_class }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}</td><td>{{ enrollment.get_status_display }}</td></tr>{% empty %}<tr><td colspan="3">No enrollment yet.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

@@ -1,12 +1,12 @@
 """Use these transactional, authorized services for all student record writes."""
-from django.contrib.admin.models import ADDITION, LogEntry
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.admin.models import ADDITION, CHANGE, LogEntry
+from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
 
-from apps.accounts.models import User
-from apps.accounts.permissions import manageable_accounts
 from apps.schools.services import lock_school, write_record
+from apps.accounts.models import User
 from .models import Enrollment, Guardian, Student, StudentGuardian, StudentNumber
 from .permissions import can_manage_students
 
@@ -29,6 +29,7 @@ def save_student(form, actor):
         with transaction.atomic():
             school = lock_school()
             record.school = school
+            creating = record._state.adding
             if record._state.adding:
                 counter, _ = StudentNumber.objects.get_or_create(school=school)
                 StudentNumber.objects.filter(pk=counter.pk).update(last_value=models.F("last_value") + 1)
@@ -37,6 +38,7 @@ def save_student(form, actor):
             else:
                 previous = lock_student(record.pk, school)
                 record.status = previous.status
+                record.portal_user_id = previous.portal_user_id
                 old_photo = previous.photo.name
                 if not form.files.get(form.add_prefix("photo")):
                     record.photo = previous.photo
@@ -44,6 +46,8 @@ def save_student(form, actor):
                 record.photo = ""
             new_photo = record.photo if record.photo and not record.photo._committed else None
             write_record(record, actor, "Saved student profile.")
+            if creating:
+                add_guardian_contact(record, form.cleaned_data, actor, primary=True)
             if old_photo and old_photo != record.photo.name:
                 storage = Student._meta.get_field("photo").storage
                 transaction.on_commit(lambda: storage.delete(old_photo))
@@ -65,16 +69,18 @@ def set_student_status(student, status, actor):
 
 
 @transaction.atomic
-def register_guardian(form, actor):
+def add_guardian_contact(student, data, actor, primary=False):
     require_manager(actor)
     school = lock_school()
-    user = form.save(commit=False)
-    user.role = User.Role.GUARDIAN
-    user.full_clean()
-    user.save()
-    LogEntry.objects.create(user=actor, content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk), object_repr=str(user), action_flag=ADDITION, change_message="Registered guardian account.")
-    guardian = Guardian(school=school, user=user, phone=form.cleaned_data["phone"], address=form.cleaned_data["address"])
-    return write_record(guardian, actor, "Registered guardian profile.")
+    student = lock_student(student.pk, school)
+    guardian = data.get("existing_guardian")
+    if guardian:
+        guardian = Guardian.objects.get(pk=guardian.pk, school=school)
+    else:
+        guardian = Guardian(school=school, **{field: data.get(f"guardian_{field}", "") for field in ("first_name", "last_name", "phone", "email", "address")})
+        write_record(guardian, actor, "Captured guardian contact with student.")
+    link = StudentGuardian(student=student, guardian=guardian, relationship=data.get("relationship", ""), is_primary=primary, is_emergency_contact=data.get("is_emergency_contact", False))
+    return write_record(link, actor, "Linked guardian contact to student.")
 
 
 @transaction.atomic
@@ -84,10 +90,6 @@ def save_guardian(form, actor):
     record = form.save(commit=False)
     if record.school_id != school.pk:
         raise PermissionDenied
-    # Lock the account as well: account editing must not race profile creation.
-    user = User.objects.select_for_update().get(pk=record.user_id)
-    if record._state.adding and not manageable_accounts(actor).filter(pk=user.pk, role=User.Role.GUARDIAN, is_active=True).exists():
-        raise ValidationError("Choose an active, ordinary Guardian account.")
     return write_record(record, actor, "Saved guardian contact details.", update_fields=form._meta.fields)
 
 
@@ -100,7 +102,6 @@ def save_link(form, actor):
     if record.pk:
         current = StudentGuardian.objects.select_for_update().get(pk=record.pk, student_id=record.student_id)
         record.is_active = current.is_active
-    User.objects.select_for_update().get(pk=record.guardian.user_id)
     return write_record(record, actor, "Saved guardian relationship.", update_fields=form._meta.fields)
 
 
@@ -110,7 +111,6 @@ def set_link_active(link, active, actor):
     school = lock_school()
     lock_student(link.student_id, school)
     record = StudentGuardian.objects.select_for_update().get(pk=link.pk, student_id=link.student_id)
-    User.objects.select_for_update().get(pk=record.guardian.user_id)
     record.is_active = active
     if not active:
         record.is_primary = False
@@ -140,3 +140,24 @@ def close_enrollment(enrollment, status, completion_date, actor):
         raise ValidationError("Choose a completed enrollment status.")
     record.status, record.completion_date = status, completion_date
     return write_record(record, actor, "Closed enrollment; preserved academic context.", update_fields=["status", "completion_date"])
+
+
+@transaction.atomic
+def set_portal_access(student, password, active, actor):
+    require_manager(actor)
+    student = lock_student(student.pk, lock_school())
+    if student.portal_user_id:
+        user = User.objects.select_for_update().get(pk=student.portal_user_id)
+    else:
+        user = User(username=student.student_id, role=User.Role.STUDENT, first_name=student.first_name, last_name=student.last_name)
+    validate_password(password, user)
+    user.set_password(password)
+    user.must_change_password = True
+    user.is_active = active
+    user.full_clean()
+    creating = user._state.adding
+    user.save()
+    student.portal_user = user
+    write_record(student, actor, "Set student portal access; password change required.", update_fields=["portal_user"])
+    LogEntry.objects.create(user=actor, content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk), object_repr=str(user)[:200], action_flag=ADDITION if creating else CHANGE, change_message="Set temporary student portal credential.")
+    return student

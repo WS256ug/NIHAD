@@ -20,8 +20,8 @@
   </section>
   <section id="sign-in-panel" class="sign-in-panel" aria-labelledby="sign-in-title">
     <span class="eyebrow">Welcome back</span>
-    <h2 id="sign-in-title">Sign in to your school</h2>
-    <p class="muted">Use the account provided by your school administrator.</p>
+    <h2 id="sign-in-title">Staff sign-in</h2>
+    <p class="muted">Use the account provided by your school administrator. <a href="{% url 'students:portal_login' %}">Student / guardian portal</a></p>
     <form method="post" action="{% url 'accounts:login' %}"
           hx-post="{% url 'accounts:login' %}" hx-select="#sign-in-panel"
           hx-target="#sign-in-panel" hx-swap="outerHTML"

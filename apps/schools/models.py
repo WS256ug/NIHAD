@@ -67,6 +67,14 @@ class ConfigurationRecord(AuditedModel):
         self.name = self.name.strip()
         if not self.name:
             raise ValidationError({"name": "Enter a name."})
+        if self.pk and not self.is_active:
+            assessments = getattr(self, "assessments", None)
+            if assessments is not None and assessments.exclude(status="closed").exists():
+                raise ValidationError("Close assessments using this record first.")
+            for relation in ("teachingassignment_records", "classteacherassignment_records"):
+                assignments = getattr(self, relation, None)
+                if assignments is not None and assignments.filter(is_active=True).exists():
+                    raise ValidationError("Deactivate academic assignments using this record first.")
 
     def check_parent_unchanged(self, field):
         if self.pk and not self._state.adding:
@@ -94,6 +102,8 @@ class Section(ConfigurationRecord):
             raise ValidationError("Deactivate this section's active classes first.")
         if self.pk and not self.is_active and self.enrollments.filter(status="current").exists():
             raise ValidationError("Close current enrollments before deactivating their section.")
+        if self.pk and not self.is_active and self.subjects.filter(is_active=True).exists():
+            raise ValidationError("Deactivate this section's subjects first.")
 
 
 class AcademicYear(ConfigurationRecord):
@@ -162,6 +172,8 @@ class Term(ConfigurationRecord):
                 overlaps = Term.objects.filter(academic_year_id=self.academic_year_id, start_date__lte=self.end_date, end_date__gte=self.start_date).exclude(pk=self.pk)
                 if overlaps.exists():
                     raise ValidationError("Terms in the same academic year cannot overlap.")
+                if self.pk and self.assessments.filter(models.Q(date__lt=self.start_date) | models.Q(date__gt=self.end_date)).exists():
+                    raise ValidationError("Term dates must contain all existing assessment dates.")
         if self.pk and not self.is_active and School.objects.filter(current_term_id=self.pk).exists():
             raise ValidationError("Select a different current term or clear the current term first.")
 

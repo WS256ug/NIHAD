@@ -37,7 +37,10 @@ class RoleAccessTests(AccountTestCase):
                 with self.subTest(role=role, target=target_role):
                     response = self.client.get(reverse(f"dashboard:{target_role}"))
                     allowed = role == target_role or user.is_superuser
-                    self.assertEqual(response.status_code, 200 if allowed else 403)
+                    self.assertEqual(response.status_code, 302 if role == target_role == User.Role.STUDENT else (200 if allowed else 403))
+            if role == User.Role.STUDENT:
+                self.assertEqual(self.client.get(dashboard_url(user)).status_code, 404)
+                continue
             home = self.client.get(dashboard_url(user))
             self.assertContains(home, 'href="' + reverse("accounts:profile") + '"')
             if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN):
@@ -55,7 +58,7 @@ class RoleAccessTests(AccountTestCase):
         self.assertFalse(has_role(admin, User.Role.TEACHER))
 
     def test_authenticated_requests_to_other_role_do_not_redirect_in_a_loop(self):
-        self.client.force_login(self.users[User.Role.GUARDIAN])
+        self.client.force_login(self.users[User.Role.STUDENT])
         response = self.client.get(reverse("dashboard:teacher"), follow=True)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.redirect_chain, [])
@@ -126,7 +129,7 @@ class AccountManagementTests(AccountTestCase):
         }
 
     def test_school_admin_creates_allowed_roles_without_granting_privileges(self):
-        for role in [User.Role.TEACHER, User.Role.HEADTEACHER, User.Role.BURSAR, User.Role.GUARDIAN]:
+        for role in [User.Role.TEACHER, User.Role.HEADTEACHER, User.Role.BURSAR]:
             with self.subTest(role=role):
                 response = self.client.post(reverse("accounts:user_create"), self.account_data(
                     username=f"new_{role}", role=role, is_staff="on", is_superuser="on", groups=[1], user_permissions=[1],
@@ -142,7 +145,7 @@ class AccountManagementTests(AccountTestCase):
                 self.assertNotIn(self.password, log.change_message)
 
     def test_school_admin_cannot_create_school_admin_or_superuser(self):
-        for role in [User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, "invalid"]:
+        for role in [User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, User.Role.STUDENT, "guardian", "invalid"]:
             with self.subTest(role=role):
                 response = self.client.post(reverse("accounts:user_create"), self.account_data(role=role))
                 self.assertEqual(response.status_code, 200)
@@ -164,7 +167,7 @@ class AccountManagementTests(AccountTestCase):
             reverse("accounts:user_deactivate", args=[self.target.pk]),
             reverse("accounts:user_activate", args=[self.target.pk]),
         ]
-        for role in [User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, User.Role.GUARDIAN]:
+        for role in [User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, User.Role.STUDENT]:
             self.client.force_login(self.users[role])
             for url in endpoints:
                 with self.subTest(role=role, url=url):

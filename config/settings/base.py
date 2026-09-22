@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "apps.dashboard.apps.DashboardConfig",
     "apps.schools.apps.SchoolsConfig",
     "apps.students.apps.StudentsConfig",
+    "apps.academics.apps.AcademicsConfig",
+    "apps.reports.apps.ReportsConfig",
 ]
 
 MIDDLEWARE = [
@@ -42,6 +44,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.InitialPasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

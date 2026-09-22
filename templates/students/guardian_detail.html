@@ -5,8 +5,8 @@
   <header class="page-heading"><div><span class="eyebrow">Guardian profile</span><h1>{{ guardian }}</h1></div><a href="{% url 'students:guardian_edit' guardian.pk %}" role="button">Edit contacts</a></header>
   <div class="workspace-grid">
     <section class="workspace-card"><h2>Contact details</h2><dl class="account-details">
-      <div><dt>Username</dt><dd>{{ guardian.user.username }}</dd></div><div><dt>Email</dt><dd>{{ guardian.user.email|default:'Not provided' }}</dd></div><div><dt>Phone</dt><dd>{{ guardian.phone }}</dd></div><div><dt>Address</dt><dd>{{ guardian.address|default:'Not provided'|linebreaksbr }}</dd></div><div><dt>Account status</dt><dd>{% if guardian.user.is_active %}Active{% else %}Inactive{% endif %}</dd></div>
-    </dl>{% if can_edit_account %}<div class="form-actions"><a href="{% url 'accounts:user_edit' guardian.user_id %}">Edit account name or email</a>{% if guardian.user.is_active %}<a href="{% url 'accounts:user_deactivate' guardian.user_id %}">Deactivate account</a>{% else %}<a href="{% url 'accounts:user_activate' guardian.user_id %}">Activate account</a>{% endif %}</div>{% endif %}</section>
+      <div><dt>Email</dt><dd>{{ guardian.email|default:'Not provided' }}</dd></div><div><dt>Phone</dt><dd>{{ guardian.phone }}</dd></div><div><dt>Address</dt><dd>{{ guardian.address|default:'Not provided'|linebreaksbr }}</dd></div>
+    </dl><p>Guardians access the student portal using their child's registration number and portal password.</p></section>
     <section class="workspace-card"><h2>Linked students</h2>{% for link in links %}<div class="relationship-card"><a href="{% url 'students:detail' link.student_id %}">{{ link.student.full_name }}</a><span class="table-secondary">{{ link.student.student_id }} · {{ link.relationship }} · {% if link.is_active %}Active link{% else %}Inactive link{% endif %}</span></div>{% empty %}<p>No students linked. Open a student's profile to add this guardian.</p>{% endfor %}</section>
   </div>
 </div>

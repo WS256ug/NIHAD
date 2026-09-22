@@ -49,6 +49,7 @@ class Student(AuditedModel):
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE, db_index=True)
     address = models.TextField(blank=True)
     contact_phone = models.CharField(max_length=40, blank=True)
+    portal_user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, editable=False, on_delete=models.PROTECT, related_name="portal_student")
 
     class Meta:
         ordering = ("last_name", "first_name", "pk")
@@ -89,21 +90,24 @@ class Student(AuditedModel):
 
 class Guardian(AuditedModel):
     school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="guardians")
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="guardian_profile")
+    first_name = models.CharField(max_length=150, default="")
+    last_name = models.CharField(max_length=150, default="")
+    email = models.EmailField(blank=True)
     phone = models.CharField(max_length=40)
     address = models.TextField(blank=True)
 
     class Meta:
-        ordering = ("user__last_name", "user__first_name", "pk")
+        ordering = ("last_name", "first_name", "pk")
 
     def __str__(self):
-        return self.user.get_full_name() or self.user.username
+        return f"{self.first_name} {self.last_name}".strip()
 
     def clean(self):
         super().clean()
-        preserve_fields(self, ("school_id", "user_id"))
-        if self.user_id and self.user.role != "guardian":
-            raise ValidationError("Choose an account with the Guardian role.")
+        preserve_fields(self, ("school_id",))
+        self.first_name, self.last_name = self.first_name.strip(), self.last_name.strip()
+        if not self.first_name or not self.last_name:
+            raise ValidationError("Enter the guardian's first and last names.")
         self.phone = self.phone.strip()
         if not self.phone:
             raise ValidationError({"phone": "Enter a contact phone number."})
@@ -136,8 +140,6 @@ class StudentGuardian(AuditedModel):
         if self.student_id and self.guardian_id:
             if self.student.school_id != self.guardian.school_id:
                 raise ValidationError("Student and guardian must belong to the same school.")
-            if self.is_active and (not self.guardian.user.is_active or self.guardian.user.role != "guardian"):
-                raise ValidationError("Active links require an active Guardian account.")
             if self.is_active and self.is_primary and StudentGuardian.objects.filter(student_id=self.student_id, is_active=True, is_primary=True).exclude(pk=self.pk).exists():
                 raise ValidationError("This student already has a primary guardian. Unmark that guardian first.")
 

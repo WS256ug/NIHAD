@@ -7,14 +7,14 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
-from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.accounts.models import User
-from apps.accounts.permissions import manageable_accounts, role_required
+from apps.accounts.permissions import role_required
+from apps.academics.permissions import visible_enrollments
 from apps.schools.models import AcademicClass, AcademicYear, School, Section, Stream
 from . import services
-from .forms import CloseEnrollmentForm, EnrollmentForm, GuardianForm, GuardianLinkForm, GuardianRegistrationForm, LinkStatusForm, StudentForm, StudentStatusForm, selected_pk
+from .forms import AddGuardianContactForm, CloseEnrollmentForm, EnrollmentForm, GuardianForm, GuardianLinkForm, LinkStatusForm, StudentForm, StudentRegistrationForm, StudentStatusForm, selected_pk
 from .models import Enrollment, Student
 from .permissions import can_manage_students, manageable_guardians, visible_students
 
@@ -33,7 +33,7 @@ def form_page(request, form, title, cancel_url, **context):
     return render(request, "students/form.html", {"form": form, "page_title": title, "cancel_url": cancel_url, **context})
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_list(request):
@@ -52,8 +52,8 @@ def student_list(request):
         if value:
             enrollment_filters[field] = selected_pk(value) or 0
     if enrollment_filters:
-        records = records.filter(**{f"enrollments__{key}": value for key, value in enrollment_filters.items()}).distinct()
-    enrollment_rows = Enrollment.objects.filter(**enrollment_filters).select_related("academic_year", "academic_class", "stream")
+        records = records.filter(enrollments__in=visible_enrollments(request.user).filter(**enrollment_filters)).distinct()
+    enrollment_rows = visible_enrollments(request.user).filter(**enrollment_filters).select_related("academic_year", "academic_class", "stream")
     records = records.prefetch_related(Prefetch("enrollments", queryset=enrollment_rows, to_attr="listed_enrollments"))
     filters = request.GET.copy()
     filters.pop("page", None)
@@ -68,19 +68,19 @@ def student_list(request):
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_detail(request, pk):
     student = get_object_or_404(visible_students(request.user).select_related("school"), pk=pk)
     return render(request, "students/student_detail.html", {
         "student": student, "can_manage_students": can_manage_students(request.user),
-        "enrollments": student.enrollments.select_related("academic_year", "section", "academic_class", "stream"),
-        "guardian_links": student.guardian_links.select_related("guardian__user"),
+        "enrollments": visible_enrollments(request.user).filter(student=student).select_related("academic_year", "section", "academic_class", "stream"),
+        "guardian_links": student.guardian_links.select_related("guardian") if request.user.role != User.Role.TEACHER else [],
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_photo(request, pk):
@@ -104,7 +104,8 @@ def student_form(request, pk=None):
     if school is None:
         return redirect("schools:profile")
     student = get_object_or_404(visible_students(request.user), pk=pk) if pk else None
-    form = StudentForm(request.POST if request.method == "POST" else None, request.FILES or None, school=school, instance=student)
+    form_class = StudentForm if student else StudentRegistrationForm
+    form = form_class(request.POST if request.method == "POST" else None, request.FILES or None, school=school, instance=student)
     if request.method == "POST" and form.is_valid():
         saved = attempt(form, lambda: services.save_student(form, request.user))
         if saved:
@@ -134,7 +135,7 @@ def guardian_list(request):
     records = manageable_guardians(request.user)
     query = request.GET.get("q", "").strip()
     for token in query.split()[:10]:
-        records = records.filter(Q(user__username__icontains=token) | Q(user__first_name__icontains=token) | Q(user__last_name__icontains=token) | Q(user__email__icontains=token) | Q(phone__icontains=token))
+        records = records.filter(Q(first_name__icontains=token) | Q(last_name__icontains=token) | Q(email__icontains=token) | Q(phone__icontains=token))
     return render(request, "students/guardian_list.html", {"page_obj": Paginator(records, 20).get_page(request.GET.get("page")), "query": query})
 
 
@@ -146,42 +147,38 @@ def guardian_detail(request, pk):
     return render(request, "students/guardian_detail.html", {
         "guardian": guardian,
         "links": guardian.student_links.filter(student__school_id=guardian.school_id).select_related("student"),
-        "can_edit_account": manageable_accounts(request.user).filter(pk=guardian.user_id).exists(),
     })
 
 
 @role_required(User.Role.SCHOOL_ADMIN)
 @never_cache
 @require_http_methods(["GET", "POST"])
-@sensitive_post_parameters("password1", "password2")
-def guardian_register(request):
-    if not School.objects.exists():
-        return redirect("schools:profile")
-    form = GuardianRegistrationForm(request.POST if request.method == "POST" else None)
+def guardian_add(request, student_pk):
+    student = get_object_or_404(visible_students(request.user), pk=student_pk)
+    form = AddGuardianContactForm(request.POST if request.method == "POST" else None, student=student)
     if request.method == "POST" and form.is_valid():
-        guardian = attempt(form, lambda: services.register_guardian(form, request.user))
-        if guardian:
-            messages.success(request, "Guardian account and profile created. Share the initial password securely.")
-            return redirect("students:guardian_detail", pk=guardian.pk)
-    return form_page(request, form, "Register guardian", reverse("students:guardian_list"))
+        if attempt(form, lambda: services.add_guardian_contact(student, form.cleaned_data, request.user)):
+            messages.success(request, "Guardian contact added.")
+            return redirect("students:detail", pk=student_pk)
+    return form_page(request, form, f"Add guardian contact: {student.full_name}", reverse("students:detail", args=[student_pk]))
 
 
 @role_required(User.Role.SCHOOL_ADMIN)
 @never_cache
 @require_http_methods(["GET", "POST"])
-def guardian_form(request, pk=None):
+def guardian_form(request, pk):
     school = School.objects.first()
     if school is None:
         return redirect("schools:profile")
-    guardian = get_object_or_404(manageable_guardians(request.user), pk=pk) if pk else None
-    form = GuardianForm(request.POST if request.method == "POST" else None, actor=request.user, school=school, instance=guardian)
+    guardian = get_object_or_404(manageable_guardians(request.user), pk=pk)
+    form = GuardianForm(request.POST if request.method == "POST" else None, school=school, instance=guardian)
     if request.method == "POST" and form.is_valid():
         saved = attempt(form, lambda: services.save_guardian(form, request.user))
         if saved:
             messages.success(request, "Guardian contact details saved.")
             return redirect("students:guardian_detail", pk=saved.pk)
     cancel = reverse("students:guardian_detail", args=[pk]) if pk else reverse("students:guardian_list")
-    return form_page(request, form, "Edit guardian contacts" if pk else "Use existing Guardian account", cancel)
+    return form_page(request, form, "Edit guardian contacts", cancel)
 
 
 @role_required(User.Role.SCHOOL_ADMIN)

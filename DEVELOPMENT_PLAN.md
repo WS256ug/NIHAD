@@ -9,12 +9,12 @@ starting the next. Always use `.venv` for Python and dependency commands.
 | 2 | Accounts, password management, permission helpers, role navigation | Complete |
 | 3 | School profile, sections, years, terms, classes and streams | Complete |
 | 4 | Students, guardians, enrollment and history | Complete |
-| 5 | Teachers, subjects and allocations | Next |
-| 6 | Assessments and marks | Planned |
-| 7 | Configurable grading, aggregates and divisions | Planned |
+| 5 | Teachers, subjects and allocations | Complete |
+| 6 | Assessments and marks | Complete |
+| 7 | Configurable grading, aggregates and divisions | In progress |
 | 8 | Reports, review, publication and PDF/print | Planned |
 | 9 | Fees, payments, balances and receipts | Planned |
-| 10 | Guardian portal and report-access policy | Planned |
+| 10 | Student portal used by guardians and report-access policy | In progress |
 | 11 | Expenses and financial summaries | Planned |
 | 12 | Promotion and preserved enrollment history | Planned |
 | 13 | Role dashboards | Planned |
@@ -134,3 +134,25 @@ starting the next. Always use `.venv` for Python and dependency commands.
 Phase 5 adds teacher profiles/accounts, configurable subjects, teaching assignments,
 class-teacher assignments and assignment validation. Test authorization against
 the student's enrollment context before granting teachers access to student records.
+
+## Approved scope revision and remaining work
+
+The user requested completion of all remaining phases. Guardian contacts are
+captured during student registration; guardians no longer have separate accounts.
+The student portal uses the permanent student registration number and a password.
+Existing guardian contact data is migrated before old logins are retired. Portal
+passwords are issued/reset by administrators and must be changed on first use.
+
+Work proceeds through teacher/subject assignments, assessments and marks, grading,
+report review/publication/PDF, fee charges/payments/receipts, portal fee/report
+access, expenses, promotion, dashboards, security and production preparation.
+Each milestone is verified before proceeding; deployment credentials and external
+infrastructure are not assumed to exist.
+
+## Phases 5–6 verification
+
+Teacher profiles, subjects, teaching and class-teacher assignments are implemented.
+Teachers see assigned students and enrollment history. Assessment types, class/stream
+assessments, open/close controls, and audited marks entry enforce assignment scope,
+score limits and revision checks. All 151 tests passed after Phase 6; migrations are
+applied to development SQLite.

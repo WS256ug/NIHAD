@@ -1,8 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-
-from apps.accounts.models import User
-from apps.accounts.permissions import manageable_accounts
+from django.contrib.auth.forms import SetPasswordForm
 from apps.schools.models import AcademicClass, AcademicYear, Stream
 from .models import Enrollment, Guardian, Student, StudentGuardian
 from .photos import clean_photo
@@ -54,36 +51,51 @@ class StudentStatusForm(forms.Form):
     confirm = forms.BooleanField(label="I confirm this student status change.")
 
 
-class GuardianRegistrationForm(UserCreationForm):
-    phone = forms.CharField(max_length=40)
-    address = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
-
-    class Meta(UserCreationForm.Meta):
-        model = User
-        fields = ("username", "first_name", "last_name", "email")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name in ("first_name", "last_name", "email"):
-            self.fields[name].required = True
-        self.instance.role = User.Role.GUARDIAN
+class PortalAccessForm(SetPasswordForm):
+    is_active = forms.BooleanField(required=False, initial=True, label="Enable student portal access")
+    confirm = forms.BooleanField(label="I will share this temporary password securely with the guardian.")
 
 
 class GuardianForm(forms.ModelForm):
     class Meta:
         model = Guardian
-        fields = ("user", "phone", "address")
+        fields = ("first_name", "last_name", "phone", "email", "address")
         widgets = {"address": forms.Textarea(attrs={"rows": 3})}
-        labels = {"user": "Guardian account"}
 
-    def __init__(self, *args, actor, school, **kwargs):
+    def __init__(self, *args, school, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.school = school
-        if self.instance.pk:
-            self.fields["user"].disabled = True
-            self.fields["user"].queryset = User.objects.filter(pk=self.instance.user_id)
-        else:
-            self.fields["user"].queryset = manageable_accounts(actor).filter(role=User.Role.GUARDIAN, is_active=True, guardian_profile__isnull=True)
+
+
+class GuardianContactFields(forms.Form):
+    existing_guardian = forms.ModelChoiceField(queryset=Guardian.objects.none(), required=False, label="Existing guardian contact", help_text="Select an existing contact for a sibling, or enter the details below.")
+    guardian_first_name = forms.CharField(max_length=150, required=False)
+    guardian_last_name = forms.CharField(max_length=150, required=False)
+    guardian_phone = forms.CharField(max_length=40, required=False)
+    guardian_email = forms.EmailField(required=False)
+    guardian_address = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
+    relationship = forms.CharField(max_length=60, label="Relationship to student")
+    is_emergency_contact = forms.BooleanField(required=False, initial=True)
+
+    def clean(self):
+        data = super().clean()
+        if not data.get("existing_guardian"):
+            for name in ("guardian_first_name", "guardian_last_name", "guardian_phone"):
+                if not data.get(name):
+                    self.add_error(name, "Enter this guardian detail or select an existing contact.")
+        return data
+
+
+class StudentRegistrationForm(GuardianContactFields, StudentForm):
+    def __init__(self, *args, school, **kwargs):
+        super().__init__(*args, school=school, **kwargs)
+        self.fields["existing_guardian"].queryset = Guardian.objects.filter(school=school)
+
+
+class AddGuardianContactForm(GuardianContactFields):
+    def __init__(self, *args, student, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["existing_guardian"].queryset = Guardian.objects.filter(school_id=student.school_id).exclude(student_links__student=student)
 
 
 class GuardianLinkForm(forms.ModelForm):
@@ -94,12 +106,12 @@ class GuardianLinkForm(forms.ModelForm):
     def __init__(self, *args, student, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.student = student
-        choices = Guardian.objects.filter(school_id=student.school_id).select_related("user")
+        choices = Guardian.objects.filter(school_id=student.school_id)
         if self.instance.pk:
             self.fields["guardian"].disabled = True
             choices = choices.filter(pk=self.instance.guardian_id)
         else:
-            choices = choices.filter(user__is_active=True, user__role=User.Role.GUARDIAN).exclude(student_links__student=student)
+            choices = choices.exclude(student_links__student=student)
         self.fields["guardian"].queryset = choices
 
 

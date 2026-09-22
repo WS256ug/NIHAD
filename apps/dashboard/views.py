@@ -13,7 +13,7 @@ WORKSPACES = {
     User.Role.HEADTEACHER: ("Headteacher workspace", "A clear view of your school.", "View student profiles and enrollment history. Academic review and report approval will follow."),
     User.Role.TEACHER: ("Teacher workspace", "More time for teaching.", "Your account is ready. Assigned classes, marks and comments will appear as those features become available."),
     User.Role.BURSAR: ("Finance workspace", "Your school's finance workspace.", "Your account is ready. Fees, payments and expenses will appear as those features become available."),
-    User.Role.GUARDIAN: ("Guardian workspace", "Stay connected to your child's school.", "Your account is ready. Linked children and their school information will appear as those features become available."),
+    User.Role.STUDENT: ("Student portal", "Stay connected to your child's school.", "Use your child's registration number to access their records."),
 }
 
 
@@ -30,6 +30,8 @@ def home(request):
 def workspace(request, role):
     if not has_role(request.user, role):
         raise PermissionDenied
+    if role == User.Role.STUDENT and request.user.role == User.Role.STUDENT:
+        return redirect("students:portal_home")
     title, heading, description = WORKSPACES[role]
     return render(request, "dashboard/home.html", {
         "workspace_title": title, "workspace_heading": heading, "workspace_description": description,

@@ -201,7 +201,7 @@ class ConfigurationServiceTests(SchoolTestCase):
         self.assertFalse(AcademicClass.objects.filter(name="Top").exists())
 
     def test_services_require_authorized_actor(self):
-        guardian = self.users[User.Role.GUARDIAN]
+        guardian = self.users[User.Role.STUDENT]
         form = SectionForm({"name": "Unauthorized", "sort_order": 0}, school=self.school)
         self.assertTrue(form.is_valid())
         for operation in [
@@ -231,6 +231,8 @@ class ConfigurationViewTests(SchoolTestCase):
                     self.assertEqual(self.client.get(url).status_code, 200 if allowed else 403)
                     if not allowed:
                         self.assertEqual(self.client.post(url, {}).status_code, 403)
+            if role == User.Role.STUDENT:
+                continue
             home = self.client.get(reverse(f"dashboard:{role}"))
             if allowed:
                 self.assertContains(home, "School setup")

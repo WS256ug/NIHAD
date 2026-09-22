@@ -18,7 +18,7 @@ from apps.accounts.models import User
 from apps.schools.models import AcademicClass, Section, Stream
 from apps.schools.services import set_record_active
 from apps.students import services
-from apps.students.forms import EnrollmentForm, GuardianForm, GuardianLinkForm, GuardianRegistrationForm, StudentForm
+from apps.students.forms import EnrollmentForm, GuardianForm, GuardianLinkForm, StudentForm, StudentRegistrationForm
 from apps.students.models import Enrollment, Guardian, Student, StudentGuardian, StudentNumber
 from apps.students.permissions import visible_students
 from tests.test_schools import SchoolTestCase
@@ -30,10 +30,10 @@ class StudentTestCase(SchoolTestCase):
         super().setUpTestData()
         cls.student = Student.objects.create(school=cls.school, student_id="STD-000001", first_name="Mary", last_name="Wasswa", gender="female", date_of_birth=date(2018, 5, 1), admission_date=date(2025, 1, 1))
         StudentNumber.objects.create(school=cls.school, last_value=1)
-        cls.guardian = Guardian.objects.create(school=cls.school, user=cls.users[User.Role.GUARDIAN], phone="0700000000")
+        cls.guardian = Guardian.objects.create(school=cls.school, first_name="Jane", last_name="Wasswa", email="jane@example.test", phone="0700000000")
 
     def student_data(self, **changes):
-        return {"first_name": "Sarah", "middle_name": "", "last_name": "Wasswa", "gender": "female", "date_of_birth": "2019-01-01", "admission_date": "2025-01-01", "admission_number": "", **changes}
+        return {"first_name": "Sarah", "middle_name": "", "last_name": "Wasswa", "gender": "female", "date_of_birth": "2019-01-01", "admission_date": "2025-01-01", "admission_number": "", "existing_guardian": self.guardian.pk, "relationship": "Mother", **changes}
 
     def enrollment_data(self, **changes):
         return {"academic_year": self.year.pk, "academic_class": self.academic_class.pk, "stream": "", "enrollment_date": "2026-01-02", "status": "current", "completion_date": "", **changes}
@@ -48,14 +48,12 @@ class StudentTestCase(SchoolTestCase):
         self.assertTrue(form.is_valid(), form.errors)
         return services.save_link(form, self.actor)
 
-    def new_guardian_form(self, **changes):
-        return GuardianRegistrationForm({"username": "new_guardian", "first_name": "Jane", "last_name": "Wasswa", "email": "jane@example.test", "phone": "0700111222", "password1": self.password, "password2": self.password, **changes})
 
 
 class StudentRecordTests(StudentTestCase):
     def test_ids_are_generated_unique_immutable_and_not_taken_from_post(self):
         for expected in ("STD-000002", "STD-000003"):
-            form = StudentForm(self.student_data(student_id="FORGED", school="999", status="graduated", created_by="999"), school=self.school)
+            form = StudentRegistrationForm(self.student_data(student_id="FORGED", school="999", status="graduated", created_by="999"), school=self.school)
             self.assertTrue(form.is_valid(), form.errors)
             student = services.save_student(form, self.actor)
             self.assertEqual(student.student_id, expected)
@@ -67,7 +65,7 @@ class StudentRecordTests(StudentTestCase):
         self.assertEqual(Student.objects.values("student_id").distinct().count(), 3)
 
     def test_registration_audit_failure_rolls_back_student_and_sequence(self):
-        form = StudentForm(self.student_data(), school=self.school)
+        form = StudentRegistrationForm(self.student_data(), school=self.school)
         self.assertTrue(form.is_valid(), form.errors)
         with patch("apps.schools.services.LogEntry.objects.create", side_effect=RuntimeError("audit failed")):
             with self.assertRaises(RuntimeError):
@@ -120,99 +118,58 @@ class StudentRecordTests(StudentTestCase):
 
 
 class GuardianRecordTests(StudentTestCase):
-    def test_registration_creates_hashed_account_and_profile_atomically(self):
-        form = self.new_guardian_form(role="super_admin", is_staff="on", is_superuser="on")
+    def test_registration_captures_guardian_without_creating_an_account(self):
+        before = User.objects.count()
+        form = StudentRegistrationForm(self.student_data(existing_guardian="", guardian_first_name="Alice", guardian_last_name="Doe", guardian_phone="0700", guardian_email="alice@example.test"), school=self.school)
         self.assertTrue(form.is_valid(), form.errors)
-        guardian = services.register_guardian(form, self.actor)
-        self.assertEqual(guardian.user.role, User.Role.GUARDIAN)
-        self.assertFalse(guardian.user.is_staff or guardian.user.is_superuser)
-        self.assertTrue(guardian.user.check_password(self.password))
-        self.assertEqual(guardian.phone, "0700111222")
-        self.assertEqual(LogEntry.objects.filter(user=self.actor).count(), 2)
+        student = services.save_student(form, self.actor)
+        link = student.guardian_links.get()
+        self.assertEqual(str(link.guardian), "Alice Doe")
+        self.assertTrue(link.is_primary)
+        self.assertEqual(User.objects.count(), before)
 
-    def test_bad_password_and_duplicate_username_rejected(self):
-        for changes in ({"password1": "123", "password2": "123"}, {"username": self.guardian.user.username}, {"email": "bad"}):
-            with self.subTest(changes=changes):
-                self.assertFalse(self.new_guardian_form(**changes).is_valid())
-
-    def test_audit_failure_rolls_back_guardian_registration(self):
-        form = self.new_guardian_form()
-        self.assertTrue(form.is_valid())
-        with patch("apps.students.services.write_record", side_effect=ValidationError("failed")):
-            with self.assertRaises(ValidationError):
-                services.register_guardian(form, self.actor)
-        self.assertFalse(User.objects.filter(username="new_guardian").exists())
-        self.assertEqual(Guardian.objects.count(), 1)
-        self.assertFalse(LogEntry.objects.exists())
-
-    def test_existing_account_choices_reject_wrong_role_inactive_privileged_and_already_linked(self):
-        new_user = User.objects.create_user("unused_guardian", role=User.Role.GUARDIAN)
-        for user in [self.guardian.user, self.users[User.Role.TEACHER], self.users[User.Role.SUPER_ADMIN]]:
-            form = GuardianForm({"user": user.pk, "phone": "0700"}, actor=self.actor, school=self.school)
-            self.assertFalse(form.is_valid())
-        form = GuardianForm({"user": new_user.pk, "phone": "0700"}, actor=self.actor, school=self.school)
-        self.assertTrue(form.is_valid(), form.errors)
-        new_user.is_active = False
-        new_user.save()
-        with self.assertRaisesMessage(ValidationError, "active, ordinary"):
-            services.save_guardian(form, self.actor)
-
-    def test_existing_guardian_account_can_be_attached_and_identity_cannot_change(self):
-        new_user = User.objects.create_user("unused_guardian", role=User.Role.GUARDIAN)
-        form = GuardianForm({"user": new_user.pk, "phone": "0700"}, actor=self.actor, school=self.school)
-        self.assertTrue(form.is_valid(), form.errors)
-        guardian = services.save_guardian(form, self.actor)
-        form = GuardianForm({"user": self.guardian.user.pk, "phone": "0777"}, instance=guardian, actor=self.actor, school=self.school)
-        self.assertTrue(form.is_valid(), form.errors)
-        saved = services.save_guardian(form, self.actor)
-        self.assertEqual(saved.user_id, new_user.pk)
-        self.assertEqual(saved.phone, "0777")
-        with self.assertRaises(ProtectedError):
-            new_user.delete()
-
-    def test_guardian_role_cannot_be_changed_through_account_form(self):
-        form = ManagedAccountChangeForm({"username": self.guardian.user.username, "email": "guardian@example.test", "role": User.Role.TEACHER}, instance=self.guardian.user, actor=self.actor)
+    def test_registration_requires_guardian_details_or_existing_contact(self):
+        form = StudentRegistrationForm(self.student_data(existing_guardian=""), school=self.school)
         self.assertFalse(form.is_valid())
-        self.assertIn("must keep the Guardian role", str(form.errors))
+        self.assertIn("guardian_phone", form.errors)
 
-    def test_multiple_children_multiple_guardians_and_one_primary(self):
-        link = self.link(is_primary="on", is_emergency_contact="on")
-        second = Student.objects.create(school=self.school, student_id="STD-000002", first_name="Sarah", last_name="Wasswa", date_of_birth=date(2019, 1, 1), admission_date=date(2025, 1, 1))
-        StudentGuardian.objects.create(student=second, guardian=self.guardian, relationship="Mother")
+    def test_existing_contact_can_link_siblings_without_duplicate_contacts(self):
+        self.link(is_primary="on")
+        form = StudentRegistrationForm(self.student_data(), school=self.school)
+        self.assertTrue(form.is_valid(), form.errors)
+        student = services.save_student(form, self.actor)
+        self.assertEqual(student.guardian_links.get().guardian, self.guardian)
         self.assertEqual(self.guardian.student_links.count(), 2)
-        user = User.objects.create_user("second_guardian", role=User.Role.GUARDIAN)
-        guardian = Guardian.objects.create(school=self.school, user=user, phone="0777")
+        self.assertEqual(Guardian.objects.count(), 1)
+
+    def test_contact_edit_preserves_relationships(self):
+        link = self.link()
+        form = GuardianForm({"first_name": "Jane", "last_name": "Updated", "phone": "0777", "email": "jane@example.test"}, instance=self.guardian, school=self.school)
+        self.assertTrue(form.is_valid(), form.errors)
+        services.save_guardian(form, self.actor)
+        link.refresh_from_db()
+        self.assertEqual(str(link.guardian), "Jane Updated")
+        with self.assertRaises(ProtectedError):
+            self.guardian.delete()
+
+    def test_multiple_guardians_one_primary_and_reactivation(self):
+        link = self.link(is_primary="on", is_emergency_contact="on")
+        guardian = Guardian.objects.create(school=self.school, first_name="John", last_name="Wasswa", phone="0777")
         form = GuardianLinkForm({"guardian": guardian.pk, "relationship": "Father", "is_primary": "on"}, student=self.student)
         self.assertFalse(form.is_valid())
-        self.assertIn("already has a primary guardian", str(form.errors))
         with self.assertRaises(IntegrityError), transaction.atomic():
             StudentGuardian.objects.create(student=self.student, guardian=guardian, relationship="Father", is_primary=True)
         services.set_link_active(link, False, self.actor)
         link.refresh_from_db()
         self.assertFalse(link.is_primary or link.is_emergency_contact or link.is_active)
-        self.assertEqual(StudentGuardian.objects.count(), 2)
         self.assertTrue(services.set_link_active(link, True, self.actor).is_active)
 
-    def test_duplicate_link_protected_history_and_inactive_account(self):
-        link = self.link()
+    def test_duplicate_link_is_rejected_and_history_protected(self):
+        self.link()
         form = GuardianLinkForm({"guardian": self.guardian.pk, "relationship": "Mother"}, student=self.student)
         self.assertFalse(form.is_valid())
-        for target in (self.guardian, self.student):
-            with self.assertRaises(ProtectedError):
-                target.delete()
-        services.set_link_active(link, False, self.actor)
-        self.guardian.user.is_active = False
-        self.guardian.user.save()
-        with self.assertRaisesMessage(ValidationError, "active Guardian account"):
-            services.set_link_active(link, True, self.actor)
-
-    def test_link_rechecks_account_after_form_validation(self):
-        form = GuardianLinkForm({"guardian": self.guardian.pk, "relationship": "Mother"}, student=self.student)
-        self.assertTrue(form.is_valid())
-        User.objects.filter(pk=self.guardian.user_id).update(is_active=False)
-        with self.assertRaisesMessage(ValidationError, "active Guardian account"):
-            services.save_link(form, self.actor)
-        self.assertFalse(StudentGuardian.objects.exists())
+        with self.assertRaises(ProtectedError):
+            self.student.delete()
 
 
 class EnrollmentRecordTests(StudentTestCase):
@@ -319,7 +276,7 @@ class StudentViewTests(StudentTestCase):
         reading = [("list", []), ("detail", [self.student.pk])]
         managing = [
             ("create", []), ("edit", [self.student.pk]), ("status", [self.student.pk]),
-            ("guardian_list", []), ("guardian_register", []), ("guardian_existing", []),
+            ("guardian_list", []), ("guardian_add", [self.student.pk]),
             ("guardian_detail", [self.guardian.pk]), ("guardian_edit", [self.guardian.pk]),
             ("link_create", [self.student.pk]), ("link_edit", [self.student.pk, link.pk]),
             ("link_activate", [self.student.pk, link.pk]), ("link_deactivate", [self.student.pk, link.pk]),
@@ -333,6 +290,10 @@ class StudentViewTests(StudentTestCase):
                 allowed = reader if (name, args) in reading else manager
                 url = reverse(f"students:{name}", args=args)
                 with self.subTest(role=role, view=name):
+                    if role == User.Role.TEACHER and (name, args) in reading:
+                        self.assertEqual(self.client.get(url).status_code, 200 if name == "list" else 404)
+                        self.assertEqual(self.client.post(url, {}).status_code, 405)
+                        continue
                     self.assertEqual(self.client.get(url).status_code, 200 if allowed else 403)
                     if not allowed:
                         self.assertEqual(self.client.post(url, {}).status_code, 403)
@@ -347,7 +308,7 @@ class StudentViewTests(StudentTestCase):
         operations = [
             lambda: services.save_student(None, teacher),
             lambda: services.set_student_status(self.student, "inactive", teacher),
-            lambda: services.register_guardian(None, teacher),
+            lambda: services.add_guardian_contact(self.student, {}, teacher),
             lambda: services.save_guardian(None, teacher),
             lambda: services.save_link(None, teacher),
             lambda: services.set_link_active(link, False, teacher),
@@ -363,7 +324,7 @@ class StudentViewTests(StudentTestCase):
         enrollment = self.enroll()
         protected = Client(enforce_csrf_checks=True)
         protected.force_login(self.actor)
-        names = [("create", []), ("edit", [self.student.pk]), ("status", [self.student.pk]), ("guardian_register", []), ("guardian_existing", []), ("guardian_edit", [self.guardian.pk]), ("link_create", [self.student.pk]), ("link_deactivate", [self.student.pk, link.pk]), ("enroll", [self.student.pk]), ("enrollment_close", [self.student.pk, enrollment.pk])]
+        names = [("create", []), ("edit", [self.student.pk]), ("status", [self.student.pk]), ("guardian_add", [self.student.pk]), ("guardian_edit", [self.guardian.pk]), ("link_create", [self.student.pk]), ("link_deactivate", [self.student.pk, link.pk]), ("enroll", [self.student.pk]), ("enrollment_close", [self.student.pk, enrollment.pk])]
         for name, args in names:
             self.assertEqual(protected.post(reverse(f"students:{name}", args=args), {}).status_code, 403)
         self.client.force_login(self.actor)
@@ -389,7 +350,7 @@ class StudentViewTests(StudentTestCase):
         response = self.client.post(reverse("students:create"), self.student_data())
         student = Student.objects.get(student_id="STD-000002")
         self.assertRedirects(response, reverse("students:detail", args=[student.pk]))
-        self.assertRedirects(self.client.post(reverse("students:link_create", args=[student.pk]), {"guardian": self.guardian.pk, "relationship": "Mother", "is_primary": "on"}), reverse("students:detail", args=[student.pk]))
+        self.assertEqual(student.guardian_links.get().guardian, self.guardian)
         self.assertRedirects(self.client.post(reverse("students:enroll", args=[student.pk]), self.enrollment_data()), reverse("students:detail", args=[student.pk]))
         enrollment = student.enrollments.get()
         self.assertRedirects(self.client.post(reverse("students:enrollment_close", args=[student.pk, enrollment.pk]), {"status": "withdrawn", "completion_date": "2026-05-31", "confirm": "on"}), reverse("students:detail", args=[student.pk]))
@@ -397,16 +358,10 @@ class StudentViewTests(StudentTestCase):
         self.assertEqual(student.enrollments.get().status, "withdrawn")
         self.assertEqual(LogEntry.objects.filter(user=self.actor).count(), 5)
 
-    def test_guardian_registration_http_and_account_edit_role_guard(self):
+    def test_old_guardian_account_routes_are_removed(self):
         self.client.force_login(self.actor)
-        form = self.new_guardian_form()
-        response = self.client.post(reverse("students:guardian_register"), form.data)
-        guardian = Guardian.objects.get(user__username="new_guardian")
-        self.assertRedirects(response, reverse("students:guardian_detail", args=[guardian.pk]))
-        response = self.client.post(reverse("accounts:user_edit", args=[guardian.user_id]), {"username": guardian.user.username, "email": guardian.user.email, "role": User.Role.TEACHER})
-        self.assertContains(response, "must keep the Guardian role")
-        guardian.user.refresh_from_db()
-        self.assertEqual(guardian.user.role, User.Role.GUARDIAN)
+        for url in ("/students/guardians/new/", "/students/guardians/existing/"):
+            self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_search_full_name_id_and_historical_filters_apply_to_same_enrollment(self):
         old = self.enroll()
@@ -518,7 +473,7 @@ class StudentPhotoTests(StudentTestCase):
                 self.assertTrue(b"".join(response.streaming_content))
                 response.close()
             else:
-                self.assertEqual(response.status_code, 403)
+                self.assertEqual(response.status_code, 404 if role == User.Role.TEACHER else 403)
         self.client.logout()
         self.assertEqual(self.client.get("/media/" + student.photo.name).status_code, 404)
         self.assertEqual(self.client.get("/private_media/" + student.photo.name).status_code, 404)

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Report · {{ report.enrollment.student.student_id }}{% endblock %}
+{% block content %}<div class="workspace">
+<div class="no-print"><a href="{% url 'reports:list' %}">Back to reports</a><header class="page-heading"><h1>Student report</h1><div class="table-actions">{% if data %}<a role="button" href="{% url 'reports:pdf' report.pk %}">Download PDF</a><a href="{% url 'reports:print' report.pk %}">Print view</a>{% endif %}{% if can_comment %}<a href="{% url 'reports:comment' report.pk %}">Add class-teacher comment</a>{% endif %}{% if can_review %}<a href="{% url 'reports:review' report.pk %}">Review report</a>{% endif %}{% if can_publish %}<a href="{% url 'reports:publish' report.pk %}">Publish report</a>{% endif %}</div></header>
+{% if print_view %}<p>Use your browser's Print command to print this report.</p>{% endif %}
+<p>{{ report.get_status_display }} · Version {{ report.version }}{% if not report.is_current %} · Historical revision{% endif %}</p>
+{% if report.correction_reason %}<p>Correction reason: {{ report.correction_reason }}</p>{% endif %}</div>
+{% if data %}<article class="workspace-card report-sheet"><header><h2>{{ data.school }}</h2><p>{{ data.motto }}</p><p>{{ data.school_address }} · {{ data.school_phone }}</p><h3>{{ data.assessment }} report · {{ data.year }} / {{ data.term }}</h3><p>{{ data.student }} · {{ data.registration_number }}</p><p>{{ data.section }} / {{ data.class }} {{ data.stream }} · {{ data.date }}</p><p>{{ report.get_status_display }} · Version {{ report.version }}</p></header>
+<div class="table-scroll"><table><caption>Assessment results</caption><thead><tr><th>Subject / learning area</th>{% if data.mode == 'numeric' %}<th>Score / {{ data.maximum_score }}</th>{% endif %}<th>Grade / level</th>{% if data.aggregate != None %}<th>Points</th>{% endif %}</tr></thead><tbody>{% for row in data.subjects %}<tr><th scope="row">{{ row.subject }}</th>{% if data.mode == 'numeric' %}<td>{{ row.score }}</td>{% endif %}<td>{{ row.grade }}</td>{% if data.aggregate != None %}<td>{{ row.points }}</td>{% endif %}</tr>{% endfor %}</tbody></table></div>
+{% if data.mode == 'numeric' %}<p><strong>Total:</strong> {{ data.total }} · <strong>Average:</strong> {{ data.average }}%</p>{% endif %}
+{% if data.aggregate != None %}<p><strong>Aggregate:</strong> {{ data.aggregate }} · <strong>Division:</strong> {{ data.division }}</p>{% endif %}
+{% if data.position != None %}<p><strong>Position:</strong> {{ data.position }} / {{ data.cohort_size }}</p>{% endif %}
+<h3>Class-teacher comment</h3><p>{{ report.teacher_comment|default:'Pending'|linebreaksbr }}</p><h3>Headteacher comment</h3><p>{{ report.headteacher_comment|default:'Pending'|linebreaksbr }}</p>
+{% if report.published_at %}<p>Published {{ report.published_at }}</p>{% endif %}</article>{% else %}<section class="workspace-card"><p>This revision awaits completed marks and report generation.</p></section>{% endif %}
+<aside class="workspace-card no-print"><h2>Report versions</h2>{% for version in versions %}<p><a href="{% url 'reports:detail' version.pk %}">Version {{ version.version }}</a> · {{ version.get_status_display }}</p>{% endfor %}</aside>
+</div>{% endblock %}

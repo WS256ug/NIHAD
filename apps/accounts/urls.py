@@ -14,7 +14,7 @@ urlpatterns = [
     path("users/<int:pk>/edit/", views.user_edit, name="user_edit"),
     path("users/<int:pk>/activate/", views.user_status, {"activate": True}, name="user_activate"),
     path("users/<int:pk>/deactivate/", views.user_status, {"activate": False}, name="user_deactivate"),
-    path("password/change/", auth_views.PasswordChangeView.as_view(
+    path("password/change/", views.AccountPasswordChangeView.as_view(
         template_name="registration/password_change_form.html",
         success_url=reverse_lazy("accounts:password_change_done"),
     ), name="password_change"),

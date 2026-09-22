@@ -16,7 +16,7 @@ class UserFoundationTests(TestCase):
 
     def test_new_user_has_hashed_password_and_no_privileges(self):
         user = User.objects.create_user("guardian", password="test-only-strong-password")
-        self.assertEqual(user.role, User.Role.GUARDIAN)
+        self.assertEqual(user.role, User.Role.STUDENT)
         self.assertTrue(user.check_password("test-only-strong-password"))
         self.assertNotEqual(user.password, "test-only-strong-password")
         self.assertFalse(user.is_staff)
@@ -62,6 +62,8 @@ class AuthenticationFoundationTests(TestCase):
 
     def test_every_role_can_sign_in_and_only_see_own_account(self):
         for role, user in self.users.items():
+            if role == User.Role.STUDENT:
+                continue
             with self.subTest(role=role):
                 client = Client()
                 response = client.post(reverse("accounts:login"), {

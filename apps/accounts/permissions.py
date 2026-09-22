@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from .models import User
 
-STANDARD_ROLES = (User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, User.Role.GUARDIAN)
+STANDARD_ROLES = (User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR)
 
 
 def effective_role(user):
@@ -41,6 +41,8 @@ def dashboard_url(user):
     role = effective_role(user)
     if role is None:
         raise PermissionDenied
+    if role == User.Role.STUDENT:
+        return reverse("students:portal_home")
     return reverse(f"dashboard:{role}")
 
 
