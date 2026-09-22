@@ -11,10 +11,10 @@ starting the next. Always use `.venv` for Python and dependency commands.
 | 4 | Students, guardians, enrollment and history | Complete |
 | 5 | Teachers, subjects and allocations | Complete |
 | 6 | Assessments and marks | Complete |
-| 7 | Configurable grading, aggregates and divisions | In progress |
-| 8 | Reports, review, publication and PDF/print | Planned |
-| 9 | Fees, payments, balances and receipts | Planned |
-| 10 | Student portal used by guardians and report-access policy | In progress |
+| 7 | Configurable grading, aggregates and divisions | Complete |
+| 8 | Reports, review, publication and PDF/print | Complete |
+| 9 | Fees, payments, balances and receipts | Complete |
+| 10 | Independent Guardian accounts, family portal and report-access policy | In progress |
 | 11 | Expenses and financial summaries | Planned |
 | 12 | Promotion and preserved enrollment history | Planned |
 | 13 | Role dashboards | Planned |
@@ -156,3 +156,22 @@ Teachers see assigned students and enrollment history. Assessment types, class/s
 assessments, open/close controls, and audited marks entry enforce assignment scope,
 score limits and revision checks. All 151 tests passed after Phase 6; migrations are
 applied to development SQLite.
+
+## Latest role clarification
+
+The user subsequently specified individual accounts for Super Admin, School Admin,
+Headteacher, Teacher, Bursar/Finance and Guardian. This supersedes the earlier
+removal of independent Guardian logins. Guardian contacts remain part of student
+registration, with account provisioning/linking from the guardian profile. Existing
+student-number portal access remains separately supported.
+
+## Phases 7–9 verification
+
+Configurable numeric/descriptive grading, grade boundaries, required/best-N/all
+aggregates, divisions and optional tied ranking are implemented. Used grading is
+protected. Reports support immutable snapshots, class-teacher comments, headteacher
+review, approval, publication and versioned correction. HTML/print and PDF access
+share server checks; a rendered sample PDF was visually verified. All 168 tests
+passed after Phase 8. Phase 9 adds fee templates, immutable student charges, Decimal
+payments, idempotent submission, receipts, statements, outstanding balances and
+explicit payment/charge reversals; its ten targeted tests pass.

@@ -6,14 +6,16 @@ from django.views.decorators.http import require_GET
 
 from apps.accounts.models import User
 from apps.accounts.permissions import dashboard_url, has_role
+from .metrics import dashboard_metrics
 
 WORKSPACES = {
     User.Role.SUPER_ADMIN: ("Super Admin workspace", "Manage access across your school.", "Manage school accounts and administration from one place."),
     User.Role.SCHOOL_ADMIN: ("School Admin workspace", "Keep your school connected.", "Manage student records, guardians, enrollment and school accounts."),
-    User.Role.HEADTEACHER: ("Headteacher workspace", "A clear view of your school.", "View student profiles and enrollment history. Academic review and report approval will follow."),
-    User.Role.TEACHER: ("Teacher workspace", "More time for teaching.", "Your account is ready. Assigned classes, marks and comments will appear as those features become available."),
-    User.Role.BURSAR: ("Finance workspace", "Your school's finance workspace.", "Your account is ready. Fees, payments and expenses will appear as those features become available."),
+    User.Role.HEADTEACHER: ("Headteacher workspace", "A clear view of your school.", "Review results and reports, approve comments, and manage promotion decisions."),
+    User.Role.TEACHER: ("Teacher workspace", "Your classes and academic tasks.", "Enter marks for assigned subjects and add class-teacher comments where you are assigned."),
+    User.Role.BURSAR: ("Finance workspace", "Your school's financial records.", "Manage student charges, payments, receipts, expenses and income."),
     User.Role.STUDENT: ("Student portal", "Stay connected to your child's school.", "Use your child's registration number to access their records."),
+    User.Role.GUARDIAN: ("Guardian portal", "Stay connected to your children's school.", "View your linked children's records with your own account."),
 }
 
 
@@ -32,7 +34,10 @@ def workspace(request, role):
         raise PermissionDenied
     if role == User.Role.STUDENT and request.user.role == User.Role.STUDENT:
         return redirect("students:portal_home")
+    if role == User.Role.GUARDIAN and request.user.role == User.Role.GUARDIAN:
+        return redirect("students:family_home")
     title, heading, description = WORKSPACES[role]
     return render(request, "dashboard/home.html", {
         "workspace_title": title, "workspace_heading": heading, "workspace_description": description,
+        **dashboard_metrics(request.user, role),
     })

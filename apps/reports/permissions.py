@@ -21,6 +21,9 @@ def visible_reports(user):
                     match &= Q(enrollment__stream_id=assignment.stream_id)
                 scope |= match
         return records.filter(scope)
+    if user.is_authenticated and user.role in (User.Role.GUARDIAN, User.Role.STUDENT):
+        from apps.students.family import portal_students
+        return records.filter(status='published', enrollment__student__in=portal_students(user))
     return records.none()
 
 

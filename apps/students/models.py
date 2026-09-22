@@ -90,6 +90,7 @@ class Student(AuditedModel):
 
 class Guardian(AuditedModel):
     school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="guardians")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="guardian_profile")
     first_name = models.CharField(max_length=150, default="")
     last_name = models.CharField(max_length=150, default="")
     email = models.EmailField(blank=True)
@@ -105,6 +106,10 @@ class Guardian(AuditedModel):
     def clean(self):
         super().clean()
         preserve_fields(self, ("school_id",))
+        if self.pk and Guardian.objects.filter(pk=self.pk, user__isnull=False).exists():
+            preserve_fields(self, ("user_id",))
+        if self.user_id and self.user.role != "guardian":
+            raise ValidationError("Link an independent account with the Guardian role.")
         self.first_name, self.last_name = self.first_name.strip(), self.last_name.strip()
         if not self.first_name or not self.last_name:
             raise ValidationError("Enter the guardian's first and last names.")
@@ -206,6 +211,8 @@ class Enrollment(AuditedModel):
         if self.completion_date and self.enrollment_date:
             if not self.enrollment_date <= self.completion_date <= year.end_date:
                 raise ValidationError({"completion_date": "Completion must be on or after enrollment and within the academic year."})
+            if self.pk and self.marks.filter(assessment__date__gt=self.completion_date).exists():
+                raise ValidationError('Completion date cannot exclude existing assessment results.')
         if self.enrollment_date:
             overlaps = Enrollment.objects.filter(student_id=self.student_id, academic_year_id=self.academic_year_id, enrollment_date__lte=self.completion_date or year.end_date).exclude(pk=self.pk)
             if overlaps.filter(models.Q(completion_date__isnull=True) | models.Q(completion_date__gte=self.enrollment_date)).exists():

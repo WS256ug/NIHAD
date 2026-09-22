@@ -16,7 +16,7 @@ class UserFoundationTests(TestCase):
 
     def test_new_user_has_hashed_password_and_no_privileges(self):
         user = User.objects.create_user("guardian", password="test-only-strong-password")
-        self.assertEqual(user.role, User.Role.STUDENT)
+        self.assertEqual(user.role, User.Role.GUARDIAN)
         self.assertTrue(user.check_password("test-only-strong-password"))
         self.assertNotEqual(user.password, "test-only-strong-password")
         self.assertFalse(user.is_staff)

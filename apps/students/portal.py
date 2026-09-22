@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +17,7 @@ from .models import Student
 from .permissions import visible_students
 from .services import set_portal_access
 from .views import attempt, form_page
+from .family import student_context
 
 
 class PortalSignInView(SignInView):
@@ -29,12 +31,13 @@ def portal_student(request):
     return get_object_or_404(Student.objects.select_related("school"), portal_user=request.user, school_id=1)
 
 
+@login_required(login_url='students:portal_login')
 @role_required(User.Role.STUDENT)
 @never_cache
 @require_GET
 def home(request):
     student = portal_student(request)
-    return render(request, "students/portal_home.html", {"student": student, "enrollments": student.enrollments.select_related("academic_year", "academic_class__section", "stream"), "guardian_links": student.guardian_links.filter(is_active=True).select_related("guardian")})
+    return render(request, "students/portal_home.html", student_context(student, request.user))
 
 
 @role_required(User.Role.STUDENT)

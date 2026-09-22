@@ -45,6 +45,13 @@ class School(AuditedModel):
         self.name = self.name.strip()
         if not self.name:
             raise ValidationError({"name": "Enter the school name."})
+        if self.pk and not self._state.adding:
+            original_currency = School.objects.filter(pk=self.pk).values_list('currency_code', flat=True).first()
+            if original_currency != self.currency_code:
+                from apps.finance.models import FeeCharge
+                from apps.expenses.models import Expense, OtherIncome
+                if FeeCharge.objects.filter(enrollment__student__school_id=self.pk).exists() or Expense.objects.filter(school_id=self.pk).exists() or OtherIncome.objects.filter(school_id=self.pk).exists():
+                    raise ValidationError('Currency cannot change after financial records exist.')
         if self.current_academic_year_id:
             year = self.current_academic_year
             if year.school_id != self.pk or not year.is_active:

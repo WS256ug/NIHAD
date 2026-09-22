@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,13 +19,24 @@ from .pdf import report_pdf
 from .permissions import can_comment, visible_reports
 
 READ_ROLES = (User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+REPORT_READ_ROLES = (*READ_ROLES, User.Role.GUARDIAN, User.Role.STUDENT)
 
 
-@role_required(*READ_ROLES)
+@role_required(*REPORT_READ_ROLES)
 @never_cache
 @require_GET
 def report_list(request):
-    records = visible_reports(request.user).filter(is_current=True)
+    records = visible_reports(request.user)
+    if request.user.role in (User.Role.GUARDIAN, User.Role.STUDENT):
+        from apps.finance.queries import student_balances
+        from apps.schools.models import School
+        school = School.objects.first()
+        if school and school.require_fee_clearance_for_reports:
+            records = records.filter(enrollment__student__in=student_balances().filter(balance__lte=0))
+        latest = records.order_by().values('assessment_id', 'enrollment_id').annotate(latest=Max('pk')).values('latest')
+        records = records.filter(pk__in=latest)
+    else:
+        records = records.filter(is_current=True)
     status = request.GET.get('status', '')
     if status in StudentReport.Status.values:
         records = records.filter(status=status)
@@ -35,11 +46,16 @@ def report_list(request):
     return render(request, 'reports/list.html', {'page_obj': Paginator(records, 30).get_page(request.GET.get('page')), 'query': query, 'selected_status': status, 'statuses': StudentReport.Status.choices})
 
 
-@role_required(*READ_ROLES)
+@role_required(*REPORT_READ_ROLES)
 @never_cache
 @require_GET
 def detail(request, pk, output='html'):
     report = get_object_or_404(visible_reports(request.user), pk=pk)
+    portal = request.user.role in (User.Role.GUARDIAN, User.Role.STUDENT)
+    if portal:
+        from apps.students.family import report_access_allowed
+        if not report_access_allowed(report.enrollment.student):
+            raise PermissionDenied('Fee clearance is required to view this report. Fees and payment history remain available in your portal.')
     if output == 'pdf':
         if not report.snapshot:
             return HttpResponse('Generate this revision before downloading it.', status=409)
@@ -52,6 +68,7 @@ def detail(request, pk, output='html'):
         'can_review': has_role(request.user, User.Role.HEADTEACHER) and report.is_current and report.status == 'review',
         'can_publish': has_role(request.user, User.Role.SCHOOL_ADMIN) and report.is_current and report.status == 'approved',
         'versions': visible_reports(request.user).filter(assessment=report.assessment, enrollment=report.enrollment),
+        'portal_view': portal,
     })
 
 

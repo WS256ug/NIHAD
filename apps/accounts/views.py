@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, LogEntry
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView, PasswordChangeView
+from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetConfirmView
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -36,6 +36,13 @@ class AccountPasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         response = super().form_valid(form)
         User.objects.filter(pk=self.request.user.pk).update(must_change_password=False)
+        return response
+
+
+class AccountPasswordResetConfirmView(PasswordResetConfirmView):
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        User.objects.filter(pk=form.user.pk).update(must_change_password=False)
         return response
 
 
@@ -83,7 +90,9 @@ def user_create(request):
     form = ManagedAccountCreationForm(request.POST if request.method == "POST" else None, actor=request.user)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
-            user = form.save()
+            user = form.save(commit=False)
+            user.must_change_password = True
+            user.save()
             record_account_change(request.user, user, ADDITION, "Created school account.")
         messages.success(request, "Account created. Share the initial password with the account holder securely.")
         return redirect("accounts:user_list")

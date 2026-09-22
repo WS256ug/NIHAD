@@ -36,14 +36,19 @@ INSTALLED_APPS = [
     "apps.students.apps.StudentsConfig",
     "apps.academics.apps.AcademicsConfig",
     "apps.reports.apps.ReportsConfig",
+    "apps.finance.apps.FinanceConfig",
+    "apps.expenses.apps.ExpensesConfig",
+    "apps.promotions.apps.PromotionsConfig",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.accounts.middleware.ResponseSecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.LoginThrottleMiddleware",
     "apps.accounts.middleware.InitialPasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -71,6 +76,12 @@ TEMPLATES = [
 ]
 
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ['apps.accounts.throttling.ThrottledModelBackend']
+LOGIN_FAILURE_LIMIT = int(os.environ.get('LOGIN_FAILURE_LIMIT', '5'))
+AUTH_IP_FAILURE_LIMIT = int(os.environ.get('AUTH_IP_FAILURE_LIMIT', '100'))
+AUTH_WINDOW_SECONDS = int(os.environ.get('AUTH_WINDOW_SECONDS', '900'))
+RESET_REQUEST_LIMIT = int(os.environ.get('RESET_REQUEST_LIMIT', '5'))
+AUTH_TRUSTED_PROXIES = env_list('AUTH_TRUSTED_PROXIES')
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -101,6 +112,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 
 LOGGING = {
     "version": 1,

@@ -6,7 +6,7 @@
   <div class="workspace-grid">
     <section class="workspace-card"><h2>Contact details</h2><dl class="account-details">
       <div><dt>Email</dt><dd>{{ guardian.email|default:'Not provided' }}</dd></div><div><dt>Phone</dt><dd>{{ guardian.phone }}</dd></div><div><dt>Address</dt><dd>{{ guardian.address|default:'Not provided'|linebreaksbr }}</dd></div>
-    </dl><p>Guardians access the student portal using their child's registration number and portal password.</p></section>
+    </dl><p><a href="{% url 'students:guardian_access' guardian.pk %}">Set up or reset Guardian account</a></p>{% if guardian.user_id %}<p>Username: {{ guardian.user.username }} · {{ guardian.user.is_active|yesno:'Active,Inactive' }}</p>{% endif %}<p>Guardians sign in with their own individual account to view linked children.</p></section>
     <section class="workspace-card"><h2>Linked students</h2>{% for link in links %}<div class="relationship-card"><a href="{% url 'students:detail' link.student_id %}">{{ link.student.full_name }}</a><span class="table-secondary">{{ link.student.student_id }} · {{ link.relationship }} · {% if link.is_active %}Active link{% else %}Inactive link{% endif %}</span></div>{% empty %}<p>No students linked. Open a student's profile to add this guardian.</p>{% endfor %}</section>
   </div>
 </div>

@@ -3,6 +3,8 @@ from django.urls import reverse
 from .permissions import can_manage_accounts, can_manage_school, dashboard_url, effective_role
 from apps.students.permissions import can_manage_students, can_view_students
 from apps.academics.permissions import can_view_academics
+from apps.finance.permissions import can_manage_finance
+from apps.promotions.services import can_manage_promotions
 
 
 def account_navigation(request):
@@ -12,7 +14,7 @@ def account_navigation(request):
     labels = {
         "super_admin": "Super Admin workspace", "school_admin": "School Admin workspace",
         "headteacher": "Headteacher workspace", "teacher": "Teacher workspace",
-        "bursar": "Finance workspace", "student": "Student portal",
+        "bursar": "Finance workspace", "student": "Student portal", "guardian": "Guardian portal",
     }
     links = [{"label": labels[role], "url": dashboard_url(request.user)}]
     if can_manage_accounts(request.user):
@@ -26,6 +28,11 @@ def account_navigation(request):
     if can_view_academics(request.user):
         links.append({"label": "Academics", "url": reverse("academics:overview")})
         links.append({"label": "Reports", "url": reverse("reports:list")})
+    if can_manage_finance(request.user):
+        links.append({"label": "Fees", "url": reverse("finance:overview")})
+        links.append({"label": "Finance summary", "url": reverse("expenses:overview")})
+    if can_manage_promotions(request.user):
+        links.append({"label": "Promotions", "url": reverse("promotions:list")})
     links.append({"label": "My account", "url": reverse("accounts:profile")})
     if request.user.is_superuser:
         links.append({"label": "Administration", "url": reverse("admin:index")})

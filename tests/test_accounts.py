@@ -37,7 +37,7 @@ class RoleAccessTests(AccountTestCase):
                 with self.subTest(role=role, target=target_role):
                     response = self.client.get(reverse(f"dashboard:{target_role}"))
                     allowed = role == target_role or user.is_superuser
-                    self.assertEqual(response.status_code, 302 if role == target_role == User.Role.STUDENT else (200 if allowed else 403))
+                    self.assertEqual(response.status_code, 302 if role == target_role and role in (User.Role.STUDENT, User.Role.GUARDIAN) else (200 if allowed else 403))
             if role == User.Role.STUDENT:
                 self.assertEqual(self.client.get(dashboard_url(user)).status_code, 404)
                 continue
@@ -81,7 +81,7 @@ class RoleAccessTests(AccountTestCase):
                 self.assertRedirects(response, reverse("accounts:login"))
                 response = self.client.get(dashboard_url(user))
                 self.assertEqual(response.status_code, 302)
-                self.assertTrue(response.url.startswith(reverse("accounts:login")))
+                self.assertTrue(response.url.startswith(reverse("students:portal_login" if role == User.Role.STUDENT else "accounts:login")))
 
     def test_staff_with_django_permissions_cannot_enter_privileged_admin(self):
         teacher = self.users[User.Role.TEACHER]
@@ -145,7 +145,7 @@ class AccountManagementTests(AccountTestCase):
                 self.assertNotIn(self.password, log.change_message)
 
     def test_school_admin_cannot_create_school_admin_or_superuser(self):
-        for role in [User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, User.Role.STUDENT, "guardian", "invalid"]:
+        for role in [User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, User.Role.STUDENT, "invalid"]:
             with self.subTest(role=role):
                 response = self.client.post(reverse("accounts:user_create"), self.account_data(role=role))
                 self.assertEqual(response.status_code, 200)

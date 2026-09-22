@@ -10,10 +10,15 @@
     </div>
     <span class="role-badge">{{ user.get_role_display }}</span>
   </header>
+  {% if school_period %}<p>Academic year: {{ school_period.current_academic_year|default:'Not selected' }} · Term: {{ school_period.current_term.name|default:'Not selected' }}</p>{% endif %}
+  {% if metrics %}<div class="configuration-grid">{% for metric in metrics %}<section class="workspace-card"><h2>{{ metric.label }}</h2><p class="configuration-count">{{ metric.value }}</p><a href="{{ metric.url }}">View details</a></section>{% endfor %}</div>{% endif %}
+  {% if tasks %}<section class="workspace-card history-card"><h2>Tasks awaiting action</h2>{% for task in tasks %}<p><a href="{{ task.url }}">{{ task.label }}</a></p>{% endfor %}</section>{% endif %}
+  {% if section_counts %}<section class="workspace-card history-card"><h2>Currently enrolled students by section</h2>{% for section in section_counts %}<p>{{ section.section__name }}: {{ section.total }}</p>{% endfor %}</section>{% endif %}
+  {% if recent_payments %}<section class="workspace-card history-card"><h2>Recent payments</h2><div class="table-scroll"><table><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Status</th></tr></thead><tbody>{% for payment in recent_payments %}<tr><th scope="row"><a href="{% url 'finance:receipt' payment.pk %}">{{ payment.receipt_number }}</a></th><td>{{ payment.receipt.student }}</td><td>{{ payment.receipt.currency }} {{ payment.amount|floatformat:2 }}</td><td>{% if payment.reversal %}Reversed{% else %}Received{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
   <div class="workspace-grid">
     <section class="workspace-card welcome-card" aria-labelledby="workspace-title">
       <span class="section-number" aria-hidden="true">01 / Welcome</span>
-      <h2 id="workspace-title">You're in the right place.</h2>
+      <h2 id="workspace-title">School workspace</h2>
       <p>{{ workspace_description }}</p>
       {% if can_manage_accounts %}
         <a href="{% url 'accounts:user_list' %}" role="button">Manage accounts <span aria-hidden="true">→</span></a>

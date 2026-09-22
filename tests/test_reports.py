@@ -105,7 +105,7 @@ class ReportTests(ReportTestCase):
         for role in (User.Role.BURSAR, User.Role.STUDENT):
             self.client.force_login(self.users[role])
             for name in ('detail', 'print', 'pdf'):
-                self.assertEqual(self.client.get(reverse('reports:' + name, args=[report.pk])).status_code, 403)
+                self.assertEqual(self.client.get(reverse('reports:' + name, args=[report.pk])).status_code, 403 if role == User.Role.BURSAR else 404)
         self.client.force_login(self.teacher.user)
         for name in ('detail', 'print'):
             self.assertContains(self.client.get(reverse('reports:' + name, args=[report.pk])), 'Mary Wasswa')

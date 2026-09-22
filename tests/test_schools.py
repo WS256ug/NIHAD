@@ -233,7 +233,7 @@ class ConfigurationViewTests(SchoolTestCase):
                         self.assertEqual(self.client.post(url, {}).status_code, 403)
             if role == User.Role.STUDENT:
                 continue
-            home = self.client.get(reverse(f"dashboard:{role}"))
+            home = self.client.get(reverse(f"dashboard:{role}"), follow=True)
             if allowed:
                 self.assertContains(home, "School setup")
             else:

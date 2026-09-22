@@ -1,9 +1,17 @@
 from django.urls import path
-from . import portal, views
+from . import family, portal, views
 
 app_name = "students"
 
 urlpatterns = [
+    path('family/', family.home, name='family_home'),
+    path('family/<int:pk>/', family.child, name='family_child'),
+    path('family/<int:pk>/fees/', family.fees, name='family_fees'),
+    path('family/<int:pk>/photo/', family.photo, name='family_photo'),
+    path('family/receipts/<int:pk>/', family.receipt, name='family_receipt'),
+    path('family/receipts/<int:pk>/pdf/', family.receipt, {'output': 'pdf'}, name='family_receipt_pdf'),
+    path('family/receipts/<int:pk>/print/', family.receipt, {'output': 'print'}, name='family_receipt_print'),
+    path('guardians/<int:pk>/access/', family.access, name='guardian_access'),
     path("portal/login/", portal.PortalSignInView.as_view(), name="portal_login"),
     path("portal/", portal.home, name="portal_home"),
     path("portal/photo/", portal.photo, name="portal_photo"),

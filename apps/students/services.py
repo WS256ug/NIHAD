@@ -90,6 +90,8 @@ def save_guardian(form, actor):
     record = form.save(commit=False)
     if record.school_id != school.pk:
         raise PermissionDenied
+    if record.pk:
+        record.user_id = Guardian.objects.get(pk=record.pk).user_id
     return write_record(record, actor, "Saved guardian contact details.", update_fields=form._meta.fields)
 
 
@@ -161,3 +163,30 @@ def set_portal_access(student, password, active, actor):
     write_record(student, actor, "Set student portal access; password change required.", update_fields=["portal_user"])
     LogEntry.objects.create(user=actor, content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk), object_repr=str(user)[:200], action_flag=ADDITION if creating else CHANGE, change_message="Set temporary student portal credential.")
     return student
+
+
+@transaction.atomic
+def set_guardian_access(guardian, data, actor):
+    require_manager(actor)
+    school = lock_school()
+    guardian = Guardian.objects.select_for_update().get(pk=guardian.pk, school=school)
+    if guardian.user_id:
+        user = User.objects.select_for_update().get(pk=guardian.user_id)
+    elif data.get('existing_account'):
+        user = User.objects.select_for_update().get(pk=data['existing_account'].pk, role=User.Role.GUARDIAN, is_staff=False)
+        if hasattr(user, 'guardian_profile'):
+            raise ValidationError('This account is already linked to another guardian.')
+    else:
+        user = User(username=data['username'], role=User.Role.GUARDIAN)
+    user.first_name, user.last_name, user.email = guardian.first_name, guardian.last_name, guardian.email
+    validate_password(data['new_password1'], user)
+    user.set_password(data['new_password1'])
+    user.must_change_password = True
+    user.is_active = data['is_active']
+    user.full_clean()
+    creating = user._state.adding
+    user.save()
+    guardian.user = user
+    write_record(guardian, actor, 'Linked independent Guardian account; temporary password must be changed.', update_fields=['user'])
+    LogEntry.objects.create(user=actor, content_type=ContentType.objects.get_for_model(User), object_id=str(user.pk), object_repr=str(user)[:200], action_flag=ADDITION if creating else CHANGE, change_message='Set temporary guardian account credential.')
+    return guardian

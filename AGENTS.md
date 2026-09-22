@@ -8,6 +8,12 @@
 - The Django project lives at the repository root; `manage.py` uses development settings by default.
 - Track completed phases and the next milestone in `DEVELOPMENT_PLAN.md`.
 - Keep `.env`, `.venv`, local databases, and uploaded media out of Git.
+- Latest account requirement: Super Admin, School Admin, Headteacher, Teacher,
+  Bursar/Finance and Guardian each use individual accounts and role-specific access.
+- Capture guardian contact details during student registration, then provision or
+  link the guardian's own account. A guardian may access only actively linked children.
+- The earlier student-registration-number portal remains a separate optional login;
+  it does not replace the independent Guardian accounts requested most recently.
 
 ## 1. Project Overview
 
