@@ -25,17 +25,25 @@
           <span class="brand-mark" aria-hidden="true">N</span>
           <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
         </a>
-        <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" class="outline small sidebar-close">Close menu</button>
       </header>
       <nav aria-label="Main navigation">
         <ul>
           {% for link in account_navigation %}
-          <li><a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a></li>
+          <li>
+            {% if link.children %}
+            <details{% if link.active %} open{% endif %}>
+              <summary>{{ link.label }}</summary>
+              <ul>{% for child in link.children %}<li><a href="{{ child.url }}"{% if child.active %} aria-current="page"{% endif %}>{{ child.label }}</a></li>{% endfor %}</ul>
+            </details>
+            {% else %}
+            <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.label }}</a>
+            {% endif %}
+          </li>
           {% endfor %}
         </ul>
       </nav>
       <footer>
-        <p class="sidebar-user">{{ user.get_full_name|default:user.username }}<span class="table-secondary">{{ user.get_role_display }}</span></p>
+        <a class="sidebar-user person-identity" href="{% url 'accounts:profile' %}">{% include 'includes/avatar.html' with person=user only %}<span>{{ user.get_full_name|default:user.username }}<span class="table-secondary">{{ user.get_role_display }}</span></span></a>
         <form action="{% url 'accounts:logout' %}" method="post">
           {% csrf_token %}
           <button type="submit" class="outline small sidebar-signout">Sign out</button>
@@ -54,7 +62,9 @@
   <main id="main-content" tabindex="-1">
     {% if user.is_authenticated %}
     <div data-sidebar-header class="mobile-sidebar-header">
-      <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" class="outline small">Menu</button>
+      <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="Toggle navigation menu" class="sidebar-icon-button">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <span>{{ school_display_name }}</span>
     </div>
     {% endif %}

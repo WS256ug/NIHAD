@@ -8,7 +8,8 @@
   </header>
   <div class="workspace-grid">
     <section class="workspace-card"><h2>Student profile</h2>
-      {% if student.photo %}<img class="student-photo" src="{% url 'students:photo' student.pk %}" alt="Photo of {{ student.full_name }}" width="160" height="160">{% endif %}
+      {% if student.photo %}{% url 'students:photo' student.pk as avatar_photo %}{% else %}{% firstof '' as avatar_photo %}{% endif %}
+      {% include 'includes/avatar.html' with person=student photo_url=avatar_photo avatar_class='person-avatar-large' only %}
       <dl class="account-details">
         <div><dt>Gender</dt><dd>{{ student.get_gender_display }}</dd></div>
         <div><dt>Date of birth</dt><dd>{{ student.date_of_birth|date:'j M Y' }}</dd></div>

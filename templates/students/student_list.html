@@ -19,7 +19,7 @@
         <caption>{{ page_obj.paginator.count }} student{{ page_obj.paginator.count|pluralize }} · Enrollment filters include history</caption>
         <thead><tr><th scope="col">Student</th><th scope="col">Admission number</th><th scope="col">Status</th><th scope="col">Enrollments</th></tr></thead>
         <tbody>{% for student in page_obj %}<tr>
-          <th scope="row"><a href="{% url 'students:detail' student.pk %}">{{ student.full_name }}</a><small class="table-secondary">{{ student.student_id }}</small></th>
+          <th scope="row"><div class="person-identity">{% if student.photo %}{% url 'students:photo' student.pk as avatar_photo %}{% else %}{% firstof '' as avatar_photo %}{% endif %}{% include 'includes/avatar.html' with person=student photo_url=avatar_photo only %}<span><a href="{% url 'students:detail' student.pk %}">{{ student.full_name }}</a><small class="table-secondary">{{ student.student_id }}</small></span></div></th>
           <td>{{ student.admission_number|default:'—' }}</td><td><span class="role-badge">{{ student.get_status_display }}</span></td>
           <td>{% for enrollment in student.listed_enrollments %}<div>{{ enrollment.academic_year.name }} · {{ enrollment.academic_class.name }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}<small class="table-secondary">{{ enrollment.get_status_display }}</small></div>{% empty %}Not enrolled{% endfor %}</td>
         </tr>{% empty %}<tr><td colspan="4">No students match your search.{% if can_manage_students %} Register a student to get started.{% endif %}</td></tr>{% endfor %}</tbody>

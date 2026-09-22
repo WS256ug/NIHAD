@@ -1,5 +1,28 @@
 # Development plan
 
+Reusable avatars identify the signed-in account and students in lists/profiles.
+Student photos use existing authorized image routes; initials are shown when
+no photo is available. No external avatar service is used.
+
+Mobile navigation uses an accessible SVG hamburger button with a 44-pixel
+touch target, theme colors, visible keyboard focus and wrapping school names.
+The sidebar has no close button; tapping outside it or pressing Escape closes it.
+
+Personal account information is accessed by clicking the user's name in the
+sidebar footer; the separate My account navigation item has been removed.
+
+Reports and Promotions are nested under the collapsible Academics sidebar menu,
+alongside Overview. The menu opens on academic, report and promotion pages;
+Promotions remains visible only to roles authorized to manage promotions.
+
+Sidebar organization: Guardians is nested in the collapsible Students menu.
+A single Finance link opens the financial overview, which links to fees,
+expenses, other income and expense categories. Existing role permissions apply.
+
+Dashboard grid correction: removed Oat's `col-3` span from stat cards because
+the dashboard already defines its own four-column grid. Cards now occupy one
+track each, with two-column tablet and single-column phone layouts.
+
 Dashboard statistics use responsive Oat UI cards with live values, badges and
 detail links. Published report averages include a percentage progress bar;
 counts and financial totals do not imply unrecorded targets or monthly trends.

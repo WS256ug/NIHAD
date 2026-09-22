@@ -15,15 +15,11 @@
   <div class="container dashboard-stats">
     <div class="row">
       {% for metric in metrics %}
-      <article class="card col-4 stat-card" aria-labelledby="stat-{{ forloop.counter }}">
-        <header class="hstack justify-between items-center">
-          <h2 id="stat-{{ forloop.counter }}" class="stat-label">{{ metric.label }}</h2>
-          <span class="badge" data-variant="secondary">Live</span>
-        </header>
+      <article class="card stat-card" aria-labelledby="stat-{{ forloop.counter }}">
+        <h2 id="stat-{{ forloop.counter }}" class="stat-label"><a href="{{ metric.url }}">{{ metric.label }}</a></h2>
         <p class="stat-value">{{ metric.value }}</p>
-        <p class="text-light stat-description">{{ metric.description|default:'Current records' }}</p>
+        <p class="text-light stat-description"><span class="badge" data-variant="success">Live</span> {{ metric.description|default:'Current records' }}</p>
         {% if metric.progress != None %}<progress value="{{ metric.progress }}" max="100" aria-label="{{ metric.label }} percentage">{{ metric.progress }}%</progress>{% endif %}
-        <a class="stat-link" href="{{ metric.url }}" aria-label="View {{ metric.label|lower }}">View details</a>
       </article>
       {% endfor %}
     </div>
