@@ -3,6 +3,6 @@
 {% block content %}
 <section class="account-page workspace-card"><h1>{% if activate %}Activate{% else %}Deactivate{% endif %} {{ record.name }}?</h1>
   <p>{% if activate %}This record will be available for new selections again.{% else %}This record will be unavailable for new selections. Its existing records will be preserved.{% endif %}</p>
-  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button type="submit">{% if activate %}Activate{% else %}Deactivate{% endif %}</button><a href="{% url 'schools:record_list' kind %}" role="button" class="outline small">Cancel</a></div></form>
+  <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button type="submit">{% if activate %}Activate{% else %}Deactivate{% endif %}</button><a href="{% url 'schools:record_list' kind %}" role="button" class="outline small button">Cancel</a></div></form>
 </section>
 {% endblock %}

@@ -247,3 +247,46 @@ share server checks; a rendered sample PDF was visually verified. All 168 tests
 passed after Phase 8. Phase 9 adds fee templates, immutable student charges, Decimal
 payments, idempotent submission, receipts, statements, outstanding balances and
 explicit payment/charge reversals; its ten targeted tests pass.
+
+## Student religion field
+
+- Replaced student address with optional free-text religion (up to 100 characters)
+  in registration, editing and profiles; guardian addresses remain unchanged.
+- Migration students.0005 removes student address and adds religion; applied locally.
+- All 214 tests pass; Django system and migration-drift checks pass.
+- Next milestone: continue the remaining planned application phases.
+
+## Student gender and address label refinement
+
+- Student gender now requires Male or Female, enforced by forms and a database
+  constraint, without an automatic default. Existing local records already comply.
+- Guardian contact forms label the address field simply Address.
+- Migration students.0006 applied; all 214 tests, system checks and migration-drift
+  checks pass. Next milestone: continue the remaining planned application phases.
+
+## Action link styling
+
+- Applied Oat button, outline and small classes to action links across the workspace,
+  including account creation, editing, marks, fees, reports and account recovery.
+- Added the required button class: role="button" alone does not activate Oat styling.
+- All 214 tests and Django system checks pass; template audit confirms consistent
+  classes on button links. Next milestone: desktop/mobile visual verification.
+
+## Visible checkbox controls
+
+- Shared form checkboxes use explicit 20px controls beside clickable labels, with
+  keyboard focus outlines on the checkbox. No surrounding border or highlight.
+- Excluded checkboxes/radios from text-input styling that hid checked backgrounds
+  and collapsed checkbox widths. This includes the emergency-contact control.
+- All 214 tests and Django system checks pass. Next milestone: browser visual QA.
+
+## Back navigation styling
+
+- Standardized 22 back links with a shared decorative arrow, quiet text styling,
+  44px minimum click target, hover feedback and visible keyboard focus.
+- Refined after screenshot feedback: removed the box, softened the text color,
+  added heading spacing and removed the repeated School setup eyebrow on lists.
+- Kept native link semantics and explicit destinations; back links are hidden
+  when printing and long labels wrap on narrow screens.
+- All 214 tests, Django system checks and migration-drift checks pass.
+- Next milestone: desktop/mobile browser visual QA.

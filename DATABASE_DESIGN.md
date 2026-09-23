@@ -78,7 +78,7 @@ report and guardian modules will enforce them when implemented.
 
 | Model | Relationship and purpose |
 | --- | --- |
-| Student | School, permanent unique student ID, identity/admission details, status and private photo |
+| Student | School, permanent unique student ID, identity/admission details, required Male/Female gender, optional religion (100 characters), status and private photo |
 | StudentNumber | One counter per school; allocates sequential permanent IDs inside the school transaction |
 | Guardian | One-to-one protected User account, School, phone and address; name/email remain on User |
 | StudentGuardian | Protected Student and Guardian, relationship, primary/emergency flags and active status |

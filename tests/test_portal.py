@@ -47,7 +47,7 @@ class StudentPortalTests(StudentTestCase):
         account = self.provision()
         account.must_change_password = False
         account.save()
-        second = Student.objects.create(school=self.school, student_id="STD-000099", first_name="Another", last_name="Child", date_of_birth=self.student.date_of_birth, admission_date=self.student.admission_date)
+        second = Student.objects.create(gender="female", school=self.school, student_id="STD-000099", first_name="Another", last_name="Child", date_of_birth=self.student.date_of_birth, admission_date=self.student.admission_date)
         self.client.force_login(account)
         response = self.client.get(reverse("students:portal_home"), {"student": second.pk, "pk": second.pk})
         self.assertContains(response, "Mary Wasswa")

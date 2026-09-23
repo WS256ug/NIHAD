@@ -2,8 +2,12 @@
 {% for field in form %}
   {% if field.is_hidden %}{{ field }}{% if field.errors %}<div class="field-error" role="alert">{{ field.errors }}</div>{% endif %}{% else %}
   <div class="form-field">
-    {{ field.label_tag }}
-    {{ field }}
+    {% if field.field.widget.input_type == 'checkbox' %}
+      <label class="checkbox-area" for="{{ field.id_for_label }}">{{ field }}<span>{{ field.label }}</span></label>
+    {% else %}
+      {{ field.label_tag }}
+      {{ field }}
+    {% endif %}
     {% if field.help_text %}<div class="field-help" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
     {% if field.errors %}<div class="field-error" role="alert">{{ field.errors }}</div>{% endif %}
   </div>

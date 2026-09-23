@@ -2,14 +2,14 @@
 {% block title %}School setup{% endblock %}
 {% block content %}
 <div class="workspace">
-  <header class="page-heading"><div><span class="eyebrow">School administration</span><h1>School setup</h1><p class="muted">Set up your school and its academic structure.</p></div><a href="{% url 'schools:profile' %}" role="button" class="outline small">{% if school %}Edit school profile{% else %}Set up school profile{% endif %}</a></header>
+  <header class="page-heading"><div><span class="eyebrow">School administration</span><h1>School setup</h1><p class="muted">Set up your school and its academic structure.</p></div><a href="{% url 'schools:profile' %}" role="button" class="outline small button">{% if school %}Edit school profile{% else %}Set up school profile{% endif %}</a></header>
   {% if school %}
     <section class="workspace-card period-summary">
       <div><span class="eyebrow">{{ school.name }}</span><h2>Current academic period</h2><p>{{ school.current_academic_year|default:'No current academic year' }} · {{ school.current_term.name|default:'No current term' }}</p></div>
-      <a href="{% url 'schools:current_period' %}" role="button" class="outline small">Change current period</a>
+      <a href="{% url 'schools:current_period' %}" role="button" class="outline small button">Change current period</a>
     </section>
     <div class="configuration-grid">
-      {% for card in cards %}<section class="workspace-card"><span class="configuration-count">{{ card.count }}</span><h2>{{ card.label }}</h2><a href="{{ card.url }}" role="button" class="outline small">Manage {{ card.label|lower }} →</a></section>{% endfor %}
+      {% for card in cards %}<section class="workspace-card"><span class="configuration-count">{{ card.count }}</span><h2>{{ card.label }}</h2><a href="{{ card.url }}" role="button" class="outline small button">Manage {{ card.label|lower }} →</a></section>{% endfor %}
     </div>
     <p class="muted">Start with sections and academic years. Add classes within sections and terms within years. Streams are optional.</p>
   {% else %}

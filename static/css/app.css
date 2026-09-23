@@ -102,7 +102,7 @@ main:focus { outline: none; }
 .sign-in-panel form { margin-top: 2rem; }
 .form-field { margin-bottom: 1.2rem; }
 .form-field label { display: block; margin-bottom: .45rem; font-size: .83rem; font-weight: 600; }
-.form-field input { width: 100%; min-height: 2.8rem; background: var(--card); }
+.form-field input:not([type="checkbox"]):not([type="radio"]) { width: 100%; min-height: 2.8rem; background: var(--card); }
 .sign-in-button { width: 100%; justify-content: space-between; min-height: 2.8rem; margin-top: .5rem; background: var(--primary); color: var(--card); }
 .sign-in-button:hover { background: var(--primary-hover); }
 .sign-in-help { font-size: .78rem; color: var(--muted-foreground); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 1.4rem; margin: .8rem 0 0; }
@@ -145,10 +145,22 @@ main:focus { outline: none; }
 .account-page { width: calc(100% - 2rem); max-width: 640px; margin: 2.5rem auto; }
 .account-page h1 { font-size: 1.85rem; margin: 1rem 0; }
 .account-page form { margin-top: 1.5rem; }
-.form-field input[type="checkbox"] { width: auto; min-height: auto; }
+.form-field input[type="checkbox"] { width: 20px; height: 20px; min-width: 20px; min-height: 20px; flex-shrink: 0; cursor: pointer; }
+.form-field .checkbox-area { display: inline-flex; align-items: center; gap: .75rem; cursor: pointer; }
+.form-field .checkbox-area input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .form-field select { width: 100%; }
 .field-help { color: var(--muted-foreground); font-size: .78rem; margin-top: .4rem; }
 .field-help ul { padding-left: 1.2rem; }
+.back-link { display: inline-flex; align-items: center; justify-self: start; align-self: flex-start; gap: .45rem; min-height: 44px; max-width: 100%; padding: .5rem 0; border: 0; border-radius: .2rem; background: transparent; color: var(--muted-foreground); font-size: .82rem; font-weight: 500; line-height: 1.4; text-decoration: none; vertical-align: middle; }
+.back-link svg { flex-shrink: 0; width: 16px; height: 16px; }
+.back-link span { overflow-wrap: anywhere; }
+.back-link:hover { color: var(--primary); text-decoration: none; }
+.back-link:hover span { text-decoration: underline; text-underline-offset: .2em; }
+.back-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.back-link:active { color: var(--foreground); }
+.back-link + .page-heading, .back-link + h1 { margin-top: .75rem; }
+.back-link + .page-heading h1 { margin-top: 0; }
+@media print { .back-link { display: none !important; } }
 .form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
 .filter-form { display: flex; align-items: end; flex-wrap: wrap; gap: 1rem; }
 .filter-form > div:first-child { flex: 1; min-width: min(100%, 220px); }

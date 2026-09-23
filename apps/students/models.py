@@ -33,8 +33,6 @@ class Student(AuditedModel):
     class Gender(models.TextChoices):
         FEMALE = "female", "Female"
         MALE = "male", "Male"
-        OTHER = "other", "Other"
-        UNSPECIFIED = "unspecified", "Not specified"
 
     school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="students")
     student_id = models.CharField(max_length=30, unique=True, editable=False)
@@ -42,12 +40,12 @@ class Student(AuditedModel):
     middle_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100)
     photo = models.ImageField(storage=photo_storage, upload_to=photo_path, blank=True)
-    gender = models.CharField(max_length=12, choices=Gender.choices, default=Gender.UNSPECIFIED)
+    gender = models.CharField(max_length=12, choices=Gender.choices)
     date_of_birth = models.DateField()
     admission_date = models.DateField(default=timezone.localdate)
     admission_number = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE, db_index=True)
-    address = models.TextField(blank=True)
+    religion = models.CharField(max_length=100, blank=True)
     contact_phone = models.CharField(max_length=40, blank=True)
     portal_user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, editable=False, on_delete=models.PROTECT, related_name="portal_student")
 
@@ -56,7 +54,7 @@ class Student(AuditedModel):
         constraints = [
             models.CheckConstraint(condition=models.Q(date_of_birth__lte=models.F("admission_date")), name="students_birth_before_admission"),
             models.CheckConstraint(condition=models.Q(status__in=["active", "promoted", "repeating", "transferred", "withdrawn", "graduated", "inactive"]), name="students_valid_status"),
-            models.CheckConstraint(condition=models.Q(gender__in=["female", "male", "other", "unspecified"]), name="students_valid_gender"),
+            models.CheckConstraint(condition=models.Q(gender__in=["female", "male"]), name="students_valid_gender"),
             models.CheckConstraint(condition=~models.Q(student_id=""), name="students_id_not_empty"),
             models.UniqueConstraint(Lower("admission_number"), "school", condition=~models.Q(admission_number=""), name="students_admission_unique", violation_error_message="This admission number is already in use."),
         ]

@@ -2,8 +2,8 @@
 {% block title %}{{ spec.label }}{% endblock %}
 {% block content %}
 <div class="workspace">
-  <a href="{% url 'schools:overview' %}">← School setup</a>
-  <header class="page-heading"><div><span class="eyebrow">School setup</span><h1>{{ spec.label }}</h1></div><a href="{% url 'schools:record_create' kind %}" role="button" class="outline small">Create {{ spec.singular }}</a></header>
+  <a class="back-link" href="{% url 'schools:overview' %}">{% include "includes/back_icon.html" %}<span>Back to school setup</span></a>
+  <header class="page-heading"><div><h1>{{ spec.label }}</h1></div><a href="{% url 'schools:record_create' kind %}" role="button" class="outline small button">Create {{ spec.singular }}</a></header>
   <section class="workspace-card">
     <form method="get" class="filter-form" hx-get="{% url 'schools:record_list' kind %}" hx-target="#configuration-results" hx-select="#configuration-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
       <div><label for="configuration-search">Search by name</label><input type="search" id="configuration-search" name="q" value="{{ query }}"></div>
@@ -19,8 +19,8 @@
           <th scope="row">{{ row.record.name }}{% if row.current %}<small class="table-secondary">Current</small>{% endif %}</th><td>{{ row.parent }}</td>
           {% if spec.dates %}<td>{{ row.record.start_date|date:'j M Y' }} – {{ row.record.end_date|date:'j M Y' }}</td>{% endif %}
           <td>{% if row.record.is_active %}<span class="role-badge">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
-          <td class="table-actions"><a href="{% url 'schools:record_edit' kind row.record.pk %}" aria-label="Edit {{ row.record.name }}" role="button" class="outline small">Edit</a>
-            {% if row.record.is_active %}<a href="{% url 'schools:record_deactivate' kind row.record.pk %}" aria-label="Deactivate {{ row.record.name }}" role="button" class="outline small">Deactivate</a>{% else %}<a href="{% url 'schools:record_activate' kind row.record.pk %}" aria-label="Activate {{ row.record.name }}" role="button" class="outline small">Activate</a>{% endif %}
+          <td class="table-actions"><a href="{% url 'schools:record_edit' kind row.record.pk %}" aria-label="Edit {{ row.record.name }}" role="button" class="outline small button">Edit</a>
+            {% if row.record.is_active %}<a href="{% url 'schools:record_deactivate' kind row.record.pk %}" aria-label="Deactivate {{ row.record.name }}" role="button" class="outline small button">Deactivate</a>{% else %}<a href="{% url 'schools:record_activate' kind row.record.pk %}" aria-label="Activate {{ row.record.name }}" role="button" class="outline small button">Activate</a>{% endif %}
           </td>
         </tr>{% empty %}<tr><td colspan="{% if spec.dates %}5{% else %}4{% endif %}">No records match your search.</td></tr>{% endfor %}</tbody>
       </table></div>

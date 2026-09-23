@@ -25,8 +25,7 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ("first_name", "middle_name", "last_name", "gender", "date_of_birth", "admission_date", "admission_number", "photo", "address", "contact_phone")
-        widgets = {"address": forms.Textarea(attrs={"rows": 3})}
+        fields = ("first_name", "middle_name", "last_name", "gender", "date_of_birth", "admission_date", "admission_number", "photo", "religion", "contact_phone")
 
     def __init__(self, *args, school, **kwargs):
         super().__init__(*args, **kwargs)
@@ -74,7 +73,7 @@ class GuardianContactFields(forms.Form):
     guardian_phone = forms.CharField(max_length=40, required=False)
     guardian_nin = forms.CharField(max_length=50, required=False, label="Guardian NIN", help_text="National Identification Number, if available. For an existing guardian, update their profile.")
     guardian_email = forms.EmailField(required=False)
-    guardian_address = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
+    guardian_address = forms.CharField(label="Address", required=False, widget=forms.Textarea(attrs={"rows": 3}))
     relationship = forms.CharField(max_length=60, label="Relationship to student")
     is_emergency_contact = forms.BooleanField(required=False, initial=True)
 

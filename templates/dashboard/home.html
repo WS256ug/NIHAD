@@ -13,10 +13,10 @@
   <p class="dashboard-period">{{ school_period.current_academic_year }} &middot; {{ school_period.current_term.name }}</p>
   {% else %}
   <div class="dashboard-setup" role="status">Select an academic year and term to complete school setup.
-    {% if can_manage_school %}<a href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
+    {% if can_manage_school %}<a href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}" role="button" class="button outline small">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
   </div>
   {% endif %}
-  {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}" role="button" class="outline small">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
+  {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}" role="button" class="outline small button">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
   {% if metrics %}
   {% for group in metric_groups %}
   <section class="container dashboard-stats" data-group="{{ group.title }}" aria-labelledby="metric-group-{{ forloop.counter }}">
@@ -41,7 +41,7 @@
   </section>
   {% endfor %}
   {% endif %}
-  {% if tasks %}<section class="workspace-card history-card"><h2>Tasks awaiting action</h2>{% for task in tasks %}<p><a href="{{ task.url }}">{{ task.label }}</a></p>{% endfor %}</section>{% endif %}
+  {% if tasks %}<section class="workspace-card history-card"><h2>Tasks awaiting action</h2>{% for task in tasks %}<p><a href="{{ task.url }}" role="button" class="button outline small">{{ task.label }}</a></p>{% endfor %}</section>{% endif %}
   {% if section_counts %}<section class="workspace-card history-card"><h2>Currently enrolled students by section</h2>{% for section in section_counts %}<p>{{ section.section__name }}: {{ section.total }}</p>{% endfor %}</section>{% endif %}
   {% if recent_payments %}<section class="workspace-card history-card"><h2>Recent payments</h2><div class="table-scroll"><table><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Status</th></tr></thead><tbody>{% for payment in recent_payments %}<tr><th scope="row"><a href="{% url 'finance:receipt' payment.pk %}">{{ payment.receipt_number }}</a></th><td>{{ payment.receipt.student }}</td><td>{{ payment.receipt.currency }} {{ payment.amount|floatformat:2 }}</td><td>{% if payment.reversal %}Reversed{% else %}Received{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
   <div class="workspace-grid">
@@ -50,16 +50,16 @@
       <h2 id="workspace-title">School workspace</h2>
       <p>{{ workspace_description }}</p>
       {% if can_manage_accounts %}
-        <a href="{% url 'accounts:user_list' %}" role="button">Manage accounts <span aria-hidden="true">→</span></a>
+        <a href="{% url 'accounts:user_list' %}" role="button" class="button outline small">Manage accounts <span aria-hidden="true">→</span></a>
       {% endif %}
       {% if can_manage_school %}
-        <a href="{% url 'schools:overview' %}" role="button" class="outline">School setup</a>
+        <a href="{% url 'schools:overview' %}" role="button" class="outline button small">School setup</a>
       {% endif %}
       {% if can_view_students %}
-        <a href="{% url 'students:list' %}" role="button" class="outline">View students</a>
+        <a href="{% url 'students:list' %}" role="button" class="outline button small">View students</a>
       {% endif %}
       {% if user.is_superuser %}
-        <a href="{% url 'admin:index' %}" role="button">Open administration <span aria-hidden="true">→</span></a>
+        <a href="{% url 'admin:index' %}" role="button" class="button outline small">Open administration <span aria-hidden="true">→</span></a>
         <p class="small-note">Manage accounts through school administration.</p>
       {% else %}
         <p class="small-note">For help with your account, contact your school administrator.</p>
@@ -73,7 +73,7 @@
         <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
         <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
       </dl>
-      <a href="{% url 'accounts:password_change' %}">Change your password</a>
+      <a href="{% url 'accounts:password_change' %}" role="button" class="button outline small">Change your password</a>
     </section>
   </div>
 </div>

@@ -51,6 +51,24 @@ class StudentTestCase(SchoolTestCase):
 
 
 class StudentRecordTests(StudentTestCase):
+    def test_religion_registration_edit_and_profile(self):
+        form = StudentRegistrationForm(self.student_data(religion="Islam"), school=self.school)
+        self.assertNotIn("address", form.fields)
+        self.assertEqual(form.fields["guardian_address"].label, "Address")
+        self.assertTrue(form.is_valid(), form.errors)
+        student = services.save_student(form, self.actor)
+        student.refresh_from_db()
+        self.assertEqual(student.religion, "Islam")
+        self.client.force_login(self.actor)
+        response = self.client.get(reverse("students:detail", args=[student.pk]))
+        self.assertContains(response, "<dt>Religion</dt><dd>Islam</dd>", html=True)
+        form = StudentForm(self.student_data(religion=""), instance=student, school=self.school)
+        self.assertTrue(form.is_valid(), form.errors)
+        services.save_student(form, self.actor)
+        student.refresh_from_db()
+        self.assertEqual(student.religion, "")
+
+
     def test_ids_are_generated_unique_immutable_and_not_taken_from_post(self):
         for expected in ("STD-000002", "STD-000003"):
             form = StudentRegistrationForm(self.student_data(student_id="FORGED", school="999", status="graduated", created_by="999"), school=self.school)
@@ -80,20 +98,20 @@ class StudentRecordTests(StudentTestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("already in use", str(form.errors))
         with self.assertRaises(IntegrityError), transaction.atomic():
-            Student.objects.create(school=self.school, student_id="STD-OTHER", first_name="Jane", last_name="Doe", date_of_birth=date(2010, 1, 1), admission_date=date(2025, 1, 1), admission_number="a-123")
+            Student.objects.create(gender="female", school=self.school, student_id="STD-OTHER", first_name="Jane", last_name="Doe", date_of_birth=date(2010, 1, 1), admission_date=date(2025, 1, 1), admission_number="a-123")
 
     def test_names_and_birth_admission_dates_are_validated(self):
-        for changes in ({"first_name": " "}, {"date_of_birth": "2026-01-01"}, {"admission_date": "2999-01-01"}, {"gender": "invalid"}):
+        for changes in ({"first_name": " "}, {"date_of_birth": "2026-01-01"}, {"admission_date": "2999-01-01"}, {"gender": "invalid"}, {"gender": "other"}, {"gender": "unspecified"}, {"gender": ""}):
             with self.subTest(changes=changes):
                 form = StudentForm(self.student_data(**changes), school=self.school)
                 self.assertFalse(form.is_valid())
 
     def test_database_rejects_bad_student_dates_status_gender_and_duplicate_id(self):
-        for fields in ({"date_of_birth": date(2030, 1, 1)}, {"status": "unknown"}, {"gender": "unknown"}, {"student_id": ""}):
+        for fields in ({"date_of_birth": date(2030, 1, 1)}, {"status": "unknown"}, {"gender": "unknown"}, {"gender": "other"}, {"gender": "unspecified"}, {"gender": ""}, {"student_id": ""}):
             with self.subTest(fields=fields), self.assertRaises(IntegrityError), transaction.atomic():
                 Student.objects.filter(pk=self.student.pk).update(**fields)
         with self.assertRaises(IntegrityError), transaction.atomic():
-            Student.objects.create(school=self.school, student_id=self.student.student_id, first_name="John", last_name="Doe", date_of_birth=date(2010, 1, 1), admission_date=date(2025, 1, 1))
+            Student.objects.create(gender="female", school=self.school, student_id=self.student.student_id, first_name="John", last_name="Doe", date_of_birth=date(2010, 1, 1), admission_date=date(2025, 1, 1))
 
     def test_stale_profile_does_not_overwrite_new_status(self):
         form = StudentForm(self.student_data(), instance=self.student, school=self.school)
@@ -354,7 +372,7 @@ class StudentViewTests(StudentTestCase):
 
     def test_nested_resources_are_scoped_to_the_student(self):
         enrollment, link = self.enroll(), self.link()
-        second = Student.objects.create(school=self.school, student_id="STD-000002", first_name="Jane", last_name="Doe", date_of_birth=date(2018, 1, 1), admission_date=date(2025, 1, 1))
+        second = Student.objects.create(gender="female", school=self.school, student_id="STD-000002", first_name="Jane", last_name="Doe", date_of_birth=date(2018, 1, 1), admission_date=date(2025, 1, 1))
         self.client.force_login(self.actor)
         for name, pk in (("link_edit", link.pk), ("link_activate", link.pk), ("link_deactivate", link.pk), ("enrollment_close", enrollment.pk)):
             url = reverse(f"students:{name}", args=[second.pk, pk])
@@ -400,7 +418,7 @@ class StudentViewTests(StudentTestCase):
 
     def test_pagination_keeps_filters(self):
         for index in range(22):
-            Student.objects.create(school=self.school, student_id=f"TEST-{index}", first_name="Jane", last_name="Doe", date_of_birth=date(2018, 1, 1), admission_date=date(2025, 1, 1))
+            Student.objects.create(gender="female", school=self.school, student_id=f"TEST-{index}", first_name="Jane", last_name="Doe", date_of_birth=date(2018, 1, 1), admission_date=date(2025, 1, 1))
         self.client.force_login(self.actor)
         response = self.client.get(reverse("students:list"), {"q": "Jane", "status": "active", "page": 2})
         self.assertEqual(len(response.context["page_obj"]), 2)

@@ -2,7 +2,7 @@
 {% block title %}Guardians{% endblock %}
 {% block content %}
 <div class="workspace">
-  <header class="page-heading"><div><span class="eyebrow">Student contacts</span><h1>Guardians</h1><p>Guardian details are captured during student registration.</p></div><a href="{% url 'students:create' %}" role="button" class="outline small">Register student</a></header>
+  <header class="page-heading"><div><span class="eyebrow">Student contacts</span><h1>Guardians</h1><p>Guardian details are captured during student registration.</p></div><a href="{% url 'students:create' %}" role="button" class="outline small button">Register student</a></header>
   <section class="workspace-card">
     <form method="get" class="filter-form" hx-get="{% url 'students:guardian_list' %}" hx-target="#guardian-results" hx-select="#guardian-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
       <div><label for="guardian-search">Name, email or phone</label><input type="search" id="guardian-search" name="q" value="{{ query }}"></div><button type="submit">Search</button>

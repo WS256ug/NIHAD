@@ -2,7 +2,7 @@
 {% block title %}Students{% endblock %}
 {% block content %}
 <div class="workspace">
-  <header class="page-heading"><div><span class="eyebrow">Student records</span><h1>Students</h1><p class="muted">Find students and their enrollment history.</p></div>{% if can_manage_students %}<a href="{% url 'students:create' %}" role="button" class="outline small">Register student</a>{% endif %}</header>
+  <header class="page-heading"><div><span class="eyebrow">Student records</span><h1>Students</h1><p class="muted">Find students and their enrollment history.</p></div>{% if can_manage_students %}<a href="{% url 'students:create' %}" role="button" class="outline small button">Register student</a>{% endif %}</header>
   <section class="workspace-card">
     <form method="get" class="filter-form" hx-get="{% url 'students:list' %}" hx-target="#student-results" hx-select="#student-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
       <div><label for="student-search">Name, student ID or admission number</label><input type="search" id="student-search" name="q" value="{{ query }}"></div>
@@ -11,7 +11,7 @@
       <div><label for="section-filter">Section</label><select id="section-filter" name="section"><option value="">All sections</option>{% for section in sections %}<option value="{{ section.pk }}"{% if request.GET.section == section.pk|stringformat:'s' %} selected{% endif %}>{{ section.name }}</option>{% endfor %}</select></div>
       <div><label for="class-filter">Class</label><select id="class-filter" name="class"><option value="">All classes</option>{% for classroom in classes %}<option value="{{ classroom.pk }}"{% if request.GET.class == classroom.pk|stringformat:'s' %} selected{% endif %}>{{ classroom }}</option>{% endfor %}</select></div>
       <div><label for="stream-filter">Stream</label><select id="stream-filter" name="stream"><option value="">All streams</option>{% for stream in streams %}<option value="{{ stream.pk }}"{% if request.GET.stream == stream.pk|stringformat:'s' %} selected{% endif %}>{{ stream }}</option>{% endfor %}</select></div>
-      <button type="submit">Search</button><a href="{% url 'students:list' %}" role="button" class="outline small">Reset</a>
+      <button type="submit">Search</button><a href="{% url 'students:list' %}" role="button" class="outline small button">Reset</a>
     </form>
     <span id="search-progress" class="htmx-indicator" role="status">Searching…</span>
     <div id="student-results" aria-live="polite">

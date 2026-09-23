@@ -46,7 +46,7 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 
 ## Implemented in Phase 4
 
-- Student registration/profiles, permanent sequential IDs, admission numbers and statuses
+- Student registration/profiles with required Male/Female gender and optional religion, permanent sequential IDs, admission numbers and statuses
 - Validated private photo uploads and authorized delivery
 - Guardian account/profile registration and reuse of existing Guardian accounts
 - Multiple guardian links, primary/emergency contacts and preserved inactive links
