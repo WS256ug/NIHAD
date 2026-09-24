@@ -139,8 +139,10 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
     submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, assignment=assignment).first()
     if (submission.revision if submission else 0) != control.cleaned_data["revision"]:
         raise ValidationError("This sheet changed in another request. Reload before saving.")
-    if submission and submission.status in ("submitted", "approved"):
+    if assessment.requires_mark_review and submission and submission.status in ("submitted", "approved"):
         raise ValidationError("This sheet is locked. Ask a reviewer to return it for correction.")
+    if control.cleaned_data["action"] == "submit" and not assessment.requires_mark_review:
+        raise ValidationError("Marks review is disabled for this assessment. Save progress instead.")
     if not ids:
         raise ValidationError("There are no eligible students in this sheet.")
     for row in row_forms:
@@ -162,15 +164,14 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
         save_mark(form, actor)
     submission = submission or MarkSubmission(assessment=assessment, assignment=assignment)
     submission.revision += 1
+    if not assessment.requires_mark_review:
+        submission.status = "draft"
     if control.cleaned_data["action"] == "submit":
         submission.snapshot = sheet_snapshot(assessment, assignment)
         submission.status = "submitted"
         submission.submitted_at, submission.submitted_by = timezone.now(), actor
         submission.reviewed_at, submission.reviewed_by = None, None
     write_record(submission, actor, "Submitted marks for review." if submission.status == "submitted" else "Saved marks sheet progress.")
-    if not assessment.requires_mark_review:
-        assessment.requires_mark_review = True
-        write_record(assessment, actor, "Enabled marks sheet review.", update_fields=["requires_mark_review"])
     return submission
 
 
@@ -180,6 +181,8 @@ def review_sheet(assessment, assignment, form, actor):
         raise PermissionDenied
     lock_school()
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)
+    if not assessment.requires_mark_review:
+        raise ValidationError("Marks review is disabled for this assessment.")
     if assessment.status != "open" or not all_sheet_assignments(assessment).filter(pk=assignment.pk).exists():
         raise ValidationError("Only active sheets in an open assessment can be reviewed.")
     submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, assignment=assignment).first()
@@ -203,6 +206,9 @@ def require_approved_sheets(assessment):
         if not sheet_enrollments(assessment, assignment).exists():
             continue
         sheets += 1
+        if not assessment.requires_mark_review:
+            sheet_snapshot(assessment, assignment)
+            continue
         submission = MarkSubmission.objects.filter(assessment=assessment, assignment=assignment, status="approved").first()
         if not submission or submission.snapshot != sheet_snapshot(assessment, assignment):
             raise ValidationError(f"Approve the complete marks sheet for {assignment.subject.name} / {assignment.stream or 'All streams'} before closing or generating reports.")

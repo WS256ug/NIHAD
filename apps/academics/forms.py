@@ -87,7 +87,7 @@ class AssessmentTypeForm(forms.ModelForm):
 class AssessmentForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score")
+        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)

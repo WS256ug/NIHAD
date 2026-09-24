@@ -1,5 +1,6 @@
 """PDF output shares the same immutable report data and authorization as HTML."""
 from html import escape
+from decimal import Decimal
 from .formatting import report_number
 from io import BytesIO
 from reportlab.lib import colors
@@ -15,7 +16,7 @@ def document_pdf(title, subtitle, columns, rows, paragraphs=()):
     styles['Title'].textColor = colors.HexColor('#174e48')
     styles['BodyText'].leading = 14
     def paragraph(value, style='BodyText'):
-        return Paragraph(escape(str(value)).replace('\n', '<br/>'), styles[style])
+        return Paragraph(escape(report_number(value) if isinstance(value, Decimal) else str(value)).replace('\n', '<br/>'), styles[style])
     story = [paragraph(title, 'Title'), paragraph(subtitle), Spacer(1, 6 * mm)]
     if columns:
         data = [[paragraph(value) for value in columns]] + [[paragraph('' if value is None else value) for value in row] for row in rows]

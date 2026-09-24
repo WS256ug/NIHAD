@@ -48,8 +48,8 @@ class FinanceTests(FinanceTestCase):
             record_payment(self.charge, {**data, 'amount': Decimal('10')}, self.actor)
         self.assertEqual(ReceiptNumber.objects.get(pk=1).last_value, 1)
 
-    def test_overpayment_zero_negative_future_and_missing_reference_are_rejected(self):
-        for changes in ({'amount': Decimal('401')}, {'amount': Decimal('0')}, {'amount': Decimal('-1')}, {'date': date(2999, 1, 1)}, {'method': 'bank'}):
+    def test_overpayment_zero_negative_and_future_are_rejected(self):
+        for changes in ({'amount': Decimal('401')}, {'amount': Decimal('0')}, {'amount': Decimal('-1')}, {'date': date(2999, 1, 1)}):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
                 self.pay(**changes)
         self.assertFalse(Payment.objects.exists())
@@ -96,10 +96,13 @@ class FinanceTests(FinanceTestCase):
         self.assertFalse(Payment.objects.exists())
         self.assertFalse(ReceiptNumber.objects.exists())
 
-    def test_bank_reference_unique_case_insensitive(self):
-        self.pay(method='bank', reference='BANK-1')
-        with self.assertRaises(ValidationError):
-            self.pay(method='bank', reference='bank-1')
+    def test_payment_references_are_generated_and_unique(self):
+        first = self.pay(method='bank', reference='ignored')
+        second = self.pay(method='mobile', reference='ignored')
+        self.assertEqual(first.reference, 'PAY-2026-000001')
+        self.assertEqual(second.reference, 'PAY-2026-000002')
+        self.assertNotIn('reference', PaymentForm().fields)
+
 
     def test_financial_roles_and_service_authorization(self):
         payment = self.pay()
@@ -119,7 +122,7 @@ class FinanceTests(FinanceTestCase):
         data['confirm'] = 'on'
         response = self.client.post(reverse('finance:payment_create', args=[self.charge.pk]), data, follow=True)
         self.assertContains(response, 'Payment receipt')
-        self.assertContains(response, '300.20')
+        self.assertContains(response, '300.2')
         payment = Payment.objects.get()
         response = self.client.get(reverse('finance:receipt_pdf', args=[payment.pk]))
         self.assertTrue(response.content.startswith(b'%PDF'))

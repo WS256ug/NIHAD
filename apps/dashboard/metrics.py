@@ -1,4 +1,5 @@
 from decimal import Decimal
+from apps.reports.formatting import report_number
 from django.db.models import Count, Q
 from django.urls import reverse
 from apps.accounts.models import User
@@ -37,7 +38,7 @@ def dashboard_metrics(user, role):
         reports = StudentReport.objects.filter(enrollment__student__school_id=1, is_current=True)
         card('Reports awaiting review', reports.filter(status='review').count(), reverse('reports:list') + '?status=review')
         card('Approved reports', reports.filter(status='approved').count(), reverse('reports:list') + '?status=approved')
-        submitted = MarkSubmission.objects.filter(assessment__term__academic_year__school_id=1, status='submitted').select_related('assignment__subject', 'assessment__academic_class')
+        submitted = MarkSubmission.objects.filter(assessment__requires_mark_review=True, assessment__term__academic_year__school_id=1, status='submitted').select_related('assignment__subject', 'assessment__academic_class')
         card('Marks sheets awaiting review', submitted.count(), reverse('academics:marks_entry'))
         for sheet in submitted[:8]:
             result['tasks'].append({'label': f'Review marks: {sheet.assessment.academic_class} / {sheet.assignment.subject}', 'url': reverse('academics:marks', args=[sheet.assessment_id]) + f'?assignment={sheet.assignment_id}'})
@@ -52,7 +53,7 @@ def dashboard_metrics(user, role):
         averages = [Decimal(snapshot['average']) for snapshot in published.values_list('snapshot', flat=True).iterator() if snapshot.get('average') is not None]
         if averages:
             average = sum(averages) / len(averages)
-            card('Mean published report average', f'{average:.2f}%', reverse('reports:list') + '?status=published', description='Current term' if school and school.current_term_id else 'All published periods', progress=f'{average:.2f}')
+            card('Mean published report average', f'{report_number(average)}%', reverse('reports:list') + '?status=published', description='Current term' if school and school.current_term_id else 'All published periods', progress=f'{average:.2f}')
     if role == User.Role.TEACHER:
         assignments = teacher_assignments(user)
         card('Assigned classes', assignments.values('academic_class_id', 'stream_id').distinct().count(), reverse('academics:record_list', args=['teaching']))
@@ -81,7 +82,7 @@ def dashboard_metrics(user, role):
         result['finance_summary'] = financial_summary()
         currency = school.currency_code if school else ''
         for label, key in [('Fees collected', 'paid'), ('Outstanding fees', 'balance'), ('Expenses', 'expenses'), ('Surplus / deficit', 'net')]:
-            card(label, f"{currency} {result['finance_summary'][key]:,.2f}", reverse('expenses:overview'), description='All recorded periods')
+            card(label, f"{currency} {report_number(result['finance_summary'][key])}", reverse('expenses:overview'), description='All recorded periods')
         result['recent_payments'] = Payment.objects.filter(charge__enrollment__student__school_id=1).select_related('reversal').order_by('-created_at')[:8]
     academic_labels = {'Reports awaiting review', 'Approved reports', 'Draft promotion batches', 'Mean published report average', 'Open assessments', 'Marks to enter', 'Class-teacher comments due', 'Marks sheets awaiting review'}
     finance_labels = {'Fees collected', 'Outstanding fees', 'Expenses', 'Surplus / deficit'}

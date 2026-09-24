@@ -128,3 +128,37 @@ class PromotionTests(ReportTestCase):
         self.assertContains(response, 'Confirm batch')
         response = self.client.post(reverse('promotions:preview', args=[batch.pk]), {'confirm': 'on', 'revision': 1}, follow=True)
         self.assertContains(response, 'Promotion confirmed')
+
+    def test_destination_choices_exclude_same_or_earlier_years_and_classes(self):
+        empty = BatchForm()
+        self.assertFalse(empty.fields['destination_year'].queryset.exists())
+        form = BatchForm(initial=self.batch_data())
+        self.assertEqual(list(form.fields['destination_year'].queryset), [self.next_year])
+        self.assertNotIn(self.academic_class, form.fields['destination_class'].queryset)
+        self.assertIn(self.destination, form.fields['destination_class'].queryset)
+        for field, value in [('destination_year', self.year.pk), ('destination_class', self.academic_class.pk)]:
+            bad = BatchForm({**self.batch_data(), field: value})
+            self.assertFalse(bad.is_valid())
+            self.assertIn(field, bad.errors)
+
+    def test_downward_promotion_rejected_on_confirmation_and_cross_section_progression(self):
+        from apps.schools.models import Section
+        batch = self.batch()
+        PromotionBatch.objects.filter(pk=batch.pk).update(destination_class=self.academic_class)
+        with self.assertRaises(ValidationError):
+            confirm_batch(batch, batch.revision, self.actor)
+        self.assertEqual(self.student.enrollments.count(), 1)
+        upper = Section.objects.create(school=self.school, name='Upper section', sort_order=self.primary.sort_order + 1)
+        upper_class = AcademicClass.objects.create(section=upper, name='First upper class', sort_order=0)
+        form = BatchForm({**self.batch_data(), 'destination_class': upper_class.pk})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_promotion_choices_refresh_keeps_dialog_and_filters_years(self):
+        self.client.force_login(self.actor)
+        response = self.client.get(reverse('promotions:create'), {**self.batch_data(), 'dialog': '1'},
+                                   HTTP_HX_REQUEST='true', HTTP_HX_TARGET='promotion-batch-form')
+        self.assertTemplateUsed(response, 'includes/dialog_base.html')
+        self.assertContains(response, 'id="promotion-batch-form"')
+        self.assertContains(response, 'hx-select="#promotion-batch-form"')
+        self.assertContains(response, 'hx-target="#configuration-dialog-content"')
+        self.assertEqual(list(response.context['form'].fields['destination_year'].queryset), [self.next_year])

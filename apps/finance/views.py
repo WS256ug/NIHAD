@@ -1,3 +1,4 @@
+from apps.reports.formatting import report_number
 from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -138,7 +139,7 @@ def payment_list(request):
 def receipt_response(request, payment, output='html', can_manage=False):
     if output == 'pdf':
         data = payment.receipt
-        details = [('Student', f"{data['student']} / {data['registration_number']} / {data['class']} {data['stream']}"), ('Period and fee', f"{data['year']} / {data['term']} / {data['description']}"), ('Balance', f'Previous balance: {payment.previous_balance} · New balance: {payment.new_balance}'), ('Recorded by', data['recorded_by'])]
+        details = [('Student', f"{data['student']} / {data['registration_number']} / {data['class']} {data['stream']}"), ('Period and fee', f"{data['year']} / {data['term']} / {data['description']}"), ('Balance', f'Previous balance: {report_number(payment.previous_balance)} · New balance: {report_number(payment.new_balance)}'), ('Recorded by', data['recorded_by'])]
         if hasattr(payment, 'reversal'):
             details.append(('REVERSED', payment.reversal.reason))
         response = HttpResponse(document_pdf(data['school'], f"Receipt {payment.receipt_number} / {data['currency']}", ['Date', 'Method', 'Reference', 'Amount'], [[payment.date, payment.get_method_display(), payment.reference, payment.amount]], details), content_type='application/pdf')

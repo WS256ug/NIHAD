@@ -50,7 +50,7 @@ def record_payment(charge, data, actor):
     charge = FeeCharge.objects.select_for_update().get(pk=charge.pk, enrollment__student__school=school)
     existing = Payment.objects.filter(request_key=data['request_key']).first()
     if existing:
-        same = existing.created_by_id == actor.pk and existing.charge_id == charge.pk and all(getattr(existing, field) == data[field] for field in ('amount', 'date', 'method', 'reference', 'notes'))
+        same = existing.created_by_id == actor.pk and existing.charge_id == charge.pk and all(getattr(existing, field) == data[field] for field in ('amount', 'date', 'method', 'notes'))
         if not same:
             raise ValidationError('This payment request was already used with different details. Reload the form.')
         return existing
@@ -63,7 +63,7 @@ def record_payment(charge, data, actor):
     receipt_number = f"REC-{data['date'].year}-{counter.last_value:06d}"
     enrollment = charge.enrollment
     snapshot = {'school': school.name, 'student': enrollment.student.full_name, 'registration_number': enrollment.student.student_id, 'class': enrollment.academic_class.name, 'stream': enrollment.stream.name if enrollment.stream_id else '', 'year': enrollment.academic_year.name, 'term': charge.structure.term.name, 'description': charge.description, 'currency': charge.currency, 'recorded_by': actor.get_full_name() or actor.username}
-    record = Payment(charge=charge, **{field: data[field] for field in ('amount', 'date', 'method', 'reference', 'notes', 'request_key')}, receipt_number=receipt_number, previous_balance=balance, new_balance=balance-data['amount'], receipt=snapshot)
+    record = Payment(charge=charge, **{field: data[field] for field in ('amount', 'date', 'method', 'notes', 'request_key')}, reference=f"PAY-{data['date'].year}-{counter.last_value:06d}", receipt_number=receipt_number, previous_balance=balance, new_balance=balance-data['amount'], receipt=snapshot)
     return write_record(record, actor, 'Recorded payment and issued receipt.')
 
 

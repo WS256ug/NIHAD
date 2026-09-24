@@ -43,9 +43,9 @@ def roster(request, pk):
     marks = {mark.enrollment_id: mark for mark in Mark.objects.filter(assessment=assessment, subject=assignment.subject, enrollment__in=enrollments).select_related("level")} if assignment else {}
     submission = assessment.mark_submissions.filter(assignment=assignment).first() if assignment else None
     reviewer = has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
-    editable = bool(assignment and assessment.status == "open" and has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.TEACHER) and (not submission or submission.status in ("draft", "returned")))
+    editable = bool(assignment and assessment.status == "open" and has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.TEACHER) and (not assessment.requires_mark_review or not submission or submission.status in ("draft", "returned")))
     reviewing = request.method == "POST" and "review-action" in request.POST
-    if request.method == "POST" and (not assignment or (reviewing and not reviewer) or (not reviewing and not editable)):
+    if request.method == "POST" and (not assignment or (reviewing and (not reviewer or not assessment.requires_mark_review)) or (not reviewing and not editable)):
         raise PermissionDenied
     rows = [SheetRowForm(request.POST if request.method == "POST" and not reviewing else None,
                          assessment=assessment, enrollment=enrollment, mark=marks.get(enrollment.pk)) for enrollment in enrollments]
@@ -94,7 +94,7 @@ def roster(request, pk):
         "can_close_marks": can_close_marks,
         "assessment": assessment, "assignments": assignments, "assignment": assignment,
         "rows": rows, "control": control, "review_form": review, "submission": submission,
-        "can_edit": editable, "can_review": reviewer and assessment.status == "open" and submission and submission.status in ("submitted", "approved"),
+        "can_edit": editable, "can_review": assessment.requires_mark_review and reviewer and assessment.status == "open" and submission and submission.status in ("submitted", "approved"),
         "can_manage_academics": can_manage_academics(request.user),
         "unassigned_subjects": Subject.objects.filter(section_id=assessment.academic_class.section_id).exclude(pk__in=all_sheet_assignments(assessment).values("subject_id")) if reviewer else Subject.objects.none(),
         "completed": len(marks), "total": len(enrollments),
@@ -148,4 +148,4 @@ def assessment_status(request, pk, status):
             return form_redirect(request, "academics:marks", pk=pk)
     return form_page(request, form, "Close marks entry?" if status == "closed" else f"Open marks: {assessment}", reverse("academics:marks", args=[pk]),
                      submit_label="Close marks entry" if status == "closed" else "Open marks entry",
-                     explanation=f"{assessment}. All subject sheets must be approved. Marks will be locked for this assessment." if status == "closed" else "")
+                     explanation=(f"{assessment}. " + ("All subject sheets must be approved. " if assessment.requires_mark_review else "Complete all subject sheets. ") + "Marks will be locked for this assessment.") if status == "closed" else "")

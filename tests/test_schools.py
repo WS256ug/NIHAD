@@ -445,7 +445,7 @@ class ConfigurationViewTests(SchoolTestCase):
         self.school.refresh_from_db()
         self.assertNotEqual(self.school.name, "Missing required fields")
         self.assertEqual(self.client.get(reverse("admin:schools_school_add")).status_code, 403)
-        self.assertEqual(self.client.post(reverse("admin:schools_school_delete", args=[self.school.pk]), {"post": "yes"}).status_code, 403)
+        self.assertEqual(self.client.post(reverse("admin:schools_school_delete", args=[self.school.pk]), {"post": "yes"}).status_code, 200)
 
 
 class InitialSchoolSetupTests(AccountTestCase):

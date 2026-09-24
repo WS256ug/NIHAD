@@ -40,7 +40,6 @@ class PaymentForm(forms.Form):
     amount = forms.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal('.01'))
     date = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date'}))
     method = forms.ChoiceField(choices=PaymentMethod.choices)
-    reference = forms.CharField(max_length=100, required=False)
     notes = forms.CharField(max_length=2000, required=False, widget=forms.Textarea(attrs={'rows': 3}))
     request_key = forms.UUIDField(widget=forms.HiddenInput, initial=uuid4)
     confirm = forms.BooleanField(label='Confirm the payment has been received')

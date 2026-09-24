@@ -248,8 +248,53 @@ class MarkSheetTests(ReportTestCase):
         self.assertContains(response, "Mary Wasswa")
         self.assertNotContains(response, "Sarah Second")
 
-    def test_new_assessments_require_review_by_default(self):
-        self.assertTrue(self.assessment._meta.get_field("requires_mark_review").default)
+    def test_new_assessments_disable_review_by_default(self):
+        self.assertFalse(self.assessment._meta.get_field("requires_mark_review").default)
+
+    def test_review_off_saves_closes_and_generates_without_submission(self):
+        self.assessment.requires_mark_review = False
+        self.assessment.save(update_fields=["requires_mark_review"])
+        self.assertNotContains(self.client.get(self.url), "Submit for review")
+        values = {self.enrollment.pk: {"score": "80"}, self.second_enrollment.pk: {"score": "70"}}
+        forged = self.client.post(self.url, self.payload("submit", values))
+        self.assertEqual(forged.status_code, 200)
+        self.assertFalse(Mark.objects.exists())
+        self.assertEqual(self.client.post(self.url, self.payload("save", values)).status_code, 302)
+        self.assessment.refresh_from_db()
+        self.assertFalse(self.assessment.requires_mark_review)
+        self.assertEqual(MarkSubmission.objects.get().status, "draft")
+        self.client.force_login(self.actor)
+        self.assertTrue(self.client.get(self.url).context["can_close_marks"])
+        response = self.client.post(reverse("academics:assessment_close", args=[self.assessment.pk]), {})
+        self.assertEqual(response.status_code, 302)
+        self.assessment.refresh_from_db()
+        self.assertEqual(self.assessment.status, "closed")
+        self.assertEqual(len(generate_reports(self.assessment, self.actor)), 2)
+
+    def test_review_toggle_is_editable_and_old_submissions_do_not_lock_when_off(self):
+        from apps.academics.forms import AssessmentForm
+        from apps.academics.services import save_academic
+        self.submit()
+        def toggle(enabled):
+            self.assessment.refresh_from_db()
+            data = {"assessment_type": self.assessment.assessment_type_id, "term": self.term.pk,
+                    "academic_class": self.academic_class.pk, "stream": self.assessment.stream_id or "",
+                    "date": self.assessment.date, "maximum_score": self.assessment.maximum_score,
+                    "requires_mark_review": enabled}
+            form = AssessmentForm(data, instance=self.assessment, school=self.school, actor=self.actor)
+            self.assertTrue(form.is_valid(), form.errors)
+            save_academic(form, self.actor)
+        toggle(False)
+        self.assertTrue(self.client.get(self.url).context["can_edit"])
+        self.assertEqual(self.client.post(self.url, self.payload("save", {self.enrollment.pk: {"score": "81"}})).status_code, 302)
+        self.assertEqual(MarkSubmission.objects.get().status, "draft")
+        self.client.force_login(self.actor)
+        self.assertEqual(self.review().status_code, 403)
+        toggle(True)
+        self.client.force_login(self.teacher.user)
+        self.assertContains(self.client.get(self.url), "Submit for review")
+        self.assertEqual(self.client.post(self.url, self.payload("submit")).status_code, 302)
+        self.assertEqual(self.review().status_code, 302)
 
 
 @override_settings(DEBUG=True, PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])

@@ -198,7 +198,7 @@ class Assessment(AuditedModel):
     maximum_score = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal("100"), validators=[MinValueValidator(Decimal("0.01"))])
     grading_scheme = models.ForeignKey("GradingScheme", on_delete=models.PROTECT, null=True, blank=True, related_name="assessments")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
-    requires_mark_review = models.BooleanField(default=True, editable=False)
+    requires_mark_review = models.BooleanField(default=False, verbose_name="Require marks review", help_text="Enable submission and approval of subject marks before closing the assessment.")
 
     class Meta:
         ordering = ("-date", "pk")

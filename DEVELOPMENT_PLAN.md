@@ -449,3 +449,24 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Enabled audited superuser create/update operations for school structure, subjects, assessment types and guardian contact details. Model validation still runs.
 - Delete is limited to unused configuration; school deletion and records with dependencies are blocked. Workflow/financial/history models remain read-only. Guardian account links cannot be edited here.
 - Added tests for real admin create/update/delete, audit ownership and protected permissions. Next milestone: browser verification of admin forms.
+
+
+## Full superuser CRUD administration
+
+- Enabled active superusers to create, view, update and delete all registered domain records at `/admin/`, including financial and historical records, as requested. Bulk deletion uses Django's confirmation and audit logging.
+- Superuser admin corrections may change previously immutable fields; ordinary workspace services retain their existing history and financial restrictions. Field validation, database constraints, protected relationships and the single-school rule still apply.
+- Admin student creation allocates unique registration numbers transactionally; assignment sections and new expense/income metadata are populated automatically. Guardian account provisioning stays disabled and student photos remain managed through the student workspace.
+- Verification: all 263 Django tests pass, including actual financial CRUD, student number allocation and superuser/non-superuser permissions. Django system and migration-drift checks pass.
+- Next milestone: browser verification of the expanded admin forms and correction workflows.
+
+
+## Optional marks review, generated references and forward promotions
+
+- Marks review is off by default and disabled for existing assessments by migration 0005. Administrators can enable Require marks review when editing an assessment. Saving marks no longer enables review automatically; disabled review hides submission/review actions and rejects forged review requests. Completed sheets can close and generate reports without approval while review is off.
+- Payment recording generates sequential PAY-year-number references transactionally alongside receipts. References are no longer entered on the payment form; repeated requests return the same payment/reference.
+- Promotion destination choices include only later active academic years and higher configured classes. Section order followed by class order defines progression, with form/model/service enforcement. Repetition continues in the source class in a later year. Dependent choices refresh inside both full-page and dialog forms.
+- Configured the existing local PRIMARY ONE and PRIMARY TWO class orders as 1 and 2; both were previously 0.
+- Numeric inputs, financial displays and report/receipt output trim unnecessary decimal zeros without changing stored Decimal values or removing fractional precision.
+- Applied the review-default migration locally. Browser verification could not run because no browser is connected; automated tests cover form refresh responses and preserved dialog submission attributes.
+- Next milestone: browser verification of promotion dropdown changes and the optional review checkbox when a browser is connected.
+- Final verification: all 270 Django tests pass; system checks, migration-drift check and diff check pass.

@@ -69,6 +69,7 @@ class AcademicClassForm(ConfigurationForm):
     class Meta:
         model = AcademicClass
         fields = ("section", "name", "sort_order")
+        help_texts = {"sort_order": "Class progression order within this section. Higher numbers are higher classes for promotion."}
 
 
 class StreamForm(ConfigurationForm):

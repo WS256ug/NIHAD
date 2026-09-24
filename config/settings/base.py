@@ -64,6 +64,7 @@ TEMPLATES = [
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
+            "builtins": ["apps.reports.templatetags.report_numbers"],
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
@@ -127,3 +128,5 @@ LOGGING = {
 
 # Guardian records are contacts; families use student portal credentials.
 GUARDIAN_ACCOUNTS_ENABLED = False
+
+FORM_RENDERER = "config.forms.CompactNumberRenderer"

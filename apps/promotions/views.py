@@ -1,4 +1,4 @@
-from config.dialogs import form_redirect
+from config.dialogs import form_redirect, is_dialog_request
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
@@ -30,12 +30,13 @@ def batch_list(request):
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def batch_create(request):
-    form = BatchForm(request.POST if request.method == 'POST' else None)
+    dialog = is_dialog_request(request) or (request.headers.get('HX-Request') == 'true' and request.GET.get('dialog') == '1')
+    form = BatchForm(request.POST if request.method == 'POST' else None, initial=request.GET.dict() if request.method == 'GET' else None, dialog=dialog)
     if request.method == 'POST' and form.is_valid():
         batch = attempt(form, lambda: create_batch(form, request.user))
         if batch:
             return form_redirect(request, 'promotions:edit', pk=batch.pk)
-    return form_page(request, form, 'Create promotion batch', reverse('promotions:list'), explanation='Choose the source class and year. Set a later destination year for promotion or repetition. Transfer, withdrawal and graduation close the source enrollment without creating a new one.')
+    return form_page(request, form, 'Create promotion batch', reverse('promotions:list'), form_id='promotion-batch-form', is_form_dialog=dialog, form_base_template='includes/dialog_base.html' if dialog else 'base.html', explanation='Choose the source class and year. Set a later destination year for promotion or repetition. Transfer, withdrawal and graduation close the source enrollment without creating a new one.')
 
 
 @role_required(*ROLES)

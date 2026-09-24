@@ -80,7 +80,7 @@ def save_mark(form, actor):
     assignment = mark_assignment(assessment, proposed.enrollment, proposed.subject, actor)
     if assignment is None:
         raise PermissionDenied
-    if MarkSubmission.objects.filter(assessment=assessment, assignment=assignment, status__in=["submitted", "approved"]).exists():
+    if assessment.requires_mark_review and MarkSubmission.objects.filter(assessment=assessment, assignment=assignment, status__in=["submitted", "approved"]).exists():
         raise ValidationError("This marks sheet is locked. A reviewer must return it for correction before marks can change.")
     existing = Mark.objects.select_for_update().filter(assessment=assessment, enrollment_id=proposed.enrollment_id, subject_id=proposed.subject_id).first()
     expected = form.cleaned_data["expected_revision"]

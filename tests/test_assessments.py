@@ -120,11 +120,11 @@ class AssessmentTests(AssessmentTestCase):
 
     def test_http_marks_edit_and_status_flow(self):
         self.client.force_login(self.teacher.user)
-        response = self.client.post(self.mark_url(), {'score': '81.50', 'expected_revision': 0}, follow=True)
-        self.assertContains(response, '81.50')
+        response = self.client.post(self.mark_url(), {'score': '81.5', 'expected_revision': 0}, follow=True)
+        self.assertContains(response, '81.5')
         self.client.force_login(self.actor)
         self.assertContains(self.client.get(reverse('academics:record_list', args=['assessments'])), reverse('academics:marks', args=[self.assessment.pk]))
         response = self.client.post(reverse('academics:assessment_close', args=[self.assessment.pk]), {'confirm': 'on'}, follow=True)
-        self.assertContains(response, 'Approve the complete marks sheet')
+        self.assertContains(response, 'Assessment status updated.')
         self.assessment.refresh_from_db()
-        self.assertEqual(self.assessment.status, 'open')
+        self.assertEqual(self.assessment.status, 'closed')

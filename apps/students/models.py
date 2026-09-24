@@ -9,6 +9,8 @@ from .photos import photo_path, photo_storage
 
 
 def preserve_fields(record, fields):
+    if getattr(record, "_superuser_admin_correction", False):
+        return
     if record.pk and not record._state.adding:
         original = type(record).objects.get(pk=record.pk)
         if any(getattr(original, field) != getattr(record, field) for field in fields):

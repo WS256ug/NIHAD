@@ -90,7 +90,7 @@ class WorkspaceDialogTests(ReportTestCase):
     def test_promotion_creation_continues_to_decisions_and_preview_in_dialog(self):
         data = {"source_year": self.year.pk, "source_class": self.academic_class.pk,
                 "source_stream": "", "completion_date": "2026-12-31",
-                "destination_year": self.next_year.pk, "destination_class": self.academic_class.pk,
+                "destination_year": self.next_year.pk, "destination_class": "",
                 "destination_stream": "", "enrollment_date": "2027-01-02"}
         response = self.client.post(reverse("promotions:create"), data, **HEADERS)
         self.assertEqual(response.status_code, 204)

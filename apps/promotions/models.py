@@ -4,6 +4,11 @@ from apps.schools.models import AuditedModel
 from apps.students.models import preserve_fields
 
 
+def higher_classes(source):
+    """Progress follows configured section order, then class order."""
+    return models.Q(section_id=source.section_id, sort_order__gt=source.sort_order) | models.Q(section__sort_order__gt=source.section.sort_order)
+
+
 class PromotionBatch(AuditedModel):
     source_year = models.ForeignKey('schools.AcademicYear', on_delete=models.PROTECT, related_name='outgoing_batches')
     source_class = models.ForeignKey('schools.AcademicClass', on_delete=models.PROTECT, related_name='outgoing_batches')
@@ -46,6 +51,8 @@ class PromotionBatch(AuditedModel):
             raise ValidationError('Choose a destination year for new enrollments.')
         if self.destination_class_id and (self.destination_class.section.school_id != self.source_year.school_id or not self.destination_class.is_active or not self.destination_class.section.is_active):
             raise ValidationError('Choose an active destination class from this school.')
+        if self.destination_class_id and not type(self.source_class).objects.filter(pk=self.destination_class_id).filter(higher_classes(self.source_class)).exists():
+            raise ValidationError({'destination_class': 'Choose a higher class using the configured section and class order.'})
         if self.destination_stream_id and (self.destination_stream.academic_class_id != self.destination_class_id or not self.destination_stream.is_active):
             raise ValidationError('Choose an active stream from the destination class.')
 

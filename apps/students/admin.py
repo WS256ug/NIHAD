@@ -5,12 +5,17 @@ from .models import Enrollment, Guardian, Student, StudentGuardian
 
 @admin.register(Student, Guardian, StudentGuardian, Enrollment)
 class StudentRecordAdmin(ConfigurationAdmin):
-    """Read-only inspection; validated writes and protected photos use the portal."""
+    """Superuser record management; protected photos use the student workspace."""
     list_display = ("__str__", "updated_at")
     search_fields = ()
     exclude = ("photo",)
 
-    def get_readonly_fields(self, request, obj=None):
-        if self.model is Guardian:
-            return super().get_readonly_fields(request, obj)
-        return [field.name for field in self.model._meta.fields if field.name != "photo"]
+    def save_model(self, request, obj, form, change):
+        if isinstance(obj, Student) and not change:
+            from django.db.models import F
+            from .models import StudentNumber
+            counter, _ = StudentNumber.objects.select_for_update().get_or_create(school=obj.school)
+            StudentNumber.objects.filter(pk=counter.pk).update(last_value=F("last_value") + 1)
+            counter.refresh_from_db()
+            obj.student_id = f"STD-{counter.last_value:06d}"
+        super().save_model(request, obj, form, change)

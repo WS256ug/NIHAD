@@ -5,7 +5,7 @@ from apps.accounts.models import User
 from apps.accounts.permissions import has_role
 from apps.schools.services import lock_school, write_record
 from apps.students.models import Enrollment, Student
-from .models import PromotionBatch, PromotionDecision
+from .models import PromotionBatch, PromotionDecision, higher_classes
 
 
 def can_manage_promotions(actor):
@@ -30,8 +30,10 @@ def destination(batch, enrollment, decision):
             raise ValidationError('Promotion and repetition require a destination year and enrollment date.')
         classroom = enrollment.academic_class if decision == 'repeating' else batch.destination_class
         stream = enrollment.stream if decision == 'repeating' else batch.destination_stream
-        if classroom is None or (decision == 'promoted' and classroom.pk == enrollment.academic_class_id):
-            raise ValidationError('Choose a different destination class for promotion, or use Repeat.')
+        if batch.destination_year.start_date <= enrollment.academic_year.end_date:
+            raise ValidationError('Choose a destination year after the source year.')
+        if classroom is None or (decision == 'promoted' and not type(classroom).objects.filter(pk=classroom.pk).filter(higher_classes(enrollment.academic_class)).exists()):
+            raise ValidationError('Choose a higher destination class for promotion, or use Repeat.')
         return classroom, stream
     return None, None
 

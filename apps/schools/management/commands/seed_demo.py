@@ -118,6 +118,8 @@ class Command(BaseCommand):
                 review = SheetReviewForm({'action': 'approve', 'note': 'Demo marks checked.', 'revision': submission.revision})
                 if not review.is_valid():
                     raise CommandError(str(review.errors))
+                assessment.requires_mark_review = True
+                assessment.save(update_fields=["requires_mark_review"])
                 review_sheet(assessment, assignment, review, users[User.Role.HEADTEACHER])
             assessment = set_assessment_status(assessment, 'closed', actor)
             for report in generate_reports(assessment, actor):
