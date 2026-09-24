@@ -87,7 +87,7 @@ class AssessmentTypeForm(forms.ModelForm):
 class AssessmentForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score", "grading_scheme")
+        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,10 +104,16 @@ class AssessmentForm(forms.ModelForm):
                 self.fields[name].queryset = queryset.model.objects.filter(pk=getattr(self.instance, name + "_id"))
         if self.is_bound and not self.instance.pk:
             self.fields["stream"].queryset = self.fields["stream"].queryset.filter(academic_class_id=selected_pk(self.data.get("academic_class")))
-        self.fields["grading_scheme"].queryset = GradingScheme.objects.filter(section__school=school, is_active=True)
-        if self.instance.pk and self.instance.grading_scheme_id and self.instance.marks.exists():
-            self.fields["grading_scheme"].disabled = True
         set_date_widgets(self)
+
+    def clean(self):
+        from .section_grades import current_scheme
+        data = super().clean()
+        academic_class = data.get("academic_class")
+        if academic_class and not self.instance.grading_scheme_id:
+            scheme = current_scheme(academic_class.section)
+            self.instance.grading_scheme = scheme if scheme and scheme.is_active else None
+        return data
 
 
 class MarkForm(forms.ModelForm):
@@ -115,7 +121,7 @@ class MarkForm(forms.ModelForm):
 
     class Meta:
         model = Mark
-        fields = ("score", "level")
+        fields = ("score", "level", "is_absent")
 
     def __init__(self, *args, assessment, enrollment, subject, assignment, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,10 +133,11 @@ class MarkForm(forms.ModelForm):
         if assessment.grading_scheme_id and assessment.grading_scheme.mode == "descriptive":
             self.fields.pop("score")
             self.fields["level"].queryset = assessment.grading_scheme.rules.all()
-            self.fields["level"].required = True
+            self.fields["level"].label_from_instance = lambda level: level.label
+            self.fields["level"].required = False
         else:
             self.fields.pop("level")
-            self.fields["score"].required = True
+            self.fields["score"].required = False
             self.fields["score"].min_value = 0
             self.fields["score"].max_value = assessment.maximum_score
             self.fields["score"].widget.attrs.update(min=0, max=assessment.maximum_score, step="0.01")
@@ -173,10 +180,62 @@ class GradeRuleForm(GradingRuleForm):
     class Meta:
         model = GradeRule
         fields = ("scheme", "label", "minimum", "maximum", "points", "sort_order")
-        help_texts = {"minimum": "Percentage included in this grade. Leave blank for descriptive levels.", "maximum": "Upper boundary excluded, except 100 which is included. Example: 80 to 100.", "points": "Aggregate points; leave blank for descriptive levels."}
+        help_texts = {"minimum": "Percentage included in this grade. Leave blank for descriptive levels.", "maximum": "Consecutive whole-number ranges include decimals up to the next grade: 80-89 means below 90. Shared boundaries start the next grade; 100 is included.", "points": "Aggregate points; leave blank for descriptive levels."}
 
 
 class DivisionRuleForm(GradingRuleForm):
     class Meta:
         model = DivisionRule
         fields = ("scheme", "label", "minimum", "maximum")
+
+
+class SectionGradeForm(forms.Form):
+    section = forms.ModelChoiceField(queryset=Section.objects.none())
+    label = forms.CharField(max_length=60, label="Grade", help_text="For example, D1, Excellent or Achieved.")
+    minimum = forms.DecimalField(required=False, min_value=0, max_value=100, decimal_places=2, max_digits=5, label="From (%)", help_text="Leave both percentages blank for a descriptive learning level.")
+    maximum = forms.DecimalField(required=False, min_value=0, max_value=100, decimal_places=2, max_digits=5, label="Up to (%)", help_text="For 80-89 followed by 90-100, marks below 90 belong to 80-89. Shared boundaries start the next grade; 100% is included.")
+    points = forms.IntegerField(required=False, min_value=0, max_value=32767, help_text="Optional aggregate points, such as 1 for D1.")
+    sort_order = forms.IntegerField(min_value=0, initial=0, label="Display order")
+    rule_model = GradeRule
+    rule_fields = ("label", "minimum", "maximum", "points", "sort_order")
+
+    def __init__(self, *args, school, actor, instance=None, **kwargs):
+        self.instance = instance
+        if instance:
+            kwargs["initial"] = {"section": instance.scheme.section_id, **{field: getattr(instance, field) for field in self.rule_fields}}
+        super().__init__(*args, **kwargs)
+        self.fields["section"].queryset = Section.objects.filter(school=school, is_active=True)
+        if instance:
+            self.fields["section"].disabled = True
+
+    def clean(self):
+        data = super().clean()
+        low, high = data.get("minimum"), data.get("maximum")
+        descriptive = low is None and high is None
+        data["mode"] = "descriptive" if descriptive else "numeric"
+        if not descriptive and (low is None or high is None or low >= high):
+            raise forms.ValidationError("Enter both percentages, with From lower than Up to.")
+        if descriptive and data.get("points") is not None:
+            raise forms.ValidationError("Descriptive learning levels use a label and display order, without points.")
+        return data
+
+
+class SectionDivisionForm(SectionGradeForm):
+    rule_model = DivisionRule
+    rule_fields = ("label", "minimum", "maximum")
+    minimum = forms.IntegerField(min_value=0, label="Lowest aggregate")
+    maximum = forms.IntegerField(min_value=0, label="Highest aggregate")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("points")
+        self.fields.pop("sort_order")
+        self.fields["label"].label = "Division"
+        self.fields["label"].help_text = "For example, Division I. Ranges include both endpoints."
+
+    def clean(self):
+        data = forms.Form.clean(self)
+        data["mode"] = "numeric"
+        if data.get("minimum") is not None and data.get("maximum") is not None and data["minimum"] > data["maximum"]:
+            raise forms.ValidationError("Lowest aggregate must not exceed highest aggregate.")
+        return data

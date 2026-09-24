@@ -1,10 +1,12 @@
+from django.conf import settings
+from config.dialogs import form_redirect
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
@@ -124,10 +126,12 @@ class GuardianAccessForm(PortalAccessForm):
 @require_http_methods(['GET', 'POST'])
 @sensitive_post_parameters('new_password1', 'new_password2')
 def access(request, pk):
+    if not settings.GUARDIAN_ACCOUNTS_ENABLED:
+        raise PermissionDenied("Separate guardian accounts are disabled. Use student portal access.")
     guardian = get_object_or_404(Guardian.objects.select_related('user'), pk=pk, school_id=1)
     user = guardian.user or User(role=User.Role.GUARDIAN, first_name=guardian.first_name, last_name=guardian.last_name)
     form = GuardianAccessForm(user, request.POST if request.method == 'POST' else None, guardian=guardian, initial={'is_active': user.is_active})
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: set_guardian_access(guardian, form.cleaned_data, request.user)):
         messages.success(request, 'Guardian account saved. Share the individual username and temporary password securely.')
-        return redirect('students:guardian_detail', pk=pk)
+        return form_redirect(request, 'students:guardian_detail', pk=pk)
     return form_page(request, form, f'Guardian account: {guardian}', reverse('students:guardian_detail', args=[pk]), explanation='This guardian uses their own account to see actively linked children. A password change is required at first sign-in.')

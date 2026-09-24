@@ -143,3 +143,45 @@ Promotion batch → individual decisions and new enrollment records.
 Use `settings.AUTH_USER_MODEL` for user foreign keys, protect referenced history,
 use `DecimalField` for money and wrap related financial or promotion writes in
 transactions. Detailed domain schemas will be added in their implementation phases.
+
+
+## Internal section grade versions
+
+GradingScheme, GradeRule and DivisionRule remain unchanged in the database.
+The newest scheme by primary key in a section is its current configuration,
+including incomplete drafts. Workspace lists show only that version's rules.
+Editing an active, used or assessment-linked version copies its grades, divisions,
+aggregation settings and required subjects within the school transaction lock.
+Older assessments keep their foreign keys. Incomplete unreferenced versions can
+be edited directly; complete versions activate automatically. No schema migration
+is required. New sections start without aggregates; adding divisions requires
+points on every grade and enables all-subject aggregation. Existing aggregation
+policies are preserved when copying versions.
+
+
+## Marks sheet review and absence
+
+Migration academics.0004 adds Mark.is_absent and updates the value constraint:
+absent marks have neither score nor level; other marks have exactly one.
+Assessment.requires_mark_review defaults to true for new assessments; migration
+preserves false for existing records. Saving a sheet enables review for it.
+
+MarkSubmission is unique by assessment and teaching assignment. It stores a
+status (draft/submitted/approved/returned), optimistic revision, submitter/reviewer
+and timestamps, review note, and a JSON snapshot of enrollment IDs and mark
+revisions. Audit events preserve transitions. Approval and downstream report
+checks compare the saved snapshot against the current eligible roster/results.
+Report correction returns submitted/approved sheets while preserving prior report
+snapshots. Absent numeric results do not contribute an overall result or ranking.
+
+
+## Guardian contacts and student portal (2026-09-24)
+
+This supersedes earlier independent guardian-account requirements. Guardian
+names, phone numbers, NIN, email, addresses and student relationships remain.
+Parents use each child's registration number and student portal password;
+siblings require separate sign-ins. Staff manage access from the student profile.
+Separate guardian login, sessions and account provisioning are disabled by default
+(`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
+for historical integrity. Registration creates contacts without login accounts.
+Report publication, student isolation and fee-clearance checks remain enforced.

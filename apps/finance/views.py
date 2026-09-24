@@ -1,8 +1,9 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
@@ -65,7 +66,7 @@ def structure_form(request, pk=None):
     form = FeeStructureForm(request.POST if request.method == 'POST' else None, instance=record)
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: services.save_structure(form, request.user)):
         messages.success(request, 'Fee structure saved.')
-        return redirect('finance:structures')
+        return form_redirect(request, 'finance:structures')
     return form_page(request, form, 'Edit fee structure' if pk else 'Create fee structure', reverse('finance:structures'), explanation='Once assigned to students, the amount and description are preserved. Create a new structure for different fees.')
 
 
@@ -76,7 +77,7 @@ def structure_status(request, pk, active):
     record = get_object_or_404(FeeStructure, pk=pk, term__academic_year__school_id=1)
     form = ConfigurationStatusForm(request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: services.set_structure_active(record, active, request.user)):
-        return redirect('finance:structures')
+        return form_redirect(request, 'finance:structures')
     return form_page(request, form, 'Activate fee structure' if active else 'Deactivate fee structure', reverse('finance:structures'), explanation=str(record))
 
 
@@ -89,7 +90,7 @@ def charge_form(request):
         charge = attempt(form, lambda: services.assign_charge(form.cleaned_data['enrollment'], form.cleaned_data['structure'], request.user))
         if charge:
             messages.success(request, 'Student fees assigned.')
-            return redirect('finance:statement', pk=charge.enrollment.student_id)
+            return form_redirect(request, 'finance:statement', pk=charge.enrollment.student_id)
     return form_page(request, form, 'Assign student fees', reverse('finance:overview'))
 
 
@@ -119,7 +120,7 @@ def payment_form(request, pk):
         payment = attempt(form, lambda: services.record_payment(charge, form.cleaned_data, request.user))
         if payment:
             messages.success(request, 'Payment recorded and receipt issued.')
-            return redirect('finance:receipt', pk=payment.pk)
+            return form_redirect(request, 'finance:receipt', pk=payment.pk)
     return form_page(request, form, 'Record payment', reverse('finance:statement', args=[charge.enrollment.student_id]), explanation=f'{charge.enrollment.student.full_name} / {charge.description}. Remaining on this charge: {charge.currency} {charge_balance(charge)}.')
 
 
@@ -164,5 +165,5 @@ def reverse_record(request, pk, kind):
         service = services.reverse_payment if kind == 'payment' else services.cancel_charge
         if attempt(form, lambda: service(record, form.cleaned_data['reason'], request.user)):
             messages.success(request, 'Reversal recorded. Original history is preserved.')
-            return redirect('finance:statement', pk=student.pk)
+            return form_redirect(request, 'finance:statement', pk=student.pk)
     return form_page(request, form, 'Reverse payment' if kind == 'payment' else 'Cancel fee charge', reverse('finance:statement', args=[student.pk]), explanation=str(record))

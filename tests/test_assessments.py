@@ -21,7 +21,8 @@ class AssessmentTestCase(AcademicTestCase):
         self.enrollment = self.enroll(stream=self.stream.pk)
         self.assignment = self.assign(stream=self.stream.pk)
         self.assessment_type = AssessmentType.objects.create(school=self.school, name='Mid-Term')
-        self.assessment = Assessment.objects.create(assessment_type=self.assessment_type, term=self.term, academic_class=self.academic_class, date=date(2026, 3, 1), status='open')
+        # Existing assessments retain their pre-sheet workflow after migration.
+        self.assessment = Assessment.objects.create(assessment_type=self.assessment_type, term=self.term, academic_class=self.academic_class, date=date(2026, 3, 1), status='open', requires_mark_review=False)
 
     def mark_form(self, score='75.00', instance=None, revision=None):
         return MarkForm({'score': score, 'expected_revision': revision if revision is not None else instance.revision if instance else 0}, instance=instance, assessment=self.assessment, enrollment=self.enrollment, subject=self.subject, assignment=self.assignment)
@@ -124,4 +125,6 @@ class AssessmentTests(AssessmentTestCase):
         self.client.force_login(self.actor)
         self.assertContains(self.client.get(reverse('academics:record_list', args=['assessments'])), reverse('academics:marks', args=[self.assessment.pk]))
         response = self.client.post(reverse('academics:assessment_close', args=[self.assessment.pk]), {'confirm': 'on'}, follow=True)
-        self.assertContains(response, 'Marks closed')
+        self.assertContains(response, 'Approve the complete marks sheet')
+        self.assessment.refresh_from_db()
+        self.assertEqual(self.assessment.status, 'open')

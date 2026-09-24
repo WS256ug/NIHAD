@@ -1,9 +1,10 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Max, Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
@@ -82,7 +83,7 @@ def assessment_action(request, pk, action):
         operation = (lambda: services.begin_correction(assessment, form.cleaned_data['reason'], request.user)) if action == 'correct' else (lambda: services.generate_reports(assessment, request.user))
         if attempt(form, operation):
             messages.success(request, 'Correction revision opened.' if action == 'correct' else 'Reports generated. Class teachers can now add comments.')
-            return redirect('academics:marks', pk=pk) if action == 'correct' else redirect('reports:list')
+            return form_redirect(request, 'academics:marks', pk=pk) if action == 'correct' else form_redirect(request, 'reports:list')
     title = 'Open report correction' if action == 'correct' else 'Generate assessment reports'
     return form_page(request, form, title, reverse('academics:marks', args=[pk]), explanation=f'{assessment}. All assigned subject marks must be complete. Published versions are preserved.')
 
@@ -114,5 +115,5 @@ def report_action(request, pk, action):
             operation = lambda: services.publish_report(report, request.user)
         if attempt(form, operation):
             messages.success(request, 'Report updated.')
-            return redirect('reports:detail', pk=pk)
+            return form_redirect(request, 'reports:detail', pk=pk)
     return form_page(request, form, title, reverse('reports:detail', args=[pk]), explanation=str(report))

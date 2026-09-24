@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
-{% block title %}{% if activate %}Activate{% else %}Deactivate{% endif %} account{% endblock %}
+{% extends form_base_template %}
+{% block title %}{% if activate %}Activate{% else %}Deactivate{% endif %} {{ account.username }}{% endblock %}
 {% block content %}
 <section class="account-page workspace-card">
   <h1>{% if activate %}Activate{% else %}Deactivate{% endif %} {{ account.username }}?</h1>
   <p>{% if activate %}This account will be able to sign in again.{% else %}This account will lose access to the school portal. Its records will be preserved.{% endif %}</p>
-  <form method="post">
+  <form method="post" {% include "includes/dialog_form_attributes.html" %}>
     {% csrf_token %}
     {% include 'includes/form_fields.html' %}
     <div class="form-actions"><button type="submit">{% if activate %}Activate{% else %}Deactivate{% endif %} account</button><a href="{% url 'accounts:user_list' %}" role="button" class="outline small button">Cancel</a></div>

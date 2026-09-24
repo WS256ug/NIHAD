@@ -65,9 +65,10 @@ same `python -m pip` and `python manage.py` commands. Set environment values in
 .\.venv\Scripts\python.exe manage.py test
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python.exe -m pip check
+node --test tests/js/configuration_dialog.test.cjs
 ```
 
-The 123 tests cover all six roles, login/logout, role access and navigation,
+The Django tests cover all six roles, login/logout, role access and navigation,
 account creation/editing/deactivation, privilege escalation attempts, CSRF,
 password changes, reset expiry/reuse, session invalidation, HTMX responses,
 database constraints, environment settings and school configuration rules. Tests
@@ -75,6 +76,13 @@ use a separate test database. School tests include period/date consistency, pare
 relationships, activation, audit rollback and protected configuration routes.
 Student tests cover permanent IDs, guardian registration/linking, enrollment
 history, private photos, date and uniqueness constraints, role boundaries and CSRF.
+
+Workspace form actions open in dialogs, including student registration, marks,
+payments and promotion steps. Validation stays in the dialog; successful saves
+refresh the current workspace while retaining its filters. Standard form URLs
+still work directly. Dialog tests cover multipart photo uploads, permission and
+CSRF enforcement, payment idempotency, promotion steps and password changes;
+the Node test command verifies dialog events without installing dependencies.
 
 ## School setup
 
@@ -231,3 +239,53 @@ There is no public registration.
 
 See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for progress and
 [FEATURES.md](FEATURES.md) for implemented and planned functionality.
+
+
+## Managing grades
+
+Open Academics > Grades and add a grade for a section. Enter percentage boundaries
+for numeric grades, or leave both percentages and points blank for descriptive
+learning levels. Numeric ranges must cover 0-100 without gaps or overlaps. Grades
+become ready automatically when complete; no grading scheme setup is needed.
+
+You can create assessments before completing grades. Ready grades are attached
+automatically to unconfigured assessments during creation, editing, opening, or
+report generation. Reports require complete grades. Changes apply to future
+assessments; existing configured assessments retain their original grading.
+
+
+## Entering and reviewing marks
+
+Open Academics > Marks entry, choose an open assessment, then select your subject
+and stream. Enter the whole class on one sheet. Use Enter/Shift+Enter to move
+between numeric results, or Tab for normal keyboard navigation.
+
+Save progress keeps unfinished work; Submit for review requires every student to
+have a score, learning level, or explicit Absent selection. Blank is unfinished;
+zero is a valid score. Submitted sheets are locked until a School Admin or
+Headteacher returns them with a correction note. Approved sheets must be complete
+and current before closing a new assessment or generating reports.
+
+Absence appears on reports and does not become zero. A numeric report containing
+an absence has no overall total, average, aggregate, division, or position.
+Existing assessments retain their prior workflow until a sheet is saved; new
+assessments require review. Published-report changes use the correction workflow.
+
+Run marks interaction tests with:
+`node --test tests/js/configuration_dialog.test.cjs tests/js/marks_sheet.test.cjs`.
+
+Consecutive integer grade ranges include decimal marks up to the next grade's minimum: 80-89 followed by 90-100 gives 89.5 the lower grade. Existing shared-boundary ranges keep their meaning. Scores are not rounded before grading.
+
+
+## Guardian contacts and student portal (2026-09-24)
+
+This supersedes earlier independent guardian-account requirements. Guardian
+names, phone numbers, NIN, email, addresses and student relationships remain.
+Parents use each child's registration number and student portal password;
+siblings require separate sign-ins. Staff manage access from the student profile.
+Separate guardian login, sessions and account provisioning are disabled by default
+(`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
+for historical integrity. Registration creates contacts without login accounts.
+Report publication, student isolation and fee-clearance checks remain enforced.
+
+Superusers can open /admin/ directly for configuration management. The workspace no longer has an administration shortcut. School structure, subjects, assessment types and guardian contacts are editable; unused configuration can be deleted. Marks, reports, finance and history remain protected and use their workspace workflows.

@@ -1,5 +1,6 @@
 """Shared role checks and account scope; hiding navigation is never authorization."""
 from functools import wraps
+from django.conf import settings
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -12,6 +13,8 @@ STANDARD_ROLES = (User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, Us
 
 def effective_role(user):
     if not user.is_authenticated or not user.is_active:
+        return None
+    if user.role == User.Role.GUARDIAN and not settings.GUARDIAN_ACCOUNTS_ENABLED:
         return None
     if user.is_superuser:
         return User.Role.SUPER_ADMIN
@@ -59,7 +62,8 @@ def can_manage_school(user):
 def assignable_roles(user):
     if not can_manage_accounts(user):
         return ()
-    return (User.Role.SCHOOL_ADMIN, *STANDARD_ROLES) if user.is_superuser else STANDARD_ROLES
+    roles = STANDARD_ROLES if settings.GUARDIAN_ACCOUNTS_ENABLED else tuple(role for role in STANDARD_ROLES if role != User.Role.GUARDIAN)
+    return (User.Role.SCHOOL_ADMIN, *roles) if user.is_superuser else roles
 
 
 def manageable_accounts(user):

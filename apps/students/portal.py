@@ -1,8 +1,9 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
@@ -64,5 +65,5 @@ def access(request, pk):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: set_portal_access(student, form.cleaned_data["new_password1"], form.cleaned_data["is_active"], request.user)):
             messages.success(request, "Portal access saved. The guardian must change the temporary password on first sign-in.")
-            return redirect("students:detail", pk=pk)
+            return form_redirect(request, "students:detail", pk=pk)
     return form_page(request, form, f"Student portal access: {student.student_id}", reverse("students:detail", args=[pk]), explanation="The guardian signs in with this student registration number and password. Setting a new password invalidates existing sessions.")

@@ -459,15 +459,15 @@ class StudentViewTests(StudentTestCase):
         with patch("apps.students.views.School.objects.first", return_value=None):
             self.assertRedirects(self.client.get(reverse("students:create")), reverse("schools:profile"), fetch_redirect_response=False)
 
-    def test_admin_is_read_only_for_all_new_records(self):
+    def test_admin_protects_student_history_and_allows_guardian_contacts(self):
         enrollment, link = self.enroll(), self.link()
         self.client.force_login(self.users[User.Role.SUPER_ADMIN])
         for model, record in (("student", self.student), ("guardian", self.guardian), ("studentguardian", link), ("enrollment", enrollment)):
             self.assertEqual(self.client.get(reverse(f"admin:students_{model}_changelist")).status_code, 200)
             detail = reverse(f"admin:students_{model}_change", args=[record.pk])
             self.assertEqual(self.client.get(detail).status_code, 200)
-            self.assertEqual(self.client.post(detail, {}).status_code, 403)
-            self.assertEqual(self.client.get(reverse(f"admin:students_{model}_add")).status_code, 403)
+            self.assertEqual(self.client.post(detail, {}).status_code, 200 if model == "guardian" else 403)
+            self.assertEqual(self.client.get(reverse(f"admin:students_{model}_add")).status_code, 200 if model == "guardian" else 403)
             self.assertEqual(self.client.post(reverse(f"admin:students_{model}_delete", args=[record.pk]), {"post": "yes"}).status_code, 403)
 
 

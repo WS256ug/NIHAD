@@ -11,6 +11,11 @@ class InitialPasswordChangeMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        from django.conf import settings
+        from django.contrib.auth import logout
+        if request.user.is_authenticated and request.user.role == "guardian" and not settings.GUARDIAN_ACCOUNTS_ENABLED:
+            logout(request)
+            return redirect("students:portal_login")
         if request.user.is_authenticated and request.user.must_change_password:
             allowed = {reverse("accounts:password_change"), reverse("accounts:logout")}
             if request.path not in allowed and not request.path.startswith("/static/"):

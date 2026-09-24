@@ -32,6 +32,62 @@ class SchoolTestCase(AccountTestCase):
         cls.stream = Stream.objects.create(academic_class=cls.academic_class, name="East")
 
 
+class ConfigurationDialogTests(SchoolTestCase):
+    headers = {"HTTP_HX_REQUEST": "true", "HTTP_HX_TARGET": "configuration-dialog-content"}
+
+    def setUp(self):
+        self.client.force_login(self.actor)
+
+    def test_dialog_loads_all_configuration_forms_and_regular_pages_remain(self):
+        for kind in CONFIGURATION_TYPES:
+            url = reverse("schools:record_create", args=[kind])
+            with self.subTest(kind=kind):
+                response = self.client.get(url, **self.headers)
+                self.assertTemplateUsed(response, "schools/dialog_form.html")
+                self.assertNotContains(response, "<!doctype html>")
+                self.assertContains(response, 'name="csrfmiddlewaretoken"')
+                self.assertTemplateUsed(self.client.get(url), "schools/form.html")
+
+    def test_create_year_link_loads_directly_into_dialog(self):
+        response = self.client.get(reverse("schools:record_list", args=["years"]))
+        url = reverse("schools:record_create", args=["years"])
+        self.assertContains(response, f'href="{url}" hx-get="{url}" hx-target="#configuration-dialog-content"')
+        self.assertContains(response, 'id="configuration-dialog"')
+        self.assertContains(response, 'app.js?v=login-logo-6')
+
+    def test_invalid_dates_preserve_values_inside_dialog_without_saving(self):
+        response = self.client.post(reverse("schools:record_create", args=["years"]), {
+            "name": "Invalid year", "start_date": "2030-12-31", "end_date": "2030-01-01",
+        }, **self.headers)
+        self.assertTemplateUsed(response, "schools/dialog_form.html")
+        self.assertTrue(response.context["form"].errors)
+        self.assertContains(response, 'value="Invalid year"')
+        self.assertFalse(AcademicYear.objects.filter(name="Invalid year").exists())
+
+    def test_create_and_edit_trigger_table_refresh(self):
+        response = self.client.post(reverse("schools:record_create", args=["sections"]), {
+            "name": "New section", "description": "", "sort_order": 3,
+        }, **self.headers)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.headers["HX-Trigger"], "configurationSaved")
+        section = Section.objects.get(name="New section")
+        response = self.client.post(reverse("schools:record_edit", args=["sections", section.pk]), {
+            "name": "Renamed section", "description": "", "sort_order": 3,
+        }, **self.headers)
+        self.assertEqual(response.status_code, 204)
+        section.refresh_from_db()
+        self.assertEqual(section.name, "Renamed section")
+
+    def test_dialog_requests_enforce_roles_and_csrf(self):
+        url = reverse("schools:record_create", args=["sections"])
+        self.client.force_login(self.users[User.Role.TEACHER])
+        self.assertEqual(self.client.get(url, **self.headers).status_code, 403)
+        self.assertEqual(self.client.post(url, {"name": "Forbidden"}, **self.headers).status_code, 403)
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.actor)
+        self.assertEqual(client.post(url, {"name": "No token"}, **self.headers).status_code, 403)
+
+
 class ConfigurationModelTests(SchoolTestCase):
     def test_database_allows_only_one_school(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -381,11 +437,13 @@ class ConfigurationViewTests(SchoolTestCase):
         self.assertEqual(self.client.get(reverse("schools:record_list", args=["unknown"])).status_code, 404)
         self.assertEqual(self.client.post(reverse("schools:record_edit", args=["sections", 999999]), {}).status_code, 404)
 
-    def test_django_admin_cannot_bypass_configuration_services(self):
+    def test_superuser_admin_configuration_validates_and_protects_school(self):
         self.client.force_login(self.users[User.Role.SUPER_ADMIN])
         url = reverse("admin:schools_school_change", args=[self.school.pk])
         self.assertEqual(self.client.get(url).status_code, 200)
-        self.assertEqual(self.client.post(url, {"name": "Bypass"}).status_code, 403)
+        self.assertEqual(self.client.post(url, {"name": "Missing required fields"}).status_code, 200)
+        self.school.refresh_from_db()
+        self.assertNotEqual(self.school.name, "Missing required fields")
         self.assertEqual(self.client.get(reverse("admin:schools_school_add")).status_code, 403)
         self.assertEqual(self.client.post(reverse("admin:schools_school_delete", args=[self.school.pk]), {"post": "yes"}).status_code, 403)
 

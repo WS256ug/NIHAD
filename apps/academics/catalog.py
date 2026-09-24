@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from .forms import AssessmentForm, AssessmentTypeForm, ClassTeacherAssignmentForm, SubjectForm, TeacherForm, TeachingAssignmentForm
 from .models import Assessment, AssessmentType, ClassTeacherAssignment, Subject, Teacher, TeachingAssignment
-from .forms import DivisionRuleForm, GradeRuleForm, GradingSchemeForm
-from .models import DivisionRule, GradeRule, GradingScheme
+from .forms import SectionDivisionForm, SectionGradeForm
+from .models import DivisionRule, GradeRule
 
 
 @dataclass(frozen=True)
@@ -18,9 +18,8 @@ class AcademicResource:
 
 
 RESOURCES = {
-    "grading-schemes": AcademicResource(GradingScheme, GradingSchemeForm, "Grading schemes", "grading scheme", "section__school", ("name", "section__name"), ("section",)),
-    "grade-rules": AcademicResource(GradeRule, GradeRuleForm, "Grades and learning levels", "grade or learning level", "scheme__section__school", ("label", "scheme__name"), ("scheme",), False),
-    "division-rules": AcademicResource(DivisionRule, DivisionRuleForm, "Division rules", "division rule", "scheme__section__school", ("label", "scheme__name"), ("scheme",), False),
+    "grade-rules": AcademicResource(GradeRule, SectionGradeForm, "Grades", "grade", "scheme__section__school", ("label", "scheme__section__name"), ("scheme__section",), False),
+    "division-rules": AcademicResource(DivisionRule, SectionDivisionForm, "Divisions", "division", "scheme__section__school", ("label", "scheme__section__name"), ("scheme__section",), False),
     "teachers": AcademicResource(Teacher, TeacherForm, "Teachers", "teacher profile", "school", ("teacher_id", "user__first_name", "user__last_name", "user__username"), ("user",), False),
     "subjects": AcademicResource(Subject, SubjectForm, "Subjects", "subject", "section__school", ("name", "code"), ("section",)),
     "teaching": AcademicResource(TeachingAssignment, TeachingAssignmentForm, "Teaching assignments", "teaching assignment", "academic_year__school", ("teacher__user__first_name", "teacher__user__last_name", "subject__name", "academic_class__name"), ("teacher__user", "academic_year", "academic_class__section", "subject", "stream", "term")),

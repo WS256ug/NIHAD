@@ -23,8 +23,15 @@ def generate_reports(assessment, actor):
     require_manager(actor)
     school = lock_school()
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)
-    if assessment.status != 'closed' or not assessment.grading_scheme_id:
-        raise ValidationError('Close marks entry and select an active grading scheme before generating reports.')
+    if assessment.status != 'closed':
+        raise ValidationError('Close marks entry before generating reports.')
+    if assessment.requires_mark_review:
+        from apps.academics.mark_sheets import require_approved_sheets
+        require_approved_sheets(assessment)
+    if not assessment.grading_scheme_id:
+        from apps.academics.section_grades import assessment_grades
+        assessment.grading_scheme = assessment_grades(assessment.academic_class.section, actor)
+        assessment = write_record(assessment, actor, 'Automatically selected section grades.', update_fields=['grading_scheme'])
     if assessment.reports.filter(is_current=True).exclude(status='draft').exists():
         raise ValidationError('Reports are under review or published. Use the assessment correction workflow.')
     enrollments = list(assessment_enrollments(assessment, actor))
@@ -51,7 +58,7 @@ def generate_reports(assessment, actor):
             'year': assessment.term.academic_year.name, 'term': assessment.term.name,
             'assessment': assessment.assessment_type.name, 'date': assessment.date.isoformat(),
             'maximum_score': str(assessment.maximum_score), 'generated_at': timezone.now().isoformat(),
-            'position': positions.get(enrollment.pk), 'cohort_size': len(enrollments) if rank else None,
+            'position': positions.get(enrollment.pk), 'cohort_size': len(positions) if rank else None,
             **result,
         }
         report = assessment.reports.filter(enrollment=enrollment, is_current=True).first() or StudentReport(assessment=assessment, enrollment=enrollment)
@@ -120,4 +127,6 @@ def begin_correction(assessment, reason, actor):
         write_record(StudentReport(assessment=assessment, enrollment=previous.enrollment, version=previous.version + 1, previous=previous, correction_reason=reason.strip()), actor, 'Created report correction revision.')
     assessment.status = 'open'
     write_record(assessment, actor, 'Reopened assessment for an audited report correction.', update_fields=['status'])
+    from apps.academics.mark_sheets import return_sheets_for_correction
+    return_sheets_for_correction(assessment, reason.strip(), actor)
     return assessment

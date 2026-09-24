@@ -16,7 +16,8 @@ from apps.accounts.models import User
 from apps.accounts.permissions import can_manage_accounts, dashboard_url, effective_role, has_role
 
 
-@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+# Historical role coverage remains available for installations that opt in.
+@override_settings(GUARDIAN_ACCOUNTS_ENABLED=True, PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class AccountTestCase(TestCase):
     password = "Initial-test-password-73!"
     new_password = "Changed-test-password-94!"

@@ -11,4 +11,6 @@ class StudentRecordAdmin(ConfigurationAdmin):
     exclude = ("photo",)
 
     def get_readonly_fields(self, request, obj=None):
+        if self.model is Guardian:
+            return super().get_readonly_fields(request, obj)
         return [field.name for field in self.model._meta.fields if field.name != "photo"]

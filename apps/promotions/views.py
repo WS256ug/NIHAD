@@ -1,6 +1,7 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
@@ -33,7 +34,7 @@ def batch_create(request):
     if request.method == 'POST' and form.is_valid():
         batch = attempt(form, lambda: create_batch(form, request.user))
         if batch:
-            return redirect('promotions:edit', pk=batch.pk)
+            return form_redirect(request, 'promotions:edit', pk=batch.pk)
     return form_page(request, form, 'Create promotion batch', reverse('promotions:list'), explanation='Choose the source class and year. Set a later destination year for promotion or repetition. Transfer, withdrawal and graduation close the source enrollment without creating a new one.')
 
 
@@ -43,7 +44,7 @@ def batch_create(request):
 def batch_edit(request, pk):
     batch = get_object_or_404(batches(), pk=pk)
     if batch.status == 'confirmed':
-        return redirect('promotions:preview', pk=pk)
+        return form_redirect(request, 'promotions:preview', pk=pk)
     enrollments = eligible_enrollments(batch).order_by('student__last_name', 'student__first_name', 'pk')
     existing = {decision.enrollment_id: decision for decision in batch.decisions.all()}
     initial = [{'enrollment': enrollment.pk, 'selected': existing[enrollment.pk].selected if enrollment.pk in existing else False, 'decision': existing[enrollment.pk].decision if enrollment.pk in existing else 'promoted', 'notes': existing[enrollment.pk].notes if enrollment.pk in existing else ''} for enrollment in enrollments]
@@ -51,7 +52,7 @@ def batch_edit(request, pk):
     revision_form = RevisionForm(request.POST if request.method == 'POST' else None, initial={'revision': batch.revision})
     if request.method == 'POST' and formset.is_valid() and revision_form.is_valid():
         if attempt(revision_form, lambda: save_decisions(batch, [form.cleaned_data for form in formset if form.cleaned_data], revision_form.cleaned_data['revision'], request.user)):
-            return redirect('promotions:preview', pk=pk)
+            return form_redirect(request, 'promotions:preview', pk=pk)
     by_pk = {str(enrollment.pk): enrollment for enrollment in enrollments}
     rows = [{'form': form, 'enrollment': by_pk.get(str(form['enrollment'].value()))} for form in formset]
     return render(request, 'promotions/edit.html', {'batch': batch, 'formset': formset, 'rows': rows, 'revision_form': revision_form})
@@ -66,5 +67,5 @@ def preview(request, pk):
     form = ConfirmBatchForm(request.POST if request.method == 'POST' else None, initial={'revision': batch.revision})
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: confirm_batch(batch, form.cleaned_data['revision'], request.user)):
         messages.success(request, 'Promotion batch confirmed. Previous enrollment history is preserved.')
-        return redirect('promotions:preview', pk=pk)
+        return form_redirect(request, 'promotions:preview', pk=pk)
     return render(request, 'promotions/preview.html', {'batch': batch, 'decisions': decisions, 'form': form})

@@ -42,6 +42,15 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - Protected parent relationships, active-parent checks and historical preservation
 - Audit fields and transactional configuration logs
 - Read-only configuration inspection in Django admin
+- School setup create/edit dialogs for sections, academic years, terms, classes
+  and streams, with inline validation, filtered table refresh and unsaved-change
+  confirmation; standard form pages remain available without JavaScript.
+- Shared dialogs also cover school profile/current period, accounts/password
+  changes, students/guardians/enrollments, academic records and individual marks,
+  report actions, fees/payments, expenses and promotion steps. Photo uploads,
+  confirmation forms, dependent selectors and existing server permissions remain
+  supported. Saving refreshes the underlying workspace and provides a link to
+  the saved result; promotion creation and decisions advance inside the dialog.
 - 79 passing tests across Phases 1–3 plus isolated live HTTP workflow checks
 
 ## Implemented in Phase 4
@@ -57,3 +66,38 @@ dashboards, security review and deployment preparation. See DEVELOPMENT_PLAN.md.
 - Administrator management, Headteacher read-only student access and audited writes
 - Read-only domain inspection in Django admin and protected account relationships
 - 123 tests across Phases 1–4, plus isolated live HTTP workflow verification
+
+
+## Simplified grades interface
+
+- Grades and divisions are managed directly by section, without scheme controls.
+- Assessments automatically use ready section grades; incomplete grade setup
+  does not block assessment creation. Report generation still requires grades.
+- Grade changes create internal versions when necessary to preserve history.
+- Removed the section setup messages and explanatory paragraph above the table.
+
+
+## Whole-class marks entry and review
+
+- Marks entry navigation lists accessible open assessments; teachers see only
+  authorized subject assignments and student enrollments.
+- Numeric scores or descriptive levels, explicit absence, saved grades, progress
+  counts, partial saves, keyboard entry, and unsaved-change warnings.
+- Draft/returned sheets can be edited. Submission requires a complete roster;
+  submitted/approved sheets are locked, including the single-mark endpoint.
+- School Admin and Headteacher can approve or return with a required reason.
+- Closing assessments and report generation verify current approved snapshots.
+- Atomic writes, signed roster checks, revision conflicts, and audited review.
+- Absence never becomes zero or a ranked numeric overall result.
+
+
+## Guardian contacts and student portal (2026-09-24)
+
+This supersedes earlier independent guardian-account requirements. Guardian
+names, phone numbers, NIN, email, addresses and student relationships remain.
+Parents use each child's registration number and student portal password;
+siblings require separate sign-ins. Staff manage access from the student profile.
+Separate guardian login, sessions and account provisioning are disabled by default
+(`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
+for historical integrity. Registration creates contacts without login accounts.
+Report publication, student isolation and fee-clearance checks remain enforced.

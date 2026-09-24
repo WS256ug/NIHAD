@@ -46,6 +46,8 @@ main:focus { outline: none; }
 .app-layout { --sidebar-width: 220px; min-height: 100dvh; height: auto; grid-template-rows: 1fr; }
 .app-layout > main { grid-row: 1; grid-column: 2; min-width: 0; min-height: 100dvh; overflow: visible; padding-top: 0; }
 .app-layout > main > .workspace { width: 100%; }
+.app-layout > main > #workspace-content > .workspace { width: 100%; }
+#workspace-content { min-width: 0; }
 .app-layout > aside[data-sidebar] { grid-row: 1; position: sticky; top: 0; height: 100dvh; background: var(--sidebar-background); color: white; border-right: 0; }
 .app-layout > aside[data-sidebar] > header { padding: 1rem; border-bottom: 3px solid var(--brand-gold); background: var(--brand-gold); }
 .app-layout > aside[data-sidebar] > header .brand { justify-content: center; }
@@ -114,7 +116,7 @@ main:focus { outline: none; }
 .messages, .request-error { max-width: 1090px; margin: 1rem auto; }
 .request-error { color: var(--danger); background: var(--danger-soft); }
 /* Oat's alert component overrides its base-layer hidden rule. */
-.request-error[hidden] { display: none; }
+.request-error[hidden], .dialog-error[hidden] { display: none; }
 .skip-link { position: fixed; top: -5rem; left: 1rem; background: white; padding: 1rem; z-index: 100; }
 .skip-link:focus { top: .5rem; }
 .school-illustration { height: 200px; margin-top: 1.5rem; position: relative; overflow: hidden; }
@@ -162,6 +164,34 @@ main:focus { outline: none; }
 .back-link + .page-heading h1 { margin-top: 0; }
 @media print { .back-link { display: none !important; } }
 .form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
+.marks-progress { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 .75rem; }
+.marks-table input[type="number"] { width: 8rem; min-height: 44px; }
+.marks-table select { min-width: 10rem; min-height: 44px; }
+.marks-table input[type="checkbox"] { width: 20px; height: 20px; }
+.marks-table .errorlist { white-space: normal; color: var(--danger); font-size: .8rem; max-width: 22rem; }
+.marks-table td, .marks-table th { vertical-align: top; }
+.marks-actions { position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: 1rem 0; margin-bottom: 0; z-index: 2; }
+.marks-actions [data-sheet-dirty] { margin-right: auto; }
+.marks-review { border-top: 1px solid var(--border); margin-top: 1.5rem; padding-top: 1rem; }
+#configuration-dialog { width: min(560px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.75rem; border: 1px solid var(--border); border-radius: .8rem; background: var(--card); color: var(--foreground); box-shadow: 0 20px 60px #00000025; }
+#configuration-dialog::backdrop { background: #17101866; }
+#configuration-dialog h2 { margin: 0 0 .5rem; font-size: 1.4rem; }
+#configuration-dialog header { margin-bottom: 1.5rem; }
+#configuration-dialog header p { margin: 0; font-size: .85rem; }
+#configuration-dialog .form-actions { justify-content: flex-end; margin: 1.5rem 0 0; padding-top: 1rem; border-top: 1px solid var(--border); }
+#configuration-feedback { color: var(--success); }
+#configuration-feedback[hidden] { display: none; }
+#configuration-dialog.wide-dialog { width: min(1000px, calc(100vw - 2rem)); }
+#configuration-dialog .dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+#configuration-dialog .dialog-heading h2 { margin: 0; }
+#configuration-dialog .dialog-heading button { flex-shrink: 0; }
+#configuration-dialog .workspace, #configuration-dialog .account-page { width: 100%; max-width: none; margin: 0; padding: 0; }
+#configuration-dialog .workspace-card { border: 0; box-shadow: none; padding: 0; background: transparent; }
+#configuration-dialog .workspace-card p { max-width: none; }
+#configuration-dialog [data-form-dialog] h1, #configuration-dialog .back-link { display: none; }
+#configuration-dialog .form-field input:not([type="checkbox"]):not([type="radio"]), #configuration-dialog .form-field textarea { max-width: 100%; }
+#configuration-dialog .table-scroll input, #configuration-dialog .table-scroll select { min-width: 7rem; }
+@media (max-width: 560px) { #configuration-dialog { padding: 1rem; } }
 .filter-form { display: flex; align-items: end; flex-wrap: wrap; gap: 1rem; }
 .filter-form > div:first-child { flex: 1; min-width: min(100%, 220px); }
 .filter-form input, .filter-form select { width: 100%; }
@@ -255,3 +285,6 @@ main:focus { outline: none; }
   .header-note { display: none; }
   .workspace { margin-top: 2rem; }
 }
+
+.login-brand-panel { align-items: center; justify-content: center; padding: clamp(2rem, 5vw, 4rem); }
+.login-school-logo { display: block; width: 100%; max-width: 360px; height: auto; object-fit: contain; }

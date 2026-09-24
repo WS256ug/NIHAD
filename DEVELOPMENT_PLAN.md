@@ -290,3 +290,162 @@ explicit payment/charge reversals; its ten targeted tests pass.
   when printing and long labels wrap on narrow screens.
 - All 214 tests, Django system checks and migration-drift checks pass.
 - Next milestone: desktop/mobile browser visual QA.
+
+## School setup form dialogs
+
+- Added native Oat-styled dialogs with HTMX loading and saving for section,
+  academic year, term, class and stream create/edit actions.
+- Reused Django forms, authorization, CSRF checks and transactional services.
+  Validation preserves input; saving refreshes the current filtered/paginated list.
+- Added loading/error feedback, duplicate-submit prevention, focus management,
+  unsaved-change confirmation and mobile-sized scrollable dialogs. Full-page
+  form links remain available as a fallback.
+- All 218 tests pass, including four new dialog tests; system checks,
+  migration-drift checks and JavaScript syntax checks pass.
+- Next milestone: desktop/mobile interactive browser QA. No browser connection
+  was available during implementation.
+
+## Direct school setup popup follow-up
+
+- Create/edit links now declare their HTMX dialog target directly. The request
+  handler opens the dialog immediately while the form loads, without navigating.
+- Versioned the application script URL to refresh previously cached handlers.
+- Added coverage for the Create academic year link and a JavaScript regression
+  test for popup opening, repeated requests and preserving entered form data.
+- All 219 Django tests and the JavaScript regression test pass; system,
+  migration-drift and JavaScript syntax checks pass.
+- Next milestone: browser click-through verification; no browser is connected.
+
+## Dialog error visibility fix
+
+- Extended the existing Oat alert visibility override to dialog error messages:
+  hidden alerts stay hidden until a request fails. Versioned the stylesheet URL
+  so refreshing the page loads the correction.
+- All 219 Django tests, the JavaScript regression test and system checks pass.
+- Next milestone: browser visual verification of dialog loading and error states.
+
+## Remaining workspace forms in dialogs
+
+- Extended the shared dialog to account management/password changes, school
+  profile/current period/status, student registration/editing, guardian access
+  and links, enrollment, academic configuration, marks, report actions, fee
+  structures/charges/payments/reversals, expenses and promotions.
+- Shared template context and success responses reuse existing forms, service
+  transactions and permissions. Multipart requests preserve photo upload support.
+  Confirmations retain record names; form errors stay inside the dialog.
+- Saving refreshes the workspace with its existing query filters and provides a
+  saved-result link. Promotion creation and decisions continue inside the dialog.
+  Dashboard form shortcuts use the same behavior; direct URLs remain available.
+- Long forms and decision tables get wider responsive dialogs; closing protects
+  unsaved input and loading/error feedback is shared across forms.
+- All 228 Django tests and four JavaScript tests pass. System, migration-drift
+  and JavaScript syntax checks pass.
+- Next milestone: interactive desktop/mobile browser verification, unavailable
+  in this session because no browser is connected.
+
+
+## Simplified section grades
+
+- Removed scheme management from the workspace and scheme selection from
+  assessments. Grades and divisions now use section selectors. Legacy scheme
+  list/form links redirect to Grades.
+- Added automatic internal versions and readiness checking. Transactions preserve
+  historical grades, division rules and existing aggregation policies.
+- Assessments can be created with incomplete grading; ready grades are selected
+  automatically for unconfigured assessments. Reports still require ready grades.
+- Removed the section status messages and explanatory paragraph per screenshot.
+- Verification: all 237 Django tests and four JavaScript tests pass, along with
+  system and migration-drift checks. No database migration required.
+  Next milestone: browser verification of simplified
+  grade entry and assessment creation.
+
+
+## Whole-class marks workflow
+
+- Completed editable subject/stream sheets, partial saves, complete submission,
+  reviewer approval/return, explicit absence, saved grades and progress counts.
+- Added keyboard navigation, unsaved-change protection, duplicate-submit guard,
+  roster/revision checks, atomic saves, and audit records.
+- New assessments require approved current sheets before closing/report creation.
+  Historical assessments and report snapshots remain compatible; report
+  correction returns sheets for editing and renewed approval.
+- Added reviewer dashboard tasks, Marks entry navigation, read-only submission
+  administration, and reviewed sheets in the demo seed workflow.
+- Applied academics.0004 locally. All 254 Django tests and seven JavaScript
+  interaction tests pass, along with system and migration-drift checks.
+- Next milestone: desktop/mobile browser verification of marks entry and review;
+  no browser is connected in this session.
+
+## Marks subject selection follow-up
+
+- Confirmed the current assessment has only an eligible English assignment.
+- Marks sheets now explain missing subject assignments and link administrators to teaching assignments; teacher permissions remain enforced.
+- Explicit sheet selection takes precedence over legacy subject URL filters.
+- Verification: all 18 marks-sheet tests and Django system checks pass.
+- Next milestone: configure the remaining subject assignments and verify the workflow in a browser.
+
+## Simplified close-marks confirmation
+
+- Removed the checkbox from closing marks; the confirmation names the assessment and explains that all subjects will be locked.
+- Replaced Save changes with Close marks entry. The marks-page action appears only when every eligible subject sheet is approved and current.
+- Direct close requests also check sheet readiness; cancellation and dialog responses are preserved.
+- Targeted marks-sheet tests (19) and Django system checks pass. Next milestone: browser verification of the confirmation.
+- Final verification: all 256 Django tests pass; system, migration-drift and diff checks pass.
+
+## Assessment action placement
+
+- Moved the marks link from the record name to Actions beside Edit. Open assessments offer Enter marks to admins/teachers; other states and reviewers show View marks.
+- Teachers and headteachers retain the Actions column without gaining editing controls.
+- Verification: 10 assessment tests and Django system checks pass. Next milestone: visual browser verification.
+
+## Whole-number grade ranges
+
+- Validation and calculation now share effective boundaries for consecutive integer bands, preserving shared-boundary grading and rejecting real gaps/overlaps.
+- Report generation refreshes readiness for previously rejected, unused integer-band configurations with an audit entry. Existing report snapshots are preserved.
+- Updated field help and checked the saved Primary ranges at decimal boundaries. Next milestone: retry report generation in the workspace.
+- Verification: all 257 Django tests pass; system and migration-drift checks pass. No schema migration required.
+
+## Clear stale sign-in feedback
+
+- Request errors can be dismissed and clear when sign-in fields are edited or another request starts. Removed the unsupported connection diagnosis from the banner.
+- Refreshed static asset versions so browsers fetch the update. Django checks and seven JavaScript tests pass.
+- Next milestone: browser verification of sign-in feedback.
+
+## Guardian contacts without separate accounts
+
+- Kept contact details and student links; guardian profiles now direct staff to student portal access.
+- Disabled guardian sign-in, existing guardian sessions, provisioning endpoints/services and role selection by default. Historical users and links are retained; opt-in legacy behavior remains tested.
+- Demo seeding follows the contact-only default. Updated current requirements in AGENTS.md and product/schema/user documentation.
+- Verification: all 259 Django tests pass, with system and migration-drift checks clean. No data deletion or schema migration required.
+- Next milestone: browser verification of registration, contact editing and student portal sign-in.
+
+## Report number display
+
+- HTML, print and PDF reports remove trailing decimal zeros from scores, totals, averages and maximum scores, without rounding or changing stored snapshots.
+- Verified 80.00 to 80, 80.50 to 80.5, fractional precision, zero and absent values. All nine report tests and Django checks pass.
+- Next milestone: visual report verification in the browser.
+
+## Sign-in school logo
+
+- Replaced the welcome panel's promotional text and school illustration with the existing school logo, centered and scaled responsively.
+- Updated static asset versions. Django system checks pass. Next milestone: visual browser verification of desktop/mobile sign-in.
+
+## Transparent school logo
+
+- Added a transparent PNG of the school logo and updated sign-in, header/sidebar and favicon references.
+- Verified an RGBA alpha channel with transparent pixels; Django system checks pass. Original JPEG retained.
+- Next milestone: visual browser verification against the sign-in background.
+
+## Consistent login pages
+
+- Staff and student login now share the transparent school-logo panel and responsive two-column layout.
+- Login views suppress desktop and mobile navigation; the normal workspace layout is unchanged.
+- Preserved student registration-number fields, validation, HTMX form targets and staff/student switching links.
+- Verified both login responses render the shared layout without navigation; Django checks pass. Next milestone: desktop/mobile browser review.
+
+## Superuser configuration administration
+
+- Removed Administration navigation and dashboard shortcut from the user workspace. Django admin remains available directly at /admin/.
+- Enabled audited superuser create/update operations for school structure, subjects, assessment types and guardian contact details. Model validation still runs.
+- Delete is limited to unused configuration; school deletion and records with dependencies are blocked. Workflow/financial/history models remain read-only. Guardian account links cannot be edited here.
+- Added tests for real admin create/update/delete, audit ownership and protected permissions. Next milestone: browser verification of admin forms.

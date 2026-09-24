@@ -1,13 +1,13 @@
-{% extends 'base.html' %}
+{% extends form_base_template %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block content %}
 <section class="account-page workspace-card">
   <a class="back-link" href="{{ cancel_url }}">{% include "includes/back_icon.html" %}<span>Back</span></a><h1>{{ page_title }}</h1>
   {% if explanation %}<p>{{ explanation }}</p>{% endif %}
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" {% include "includes/dialog_form_attributes.html" %} enctype="multipart/form-data">
     {% csrf_token %}{% include 'includes/form_fields.html' %}
     <span id="form-loading" class="htmx-indicator" role="status">Loading choices…</span>
-    <div class="form-actions"><button type="submit">Save changes</button><a href="{{ cancel_url }}" role="button" class="outline small button">Cancel</a></div>
+    <div class="form-actions"><button type="submit">{{ submit_label|default:"Save changes" }}</button><a href="{{ cancel_url }}" role="button" class="outline small button">Cancel</a></div>
   </form>
 </section>
 {% endblock %}

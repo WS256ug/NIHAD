@@ -1,23 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Sign in{% endblock %}
 {% block content %}
 <div class="login-layout">
-  <section class="welcome-panel" aria-labelledby="welcome-title">
-    <span class="eyebrow">Your school. Connected.</span>
-    <h1 id="welcome-title">Good days begin<br>with a clear view.</h1>
-    <p>A shared home for your school community. Sign in to access your workspace.</p>
-    <div class="school-illustration" aria-hidden="true">
-      <div class="illustration-sun"></div>
-      <div class="illustration-building">
-        <div class="illustration-roof"></div>
-        <span class="illustration-window"></span><span class="illustration-window"></span>
-        <span class="illustration-window"></span><span class="illustration-window"></span>
-        <span class="illustration-door"></span>
-      </div>
-      <div class="illustration-ground"></div>
-    </div>
-    <span class="welcome-caption">Built around the people who make a school.</span>
-  </section>
+  {% include 'includes/login_logo.html' %}
   <section id="sign-in-panel" class="sign-in-panel" aria-labelledby="sign-in-title">
     <span class="eyebrow">Welcome back</span>
     <h2 id="sign-in-title">Staff sign-in</h2>

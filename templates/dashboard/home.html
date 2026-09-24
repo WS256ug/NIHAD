@@ -13,10 +13,10 @@
   <p class="dashboard-period">{{ school_period.current_academic_year }} &middot; {{ school_period.current_term.name }}</p>
   {% else %}
   <div class="dashboard-setup" role="status">Select an academic year and term to complete school setup.
-    {% if can_manage_school %}<a href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}" role="button" class="button outline small">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
+    {% if can_manage_school %}<a{% if school_period %} data-configuration-dialog hx-get="{% url 'schools:current_period' %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML"{% endif %} href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}" role="button" class="button outline small">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
   </div>
   {% endif %}
-  {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}" role="button" class="outline small button">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
+  {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}"{% if action.dialog %} data-configuration-dialog hx-get="{{ action.url }}" hx-target="#configuration-dialog-content" hx-swap="innerHTML"{% endif %} role="button" class="outline small button">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
   {% if metrics %}
   {% for group in metric_groups %}
   <section class="container dashboard-stats" data-group="{{ group.title }}" aria-labelledby="metric-group-{{ forloop.counter }}">
@@ -59,7 +59,6 @@
         <a href="{% url 'students:list' %}" role="button" class="outline button small">View students</a>
       {% endif %}
       {% if user.is_superuser %}
-        <a href="{% url 'admin:index' %}" role="button" class="button outline small">Open administration <span aria-hidden="true">→</span></a>
         <p class="small-note">Manage accounts through school administration.</p>
       {% else %}
         <p class="small-note">For help with your account, contact your school administrator.</p>
@@ -73,7 +72,7 @@
         <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
         <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
       </dl>
-      <a href="{% url 'accounts:password_change' %}" role="button" class="button outline small">Change your password</a>
+      <a href="{% url 'accounts:password_change' %}" role="button" class="button outline small" data-configuration-dialog hx-get="{% url 'accounts:password_change' %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Change your password</a>
     </section>
   </div>
 </div>

@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import AdminUserCreationForm, AuthenticationForm, UserChangeForm, UserCreationForm
 
 from .models import User
@@ -8,7 +9,7 @@ from .permissions import assignable_roles
 class AccountCreationForm(AdminUserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["role"].choices = [choice for choice in User.Role.choices if choice[0] not in (User.Role.SUPER_ADMIN, User.Role.STUDENT)]
+        self.fields["role"].choices = [choice for choice in User.Role.choices if choice[0] not in (User.Role.SUPER_ADMIN, User.Role.STUDENT) and (settings.GUARDIAN_ACCOUNTS_ENABLED or choice[0] != User.Role.GUARDIAN)]
 
     class Meta(AdminUserCreationForm.Meta):
         model = User
@@ -16,6 +17,11 @@ class AccountCreationForm(AdminUserCreationForm):
 
 
 class AccountChangeForm(UserChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not settings.GUARDIAN_ACCOUNTS_ENABLED and self.instance.role != User.Role.GUARDIAN:
+            self.fields["role"].choices = [choice for choice in User.Role.choices if choice[0] != User.Role.GUARDIAN]
+
     class Meta(UserChangeForm.Meta):
         model = User
         fields = "__all__"
@@ -48,6 +54,8 @@ class AccountStatusForm(forms.Form):
 class StaffSignInForm(AuthenticationForm):
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
+        if user.role == User.Role.GUARDIAN and not settings.GUARDIAN_ACCOUNTS_ENABLED:
+            raise forms.ValidationError("Use the Student portal with your child's registration number and portal password.", code="invalid_login")
         if user.role == User.Role.STUDENT:
             raise forms.ValidationError("Use the Student portal sign-in page with the student's registration number.", code="invalid_login")
 

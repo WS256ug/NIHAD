@@ -62,7 +62,7 @@ class AuthenticationFoundationTests(TestCase):
 
     def test_every_role_can_sign_in_and_only_see_own_account(self):
         for role, user in self.users.items():
-            if role == User.Role.STUDENT:
+            if role in (User.Role.STUDENT, User.Role.GUARDIAN):
                 continue
             with self.subTest(role=role):
                 client = Client()
@@ -85,11 +85,11 @@ class AuthenticationFoundationTests(TestCase):
                 self.client.force_login(user)
                 response = self.client.get(reverse("admin:accounts_user_changelist"))
                 self.assertEqual(response.status_code, 302)
-                self.assertTrue(response.url.startswith(reverse("admin:login")))
+                self.assertTrue(response.url.startswith(reverse("students:portal_login" if user.role == User.Role.GUARDIAN else "admin:login")))
 
     def test_superuser_can_manage_custom_users_in_admin(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get(reverse("dashboard:home"), follow=True), "Open administration")
+        self.assertNotContains(self.client.get(reverse("dashboard:home"), follow=True), "Open administration")
         response = self.client.get(reverse("admin:accounts_user_changelist"))
         self.assertContains(response, "Bursar / Finance")
         response = self.client.get(reverse("admin:accounts_user_add"))

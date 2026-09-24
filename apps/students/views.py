@@ -1,3 +1,4 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -110,7 +111,7 @@ def student_form(request, pk=None):
         saved = attempt(form, lambda: services.save_student(form, request.user))
         if saved:
             messages.success(request, "Student profile saved.")
-            return redirect("students:detail", pk=saved.pk)
+            return form_redirect(request, "students:detail", pk=saved.pk)
     cancel = reverse("students:detail", args=[pk]) if pk else reverse("students:list")
     return form_page(request, form, "Edit student" if pk else "Register student", cancel)
 
@@ -124,7 +125,7 @@ def student_status(request, pk):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.set_student_status(student, form.cleaned_data["status"], request.user)):
             messages.success(request, "Student status updated. History is preserved.")
-            return redirect("students:detail", pk=pk)
+            return form_redirect(request, "students:detail", pk=pk)
     return form_page(request, form, f"Change status: {student.full_name}", reverse("students:detail", args=[pk]))
 
 
@@ -159,7 +160,7 @@ def guardian_add(request, student_pk):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.add_guardian_contact(student, form.cleaned_data, request.user)):
             messages.success(request, "Guardian contact added.")
-            return redirect("students:detail", pk=student_pk)
+            return form_redirect(request, "students:detail", pk=student_pk)
     return form_page(request, form, f"Add guardian contact: {student.full_name}", reverse("students:detail", args=[student_pk]))
 
 
@@ -176,7 +177,7 @@ def guardian_form(request, pk):
         saved = attempt(form, lambda: services.save_guardian(form, request.user))
         if saved:
             messages.success(request, "Guardian contact details saved.")
-            return redirect("students:guardian_detail", pk=saved.pk)
+            return form_redirect(request, "students:guardian_detail", pk=saved.pk)
     cancel = reverse("students:guardian_detail", args=[pk]) if pk else reverse("students:guardian_list")
     return form_page(request, form, "Edit guardian contacts", cancel)
 
@@ -191,7 +192,7 @@ def guardian_link(request, student_pk, pk=None):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.save_link(form, request.user)):
             messages.success(request, "Guardian relationship saved.")
-            return redirect("students:detail", pk=student_pk)
+            return form_redirect(request, "students:detail", pk=student_pk)
     return form_page(request, form, f"Guardian link: {student.full_name}", reverse("students:detail", args=[student_pk]))
 
 
@@ -205,7 +206,7 @@ def link_status(request, student_pk, pk, active):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.set_link_active(link, active, request.user)):
             messages.success(request, "Guardian link activated." if active else "Guardian link deactivated.")
-            return redirect("students:detail", pk=student_pk)
+            return form_redirect(request, "students:detail", pk=student_pk)
     title = f"{'Activate' if active else 'Deactivate'} guardian link: {link.guardian} / {student.full_name}"
     return form_page(request, form, title, reverse("students:detail", args=[student_pk]), explanation="Deactivating a link also clears its primary and emergency contact flags. The relationship record is retained.")
 
@@ -220,7 +221,7 @@ def enrollment_create(request, student_pk):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.enroll_student(form, request.user)):
             messages.success(request, "Enrollment added. Earlier records are preserved.")
-            return redirect("students:detail", pk=student_pk)
+            return form_redirect(request, "students:detail", pk=student_pk)
     return form_page(request, form, f"Enroll {student.full_name}", reverse("students:detail", args=[student_pk]), explanation="The year, class, stream and enrollment date are permanent once saved. Close an enrollment before recording a later placement in the same year.")
 
 
@@ -242,5 +243,5 @@ def enrollment_close(request, student_pk, pk):
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: services.close_enrollment(enrollment, form.cleaned_data["status"], form.cleaned_data["completion_date"], request.user)):
             messages.success(request, "Enrollment closed. History is preserved.")
-            return redirect("students:detail", pk=student_pk)
+            return form_redirect(request, "students:detail", pk=student_pk)
     return form_page(request, form, f"Close enrollment: {student.full_name}", reverse("students:detail", args=[student_pk]), explanation=f"{enrollment.academic_year} / {enrollment.academic_class}. Completed records cannot be reopened or reassigned.")

@@ -198,6 +198,7 @@ class Assessment(AuditedModel):
     maximum_score = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal("100"), validators=[MinValueValidator(Decimal("0.01"))])
     grading_scheme = models.ForeignKey("GradingScheme", on_delete=models.PROTECT, null=True, blank=True, related_name="assessments")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    requires_mark_review = models.BooleanField(default=True, editable=False)
 
     class Meta:
         ordering = ("-date", "pk")
@@ -248,13 +249,14 @@ class Mark(AuditedModel):
     score = models.DecimalField(max_digits=7, decimal_places=2, validators=[MinValueValidator(0)], null=True, blank=True)
     level = models.ForeignKey("GradeRule", on_delete=models.PROTECT, null=True, blank=True, related_name="descriptive_marks")
     revision = models.PositiveIntegerField(default=1, editable=False)
+    is_absent = models.BooleanField(default=False)
 
     class Meta:
         ordering = ("enrollment__student__last_name", "enrollment__student__first_name", "subject__name")
         constraints = [
             models.UniqueConstraint(fields=("assessment", "enrollment", "subject"), name="academics_mark_unique"),
             models.CheckConstraint(condition=models.Q(score__gte=0), name="academics_mark_nonnegative"),
-            models.CheckConstraint(condition=(models.Q(score__isnull=False, level__isnull=True) | models.Q(score__isnull=True, level__isnull=False)), name="academics_mark_value_exclusive"),
+            models.CheckConstraint(condition=(models.Q(is_absent=True, score__isnull=True, level__isnull=True) | (models.Q(is_absent=False) & (models.Q(score__isnull=False, level__isnull=True) | models.Q(score__isnull=True, level__isnull=False)))), name="academics_mark_value_exclusive"),
         ]
 
     def __str__(self):
@@ -267,7 +269,10 @@ class Mark(AuditedModel):
             return
         assessment, enrollment, assignment = self.assessment, self.enrollment, self.teaching_assignment
         scheme = assessment.grading_scheme
-        if scheme and scheme.mode == "descriptive":
+        if self.is_absent:
+            if self.score is not None or self.level_id:
+                raise ValidationError("An absent student cannot also have a score or learning level.")
+        elif scheme and scheme.mode == "descriptive":
             if self.score is not None or not self.level_id or self.level.scheme_id != scheme.pk:
                 raise ValidationError("Select a learning level from this assessment's descriptive grading scheme.")
         elif self.score is None or self.level_id:
@@ -284,6 +289,42 @@ class Mark(AuditedModel):
             raise ValidationError("The teaching assignment does not cover this student, subject and period.")
         if not assignment.is_active or assignment.teacher.employment_status != Teacher.Status.ACTIVE or not assignment.teacher.user.is_active:
             raise ValidationError("The teaching assignment is no longer active.")
+
+
+class MarkSubmission(AuditedModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "In progress"
+        SUBMITTED = "submitted", "Awaiting review"
+        APPROVED = "approved", "Approved"
+        RETURNED = "returned", "Returned for correction"
+
+    assessment = models.ForeignKey(Assessment, on_delete=models.PROTECT, related_name="mark_submissions")
+    assignment = models.ForeignKey(TeachingAssignment, on_delete=models.PROTECT, related_name="mark_submissions")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
+    revision = models.PositiveIntegerField(default=0)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="submitted_mark_sheets")
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="reviewed_mark_sheets")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+    snapshot = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("assessment", "assignment"), name="academics_submission_unique"),
+            models.CheckConstraint(condition=models.Q(status__in=["draft", "submitted", "approved", "returned"]), name="academics_submission_status"),
+        ]
+
+    def __str__(self):
+        return f"{self.assessment} / {self.assignment.subject} / {self.get_status_display()}"
+
+    def clean(self):
+        super().clean()
+        preserve_fields(self, ("assessment_id", "assignment_id"))
+        if self.assessment_id and self.assignment_id:
+            assessment, assignment = self.assessment, self.assignment
+            if assignment.academic_class_id != assessment.academic_class_id or assignment.academic_year_id != assessment.term.academic_year_id or (assignment.term_id and assignment.term_id != assessment.term_id) or (assessment.stream_id and assignment.stream_id and assignment.stream_id != assessment.stream_id):
+                raise ValidationError("This teaching assignment does not belong to the assessment.")
 
 
 class GradingScheme(AuditedModel):
@@ -330,11 +371,12 @@ class GradingScheme(AuditedModel):
         if not rules:
             raise ValidationError("Add grade rules or learning levels before activating this scheme.")
         if self.mode == self.Mode.NUMERIC:
+            from .grading import numeric_intervals
             boundary = Decimal("0")
-            for rule in rules:
+            for rule, upper in numeric_intervals(rules):
                 if rule.minimum != boundary:
                     raise ValidationError("Numeric grade ranges must cover 0 to 100 without gaps or overlaps.")
-                boundary = rule.maximum
+                boundary = upper
                 if self.aggregate_mode != self.Aggregate.NONE and rule.points is None:
                     raise ValidationError("Each numeric grade needs points when aggregates are enabled.")
             if boundary != Decimal("100"):

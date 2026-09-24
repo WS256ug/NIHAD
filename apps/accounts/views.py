@@ -1,3 +1,4 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, LogEntry
 from django.contrib.auth.decorators import login_required
@@ -7,7 +8,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
 from django.views.decorators.debug import sensitive_post_parameters
@@ -18,6 +19,7 @@ from .permissions import assignable_roles, dashboard_url, manageable_accounts, r
 
 
 class SignInView(LoginView):
+    extra_context = {"hide_navigation": True}
     template_name = "registration/login.html"
     authentication_form = StaffSignInForm
 
@@ -36,7 +38,7 @@ class AccountPasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         response = super().form_valid(form)
         User.objects.filter(pk=self.request.user.pk).update(must_change_password=False)
-        return response
+        return form_redirect(self.request, response.url)
 
 
 class AccountPasswordResetConfirmView(PasswordResetConfirmView):
@@ -95,7 +97,7 @@ def user_create(request):
             user.save()
             record_account_change(request.user, user, ADDITION, "Created school account.")
         messages.success(request, "Account created. Share the initial password with the account holder securely.")
-        return redirect("accounts:user_list")
+        return form_redirect(request, "accounts:user_list")
     return render(request, "accounts/user_form.html", {"form": form, "page_title": "Create account"})
 
 
@@ -115,7 +117,7 @@ def user_edit(request, pk):
             user = form.save()
             record_account_change(request.user, user, CHANGE, "Updated account fields: " + ", ".join(form.changed_data))
             messages.success(request, "Account updated.")
-            return redirect("accounts:user_list")
+            return form_redirect(request, "accounts:user_list")
     return render(request, "accounts/user_form.html", {"form": form, "page_title": "Edit account", "account": target})
 
 
@@ -134,5 +136,5 @@ def user_status(request, pk, activate):
             target.save(update_fields=["is_active", "updated_at"])
             record_account_change(request.user, target, CHANGE, "Activated account." if activate else "Deactivated account.")
             messages.success(request, "Account activated." if activate else "Account deactivated.")
-            return redirect("accounts:user_list")
+            return form_redirect(request, "accounts:user_list")
     return render(request, "accounts/user_status.html", {"form": form, "account": target, "activate": activate})

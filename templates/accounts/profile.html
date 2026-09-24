@@ -10,7 +10,7 @@
     <div><dt>Email</dt><dd>{{ user.email|default:'Not provided' }}</dd></div>
     <div><dt>School role</dt><dd>{{ user.get_role_display }}</dd></div>
   </dl>
-  <div class="form-actions"><a href="{% url 'accounts:password_change' %}" role="button" class="outline small button">Change password</a></div>
+  <div class="form-actions"><a href="{% url 'accounts:password_change' %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'accounts:password_change' %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Change password</a></div>
   <p class="muted">Contact your school administrator to update your details.</p>
 </section>
 {% endblock %}

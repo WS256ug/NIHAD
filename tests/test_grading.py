@@ -22,6 +22,24 @@ class GradingTestCase(AssessmentTestCase):
 
 
 class GradingTests(GradingTestCase):
+    def test_consecutive_integer_bands_cover_decimal_marks_without_rounding(self):
+        self.low.maximum = Decimal('49')
+        self.low.save()
+        self.scheme.validate_configuration()
+        from apps.academics.section_grades import assessment_grades
+        self.scheme.is_active = False
+        self.scheme.save()
+        self.assertTrue(assessment_grades(self.primary, self.actor).is_active)
+        for score in ('49', '49.5', '49.999'):
+            self.assertEqual(grade_score(Decimal(score), Decimal('100'), [self.high, self.low])[1], self.low)
+        self.assertEqual(grade_score(Decimal('50'), Decimal('100'), [self.low, self.high])[1], self.high)
+        self.assertEqual(grade_score(Decimal('24.75'), Decimal('50'), [self.low, self.high])[1], self.low)
+        for invalid_max in ('48', '49.5'):
+            self.low.maximum = Decimal(invalid_max)
+            self.low.save()
+            with self.assertRaises(ValidationError):
+                self.scheme.validate_configuration()
+
     def test_boundaries_and_non_100_maximum_use_exact_percentages(self):
         for score, expected in [('0', self.low), ('49.99', self.low), ('50', self.high), ('100', self.high)]:
             percentage, rule = grade_score(Decimal(score), Decimal('100'), [self.low, self.high])
@@ -50,7 +68,7 @@ class GradingTests(GradingTestCase):
         self.scheme.required_subjects.add(self.subject)
         math = Subject.objects.create(section=self.primary, name='Math', code='MATH')
         science = Subject.objects.create(section=self.primary, name='Science', code='SCI')
-        marks = [SimpleNamespace(subject_id=s.pk, subject=s, score=Decimal(score)) for s, score in [(self.subject, '20'), (math, '90'), (science, '80')]]
+        marks = [SimpleNamespace(subject_id=s.pk, subject=s, score=Decimal(score), is_absent=False) for s, score in [(self.subject, '20'), (math, '90'), (science, '80')]]
         self.scheme = set_academic_active(self.scheme, True, self.actor)
         result = calculate_results(self.scheme, marks, Decimal('100'))
         self.assertEqual(result['aggregate'], 10)
@@ -89,8 +107,9 @@ class GradingTests(GradingTestCase):
 
     def test_grading_configuration_pages_and_required_subject_scope(self):
         self.client.force_login(self.actor)
-        for kind in ('grading-schemes', 'grade-rules', 'division-rules'):
+        for kind in ('grade-rules', 'division-rules'):
             self.assertEqual(self.client.get(reverse('academics:record_create', args=[kind])).status_code, 200)
             self.assertEqual(self.client.get(reverse('academics:record_list', args=[kind])).status_code, 200)
+        self.assertRedirects(self.client.get(reverse('academics:record_list', args=['grading-schemes'])), reverse('academics:record_list', args=['grade-rules']))
         form = GradingSchemeForm({'section': self.nursery.pk, 'name': 'Nursery', 'mode': 'numeric', 'aggregate_mode': 'selected', 'required_subjects': [self.subject.pk]}, school=self.school, actor=self.actor)
         self.assertFalse(form.is_valid())

@@ -1,8 +1,9 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
@@ -58,7 +59,7 @@ def record_form(request, kind, pk=None):
     if request.method == 'POST' and form.is_valid():
         if attempt(form, lambda: save_category(form, request.user) if kind == 'categories' else record_cash(form, request.user)):
             messages.success(request, 'Record saved.')
-            return redirect('expenses:list', kind=kind)
+            return form_redirect(request, 'expenses:list', kind=kind)
     return form_page(request, form, title, reverse('expenses:list', args=[kind]), explanation='Financial entries are preserved. Use a reversal to correct an existing transaction.' if kind != 'categories' else '')
 
 
@@ -72,7 +73,7 @@ def reverse_record(request, kind, pk):
     record = get_object_or_404(model, pk=pk, school_id=1)
     form = ReversalForm(request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: reverse_cash(record, form.cleaned_data['reason'], request.user)):
-        return redirect('expenses:list', kind=kind)
+        return form_redirect(request, 'expenses:list', kind=kind)
     return form_page(request, form, 'Reverse transaction', reverse('expenses:list', args=[kind]), explanation=str(record))
 
 
@@ -83,5 +84,5 @@ def category_status(request, pk, active):
     record = get_object_or_404(ExpenseCategory, pk=pk, school_id=1)
     form = ConfigurationStatusForm(request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and form.is_valid() and attempt(form, lambda: set_category_active(record, active, request.user)):
-        return redirect('expenses:list', kind='categories')
+        return form_redirect(request, 'expenses:list', kind='categories')
     return form_page(request, form, 'Activate category' if active else 'Deactivate category', reverse('expenses:list', args=['categories']), explanation=str(record))

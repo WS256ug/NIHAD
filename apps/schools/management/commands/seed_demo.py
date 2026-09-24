@@ -12,6 +12,8 @@ from apps.accounts.models import User
 from apps.academics.forms import MarkForm
 from apps.academics.models import Assessment, AssessmentType, ClassTeacherAssignment, DivisionRule, GradeRule, GradingScheme, Subject, Teacher, TeachingAssignment
 from apps.academics.services import save_mark, set_academic_active, set_assessment_status
+from apps.academics.mark_sheets import SheetReviewForm, all_sheet_assignments, review_sheet, sheet_snapshot
+from apps.academics.models import MarkSubmission
 from apps.expenses.forms import ExpenseForm, IncomeForm
 from apps.expenses.models import ExpenseCategory
 from apps.expenses.services import record_cash
@@ -44,6 +46,8 @@ class Command(BaseCommand):
             raise CommandError('Set the selected demo password environment variable first.')
         validate_password(password)
         names = {'super_admin': 'demo-super', 'school_admin': 'demo-admin', 'headteacher': 'demo-headteacher', 'teacher': 'demo-teacher', 'bursar': 'demo-bursar', 'guardian': 'demo-guardian'}
+        if not settings.GUARDIAN_ACCOUNTS_ENABLED:
+            names.pop(User.Role.GUARDIAN)
         if User.objects.filter(username__in=names.values()).exists():
             raise CommandError('A demo username already exists. Use a fresh development database.')
         users = {}
@@ -83,7 +87,7 @@ class Command(BaseCommand):
         descriptive = save(GradingScheme(section=nursery, name='Demo learning levels', mode='descriptive'))
         levels = [save(GradeRule(scheme=descriptive, label=label, sort_order=index)) for index, label in enumerate(['Emerging', 'Developing', 'Achieved', 'Excellent'])]
         descriptive = set_academic_active(descriptive, True, actor)
-        guardian = save(Guardian(school=school, user=users[User.Role.GUARDIAN], first_name='Jane', last_name='Demo', email='demo-guardian@example.test', phone='0700000002'))
+        guardian = save(Guardian(school=school, user=users.get(User.Role.GUARDIAN), first_name='Jane', last_name='Demo', email='demo-guardian@example.test', phone='0700000002'))
         enrollments = []
         for index, name in enumerate(['Mary', 'John', 'Sarah']):
             form = StudentRegistrationForm({'first_name': name, 'last_name': 'Demo', 'gender': 'male' if index == 1 else 'female', 'date_of_birth': date(number - (4 if index == 2 else 10), 1, 1), 'admission_date': year.start_date, 'existing_guardian': guardian.pk, 'relationship': 'Parent'}, school=school)
@@ -107,6 +111,14 @@ class Command(BaseCommand):
                     raise CommandError(str(form.errors))
                 save_mark(form, users[User.Role.TEACHER])
         for assessment in (primary_assessment, nursery_assessment):
+            for assignment in all_sheet_assignments(assessment):
+                submission = save(MarkSubmission(assessment=assessment, assignment=assignment,
+                    status='submitted', revision=1, submitted_by=users[User.Role.TEACHER],
+                    submitted_at=timezone.now(), snapshot=sheet_snapshot(assessment, assignment)))
+                review = SheetReviewForm({'action': 'approve', 'note': 'Demo marks checked.', 'revision': submission.revision})
+                if not review.is_valid():
+                    raise CommandError(str(review.errors))
+                review_sheet(assessment, assignment, review, users[User.Role.HEADTEACHER])
             assessment = set_assessment_status(assessment, 'closed', actor)
             for report in generate_reports(assessment, actor):
                 report = teacher_comment(report, 'Steady progress this term. Keep practising.', users[User.Role.TEACHER])

@@ -3,15 +3,15 @@
 {% block content %}
 <div class="workspace">
   <a class="back-link" href="{% url 'schools:overview' %}">{% include "includes/back_icon.html" %}<span>Back to school setup</span></a>
-  <header class="page-heading"><div><h1>{{ spec.label }}</h1></div><a href="{% url 'schools:record_create' kind %}" role="button" class="outline small button">Create {{ spec.singular }}</a></header>
+  <header class="page-heading"><div><h1>{{ spec.label }}</h1></div><a data-configuration-dialog href="{% url 'schools:record_create' kind %}" hx-get="{% url 'schools:record_create' kind %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML" role="button" class="outline small button">Create {{ spec.singular }}</a></header>
   <section class="workspace-card">
-    <form method="get" class="filter-form" hx-get="{% url 'schools:record_list' kind %}" hx-target="#configuration-results" hx-select="#configuration-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
+    <form method="get" class="filter-form" hx-push-url="true" hx-get="{% url 'schools:record_list' kind %}" hx-target="#configuration-results" hx-select="#configuration-results" hx-swap="outerHTML" hx-indicator="#search-progress" hx-disabled-elt="find button">
       <div><label for="configuration-search">Search by name</label><input type="search" id="configuration-search" name="q" value="{{ query }}"></div>
       <div><label for="configuration-status">Status</label><select id="configuration-status" name="status"><option value="">All records</option><option value="active"{% if selected_status == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if selected_status == 'inactive' %} selected{% endif %}>Inactive</option></select></div>
       <button type="submit">Search</button>
     </form>
     <span id="search-progress" class="htmx-indicator" role="status">Searching…</span>
-    <div id="configuration-results" aria-live="polite">
+    <div id="configuration-results" aria-live="polite" data-refresh-url="{{ request.get_full_path }}">
       <div class="table-scroll"><table>
         <caption>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</caption>
         <thead><tr><th scope="col">Name</th><th scope="col">Belongs to</th>{% if spec.dates %}<th scope="col">Dates</th>{% endif %}<th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
@@ -19,8 +19,8 @@
           <th scope="row">{{ row.record.name }}{% if row.current %}<small class="table-secondary">Current</small>{% endif %}</th><td>{{ row.parent }}</td>
           {% if spec.dates %}<td>{{ row.record.start_date|date:'j M Y' }} – {{ row.record.end_date|date:'j M Y' }}</td>{% endif %}
           <td>{% if row.record.is_active %}<span class="role-badge">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
-          <td class="table-actions"><a href="{% url 'schools:record_edit' kind row.record.pk %}" aria-label="Edit {{ row.record.name }}" role="button" class="outline small button">Edit</a>
-            {% if row.record.is_active %}<a href="{% url 'schools:record_deactivate' kind row.record.pk %}" aria-label="Deactivate {{ row.record.name }}" role="button" class="outline small button">Deactivate</a>{% else %}<a href="{% url 'schools:record_activate' kind row.record.pk %}" aria-label="Activate {{ row.record.name }}" role="button" class="outline small button">Activate</a>{% endif %}
+          <td class="table-actions"><a data-configuration-dialog href="{% url 'schools:record_edit' kind row.record.pk %}" hx-get="{% url 'schools:record_edit' kind row.record.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML" aria-label="Edit {{ row.record.name }}" role="button" class="outline small button">Edit</a>
+            {% if row.record.is_active %}<a href="{% url 'schools:record_deactivate' kind row.record.pk %}" aria-label="Deactivate {{ row.record.name }}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'schools:record_deactivate' kind row.record.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Deactivate</a>{% else %}<a href="{% url 'schools:record_activate' kind row.record.pk %}" aria-label="Activate {{ row.record.name }}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'schools:record_activate' kind row.record.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Activate</a>{% endif %}
           </td>
         </tr>{% empty %}<tr><td colspan="{% if spec.dates %}5{% else %}4{% endif %}">No records match your search.</td></tr>{% endfor %}</tbody>
       </table></div>

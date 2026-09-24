@@ -4,7 +4,7 @@
 <div class="workspace">
   <a class="back-link" href="{% url 'students:list' %}">{% include "includes/back_icon.html" %}<span>Back to students</span></a>
   <header class="page-heading"><div><span class="eyebrow">{{ student.student_id }}</span><h1>{{ student.full_name }}</h1><span class="role-badge">{{ student.get_status_display }}</span></div>
-    {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:edit' student.pk %}" role="button" class="outline small button">Edit profile</a><a href="{% url 'students:status' student.pk %}" role="button" class="outline small button">Change status</a><a href="{% url 'students:portal_access' student.pk %}" role="button" class="button outline small">Portal access</a></div>{% endif %}
+    {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:edit' student.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:edit' student.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Edit profile</a><a href="{% url 'students:status' student.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:status' student.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Change status</a><a href="{% url 'students:portal_access' student.pk %}" role="button" class="button outline small" data-configuration-dialog hx-get="{% url 'students:portal_access' student.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Portal access</a></div>{% endif %}
   </header>
   <div class="workspace-grid">
     <section class="workspace-card"><h2>Student profile</h2>
@@ -20,17 +20,17 @@
       </dl>
     </section>
     {% if user.role != 'teacher' %}<section class="workspace-card"><h2>Guardians</h2>
-      {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:guardian_add' student.pk %}" role="button" class="outline small button">Add guardian contact</a></div>{% endif %}
+      {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:guardian_add' student.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:guardian_add' student.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Add guardian contact</a></div>{% endif %}
       {% for link in guardian_links %}<div class="relationship-card">
         <strong>{% if can_manage_students %}<a href="{% url 'students:guardian_detail' link.guardian.pk %}">{{ link.guardian }}</a>{% else %}{{ link.guardian }}{% endif %}</strong>
         <span class="table-secondary">{{ link.relationship }} · {% if link.is_active %}Active link{% else %}Inactive link{% endif %}</span>
         <p>{{ link.guardian.phone }}{% if link.guardian.email %}<br>{{ link.guardian.email }}{% endif %}</p>
         {% if link.is_primary %}<span class="role-badge">Primary</span>{% endif %}{% if link.is_emergency_contact %}<span class="role-badge">Emergency contact</span>{% endif %}
-        {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:link_edit' student.pk link.pk %}" role="button" class="outline small button">Edit link</a>{% if link.is_active %}<a href="{% url 'students:link_deactivate' student.pk link.pk %}" role="button" class="outline small button">Deactivate link</a>{% else %}<a href="{% url 'students:link_activate' student.pk link.pk %}" role="button" class="outline small button">Activate link</a>{% endif %}</div>{% endif %}
+        {% if can_manage_students %}<div class="form-actions"><a href="{% url 'students:link_edit' student.pk link.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:link_edit' student.pk link.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Edit link</a>{% if link.is_active %}<a href="{% url 'students:link_deactivate' student.pk link.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:link_deactivate' student.pk link.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Deactivate link</a>{% else %}<a href="{% url 'students:link_activate' student.pk link.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:link_activate' student.pk link.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Activate link</a>{% endif %}</div>{% endif %}
       </div>{% empty %}<p>No guardians linked yet.</p>{% endfor %}
     </section>{% endif %}
   </div>
-  <section class="workspace-card history-card"><div class="period-summary"><h2>Enrollment history</h2>{% if can_manage_students %}<a href="{% url 'students:enroll' student.pk %}" role="button" class="outline small button">Add enrollment</a>{% endif %}</div>
+  <section class="workspace-card history-card"><div class="period-summary"><h2>Enrollment history</h2>{% if can_manage_students %}<a href="{% url 'students:enroll' student.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:enroll' student.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Add enrollment</a>{% endif %}</div>
     <div class="table-scroll"><table><caption>Earlier placements are preserved when a new enrollment is added.</caption>
       <thead><tr><th scope="col">Academic year</th><th scope="col">Placement</th><th scope="col">Dates</th><th scope="col">Status</th>{% if can_manage_students %}<th scope="col">Action</th>{% endif %}</tr></thead>
       <tbody>{% for enrollment in enrollments %}<tr>
@@ -38,7 +38,7 @@
         <td>{{ enrollment.section.name }} / {{ enrollment.academic_class.name }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}</td>
         <td>{{ enrollment.enrollment_date|date:'j M Y' }}<small class="table-secondary">{% if enrollment.completion_date %}to {{ enrollment.completion_date|date:'j M Y' }}{% else %}Open{% endif %}</small></td>
         <td>{{ enrollment.get_status_display }}</td>
-        {% if can_manage_students %}<td>{% if enrollment.status == 'current' %}<a href="{% url 'students:enrollment_close' student.pk enrollment.pk %}" role="button" class="outline small button">Close enrollment</a>{% else %}Preserved{% endif %}</td>{% endif %}
+        {% if can_manage_students %}<td>{% if enrollment.status == 'current' %}<a href="{% url 'students:enrollment_close' student.pk enrollment.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:enrollment_close' student.pk enrollment.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Close enrollment</a>{% else %}Preserved{% endif %}</td>{% endif %}
       </tr>{% empty %}<tr><td colspan="{% if can_manage_students %}5{% else %}4{% endif %}">No enrollment history yet.</td></tr>{% endfor %}</tbody>
     </table></div>
   </section>

@@ -1,4 +1,5 @@
 """Use these transactional, authorized services for all student record writes."""
+from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.admin.models import ADDITION, CHANGE, LogEntry
@@ -167,6 +168,8 @@ def set_portal_access(student, password, active, actor):
 
 @transaction.atomic
 def set_guardian_access(guardian, data, actor):
+    if not settings.GUARDIAN_ACCOUNTS_ENABLED:
+        raise PermissionDenied("Separate guardian accounts are disabled. Use student portal access.")
     require_manager(actor)
     school = lock_school()
     guardian = Guardian.objects.select_for_update().get(pk=guardian.pk, school=school)

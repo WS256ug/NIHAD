@@ -32,6 +32,7 @@ def account_navigation(request):
     if can_view_academics(request.user):
         academic_children = [
             {"label": "Overview", "url": reverse("academics:overview")},
+            {"label": "Marks entry", "url": reverse("academics:marks_entry")},
             {"label": "Reports", "url": reverse("reports:list")},
         ]
         if can_manage_promotions(request.user):
@@ -39,8 +40,6 @@ def account_navigation(request):
         links.append({"label": "Academics", "url": reverse("academics:overview"), "children": academic_children})
     if can_manage_finance(request.user):
         links.append({"label": "Finance", "url": reverse("expenses:overview")})
-    if request.user.is_superuser:
-        links.append({"label": "Administration", "url": reverse("admin:index")})
     for link in links:
         link["active"] = request.path == link["url"] or (link["label"] == "School setup" and request.path.startswith(link["url"]))
         if link["label"] == "Students":

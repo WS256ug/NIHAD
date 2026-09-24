@@ -1,8 +1,9 @@
+from config.dialogs import form_redirect
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, OperationalError
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
@@ -58,7 +59,7 @@ def profile(request):
     if request.method == "POST" and form.is_valid():
         if save_or_show_errors(form, lambda: save_configuration(form, request.user)):
             messages.success(request, "School profile saved.")
-            return redirect("schools:overview")
+            return form_redirect(request, "schools:overview")
     return render(request, "schools/form.html", {"form": form, "page_title": "School profile", "cancel_url": reverse("schools:overview")})
 
 
@@ -92,6 +93,7 @@ def record_list(request, kind):
 @never_cache
 @require_http_methods(["GET", "POST"])
 def record_form(request, kind, pk=None):
+    dialog = request.headers.get("HX-Request") == "true" and request.headers.get("HX-Target") == "configuration-dialog-content"
     spec = get_configuration_type(kind)
     school = School.objects.first()
     if school is None:
@@ -100,9 +102,11 @@ def record_form(request, kind, pk=None):
     form = spec.form(request.POST if request.method == "POST" else None, school=school, instance=record)
     if request.method == "POST" and form.is_valid():
         if save_or_show_errors(form, lambda: save_configuration(form, request.user)):
+            if dialog:
+                return HttpResponse(status=204, headers={"HX-Trigger": "configurationSaved"})
             messages.success(request, "Configuration saved.")
-            return redirect("schools:record_list", kind=kind)
-    return render(request, "schools/form.html", {
+            return form_redirect(request, "schools:record_list", kind=kind)
+    return render(request, "schools/dialog_form.html" if dialog else "schools/form.html", {
         "form": form, "page_title": f"{'Edit' if pk is not None else 'Create'} {spec.singular}",
         "cancel_url": reverse("schools:record_list", args=[kind]),
     })
@@ -119,7 +123,7 @@ def record_status(request, kind, pk, activate):
     if request.method == "POST" and form.is_valid():
         if save_or_show_errors(form, lambda: set_record_active(record, activate, request.user)):
             messages.success(request, "Configuration activated." if activate else "Configuration deactivated.")
-            return redirect("schools:record_list", kind=kind)
+            return form_redirect(request, "schools:record_list", kind=kind)
     return render(request, "schools/status.html", {"form": form, "record": record, "kind": kind, "activate": activate})
 
 
@@ -138,7 +142,7 @@ def current_period(request):
     if request.method == "POST" and form.is_valid():
         if save_or_show_errors(form, lambda: set_current_period(request.user, form.cleaned_data["academic_year"], form.cleaned_data["term"])):
             messages.success(request, "Current academic period updated.")
-            return redirect("schools:overview")
+            return form_redirect(request, "schools:overview")
     return render(request, "schools/current_period.html", {"form": form})
 
 

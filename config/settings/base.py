@@ -70,6 +70,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.accounts.context_processors.account_navigation",
                 "apps.schools.context_processors.school_identity",
+                "config.dialogs.dialog_context",
             ],
         },
     },
@@ -101,6 +102,7 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_URL = "/static/"
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Whole-class marks sheets include per-row revision fields.
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
@@ -122,3 +124,6 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+# Guardian records are contacts; families use student portal credentials.
+GUARDIAN_ACCOUNTS_ENABLED = False

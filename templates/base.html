@@ -8,21 +8,21 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
   <title>{% block title %}Workspace{% endblock %} · {{ school_display_name }}</title>
-  <link rel="icon" href="{% static 'img/nihad-logo.jpg' %}" type="image/jpeg">
+  <link rel="icon" href="{% static 'img/nihad-logo.png' %}" type="image/png">
   <link rel="stylesheet" href="{% static 'vendor/oat/oat.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=login-logo-6">
   <script src="{% static 'vendor/oat/oat.min.js' %}" defer></script>
   <script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
-  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}?v=login-logo-6" defer></script>
 </head>
 <body hx-history="false">
   <a class="skip-link" href="#main-content">Skip to content</a>
-  {% if user.is_authenticated %}
+  {% if user.is_authenticated and not hide_navigation %}
   <div data-sidebar-layout class="app-layout">
     <aside data-sidebar id="app-sidebar" aria-label="School workspace">
       <header>
         <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
-          <img class="brand-logo" src="{% static 'img/nihad-logo.jpg' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
+          <img class="brand-logo" src="{% static 'img/nihad-logo.png' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
         </a>
       </header>
       <nav aria-label="Main navigation">
@@ -49,17 +49,17 @@
         </form>
       </footer>
     </aside>
-  {% else %}
+  {% elif not hide_navigation %}
   <header class="site-header">
     <a class="brand" href="{% url 'dashboard:home' %}" aria-label="{{ school_display_name }} home">
-      <img class="brand-logo" src="{% static 'img/nihad-logo.jpg' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
+      <img class="brand-logo" src="{% static 'img/nihad-logo.png' %}" alt="Nihad Baby School and Day Care logo" width="64" height="64">
       <span>{{ school_display_name }} <span class="brand-subtitle">School management</span></span>
     </a>
       <span class="header-note">School portal</span>
   </header>
   {% endif %}
   <main id="main-content" tabindex="-1">
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and not hide_navigation %}
     <div data-sidebar-header class="mobile-sidebar-header">
       <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="Toggle navigation menu" class="sidebar-icon-button">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -73,14 +73,17 @@
       </div>
     {% endif %}
     <div id="request-error" class="notice request-error" role="alert" hidden>
-      We couldn't complete that request. Check your connection and try again.
+      We couldn't complete that request. Please try again.
+      <button type="button" class="outline small" data-dismiss-request-error aria-label="Dismiss error message">Dismiss</button>
     </div>
-    {% block content %}{% endblock %}
+    <p id="configuration-feedback" class="workspace dialog-feedback" role="status" hidden></p>
+    <div id="workspace-content">{% block content %}{% endblock %}</div>
+    <dialog id="configuration-dialog" aria-labelledby="configuration-dialog-title" closedby="closerequest"><div id="configuration-dialog-content"></div></dialog>
   <footer class="site-footer">
     <span>{{ school_display_name }}</span>
     <span>A Child Time Experience.</span>
   </footer>
   </main>
-  {% if user.is_authenticated %}</div>{% endif %}
+  {% if user.is_authenticated and not hide_navigation %}</div>{% endif %}
 </body>
 </html>

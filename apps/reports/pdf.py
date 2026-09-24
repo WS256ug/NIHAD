@@ -1,5 +1,6 @@
 """PDF output shares the same immutable report data and authorization as HTML."""
 from html import escape
+from .formatting import report_number
 from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -45,10 +46,12 @@ def report_pdf(report):
     data = report.snapshot
     numeric = data['mode'] == 'numeric'
     columns = ['Subject', 'Score', 'Grade', 'Points'] if numeric else ['Learning area', 'Level']
-    rows = [[row['subject'], row['score'], row['grade'], row['points']] if numeric else [row['subject'], row['grade']] for row in data['subjects']]
+    rows = [[row['subject'], report_number(row['score']), row['grade'], row['points']] if numeric else [row['subject'], row['grade']] for row in data['subjects']]
     details = [('Student', f"{data['student']} · {data['registration_number']}"), ('Class and period', f"{data['section']} / {data['class']} {data['stream']} · {data['year']} / {data['term']} / {data['assessment']}")]
-    if numeric:
-        details.append(('Results', f"Total: {data['total']} · Average: {data['average']}% · Maximum per subject: {data['maximum_score']}"))
+    if numeric and data['average'] is not None:
+        details.append(('Results', f"Total: {report_number(data['total'])} · Average: {report_number(data['average'])}% · Maximum per subject: {report_number(data['maximum_score'])}"))
+    elif numeric:
+        details.append(('Results', 'Absent for one or more subjects. Overall results and position are not calculated.'))
     if data['aggregate'] is not None:
         details.append(('Aggregate and division', f"Aggregate: {data['aggregate']} · Division: {data['division']}"))
     if data['position'] is not None:

@@ -1,0 +1,6 @@
+<div data-form-dialog>
+  <header class="dialog-heading"><h2 id="configuration-dialog-title">{% block title %}Enter details{% endblock %}</h2><button type="button" class="outline small" data-dialog-cancel aria-label="Close dialog">Close</button></header>
+  {% block content %}{% endblock %}
+  <p class="dialog-error" role="alert" hidden>We couldn't complete that request. Please try again.</p>
+  <span class="htmx-indicator" role="status">Saving…</span>
+</div>

@@ -1,0 +1,7 @@
+<form method="post" action="{{ request.path }}" hx-post="{{ request.path }}" hx-target="#configuration-dialog-content" hx-swap="innerHTML" hx-disabled-elt="find button[type='submit']">
+  <header><h2 id="configuration-dialog-title">{{ page_title }}</h2><p class="muted">Enter the details below, then save your changes.</p></header>
+  {% csrf_token %}
+  {% include 'includes/form_fields.html' %}
+  <p class="dialog-error" role="alert" hidden>We couldn't complete that request. Please try again.</p>
+  <footer class="form-actions"><button type="button" class="outline" data-dialog-cancel>Cancel</button><button type="submit">Save changes</button><span class="htmx-indicator" role="status">Saving…</span></footer>
+</form>

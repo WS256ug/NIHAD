@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Student portal sign-in{% endblock %}
 {% block content %}
-<section class="account-page workspace-card" id="portal-sign-in">
-  <span class="eyebrow">For students and guardians</span><h1>Student portal</h1>
-  <p>Enter the student's registration number and the password provided by the school.</p>
+<div class="login-layout">
+{% include 'includes/login_logo.html' %}
+<section class="sign-in-panel" id="portal-sign-in" aria-labelledby="portal-sign-in-title">
+  <span class="eyebrow">For students and guardians</span><h2 id="portal-sign-in-title">Student portal</h2>
+  <p class="muted">Enter the student's registration number and the password provided by the school.</p>
   <form method="post" action="{% url 'students:portal_login' %}" hx-post="{% url 'students:portal_login' %}" hx-target="#portal-sign-in" hx-select="#portal-sign-in" hx-swap="outerHTML" hx-disabled-elt="find button" hx-indicator="#portal-loading">
     {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">{% include 'includes/form_fields.html' %}
-    <button type="submit">Sign in</button><span id="portal-loading" class="htmx-indicator" role="status">Signing in…</span>
-  </form><p>For a forgotten password, contact the school administrator.</p><a href="{% url 'accounts:login' %}">Staff sign-in</a>
+    <button type="submit" class="sign-in-button">Sign in <span aria-hidden="true">&rarr;</span></button><span id="portal-loading" class="htmx-indicator" role="status">Signing in…</span>
+  </form><p class="sign-in-help">For a forgotten password, contact the school administrator.<br><a href="{% url 'accounts:login' %}">Staff sign-in</a></p>
 </section>
+</div>
 {% endblock %}

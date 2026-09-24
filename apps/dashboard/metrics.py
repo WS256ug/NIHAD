@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.db.models import Count, Q
 from django.urls import reverse
 from apps.accounts.models import User
-from apps.academics.models import Assessment, ClassTeacherAssignment, Mark, Teacher
+from apps.academics.models import Assessment, ClassTeacherAssignment, Mark, MarkSubmission, Teacher
 from apps.academics.permissions import assessment_assignments, assessment_enrollments, teacher_assignments, visible_assessments, visible_enrollments
 from apps.expenses.services import financial_summary
 from apps.finance.models import Payment
@@ -37,6 +37,10 @@ def dashboard_metrics(user, role):
         reports = StudentReport.objects.filter(enrollment__student__school_id=1, is_current=True)
         card('Reports awaiting review', reports.filter(status='review').count(), reverse('reports:list') + '?status=review')
         card('Approved reports', reports.filter(status='approved').count(), reverse('reports:list') + '?status=approved')
+        submitted = MarkSubmission.objects.filter(assessment__term__academic_year__school_id=1, status='submitted').select_related('assignment__subject', 'assessment__academic_class')
+        card('Marks sheets awaiting review', submitted.count(), reverse('academics:marks_entry'))
+        for sheet in submitted[:8]:
+            result['tasks'].append({'label': f'Review marks: {sheet.assessment.academic_class} / {sheet.assignment.subject}', 'url': reverse('academics:marks', args=[sheet.assessment_id]) + f'?assignment={sheet.assignment_id}'})
         card('Draft promotion batches', PromotionBatch.objects.filter(source_year__school_id=1, status='draft').count(), reverse('promotions:list'))
         enrollments = Enrollment.objects.filter(student__school_id=1, status='current')
         if school and school.current_academic_year_id:
@@ -79,7 +83,7 @@ def dashboard_metrics(user, role):
         for label, key in [('Fees collected', 'paid'), ('Outstanding fees', 'balance'), ('Expenses', 'expenses'), ('Surplus / deficit', 'net')]:
             card(label, f"{currency} {result['finance_summary'][key]:,.2f}", reverse('expenses:overview'), description='All recorded periods')
         result['recent_payments'] = Payment.objects.filter(charge__enrollment__student__school_id=1).select_related('reversal').order_by('-created_at')[:8]
-    academic_labels = {'Reports awaiting review', 'Approved reports', 'Draft promotion batches', 'Mean published report average', 'Open assessments', 'Marks to enter', 'Class-teacher comments due'}
+    academic_labels = {'Reports awaiting review', 'Approved reports', 'Draft promotion batches', 'Mean published report average', 'Open assessments', 'Marks to enter', 'Class-teacher comments due', 'Marks sheets awaiting review'}
     finance_labels = {'Fees collected', 'Outstanding fees', 'Expenses', 'Surplus / deficit'}
     groups = {'School overview': [], 'Academic tasks': [], 'Finance': []}
     for metric in cards:
@@ -88,13 +92,13 @@ def dashboard_metrics(user, role):
     result['metric_groups'] = [{'title': title, 'cards': values} for title, values in groups.items() if values]
     actions = []
     if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN):
-        actions.append({'label': 'Register student', 'url': reverse('students:create')})
-        actions.append({'label': 'Create assessment', 'url': reverse('academics:record_create', args=['assessments'])})
+        actions.append({'label': 'Register student', 'url': reverse('students:create'), 'dialog': True})
+        actions.append({'label': 'Create assessment', 'url': reverse('academics:record_create', args=['assessments']), 'dialog': True})
     if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.BURSAR):
         actions.append({'label': 'Record payment', 'url': reverse('finance:overview') + '?outstanding=1'})
     if role == User.Role.HEADTEACHER:
         actions.append({'label': 'Review reports', 'url': reverse('reports:list') + '?status=review'})
     if role == User.Role.TEACHER:
-        actions.append({'label': 'Enter marks', 'url': reverse('academics:record_list', args=['assessments'])})
+        actions.append({'label': 'Enter marks', 'url': reverse('academics:marks_entry')})
     result['quick_actions'] = actions
     return result
