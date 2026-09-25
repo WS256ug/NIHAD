@@ -162,3 +162,22 @@ class PromotionTests(ReportTestCase):
         self.assertContains(response, 'hx-select="#promotion-batch-form"')
         self.assertContains(response, 'hx-target="#configuration-dialog-content"')
         self.assertEqual(list(response.context['form'].fields['destination_year'].queryset), [self.next_year])
+
+    def test_current_decision_choices(self):
+        from apps.promotions.forms import DecisionForm
+        form = DecisionForm(enrollments=Enrollment.objects.all())
+        self.assertEqual(list(form.fields['decision'].choices), [('promoted', 'Promoted'), ('probation', 'Promoted On Probation'), ('repeating', 'Try Again')])
+
+    def test_probation_promotes_and_preserves_decision_in_history(self):
+        batch = self.batch('probation')
+        self.client.force_login(self.actor)
+        response = self.client.get(reverse('promotions:preview', args=[batch.pk]))
+        self.assertContains(response, 'Promoted On Probation')
+        self.assertContains(response, self.destination.name)
+        confirm_batch(batch, batch.revision, self.actor)
+        decision = batch.decisions.get()
+        self.assertEqual(decision.new_enrollment.academic_class, self.destination)
+        self.assertEqual(decision.new_enrollment.academic_year, self.next_year)
+        self.assertEqual(decision.snapshot['decision'], 'Promoted On Probation')
+        self.enrollment.refresh_from_db()
+        self.assertEqual(self.enrollment.status, 'promoted')

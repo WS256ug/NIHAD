@@ -77,4 +77,4 @@ class SuperuserConfigurationTests(SchoolTestCase):
             self.assertEqual(response.status_code, 302)
         identifiers = list(Student.objects.values_list("student_id", flat=True))
         self.assertEqual(len(set(identifiers)), 2)
-        self.assertTrue(all(value.startswith("STD-") for value in identifiers))
+        self.assertEqual(set(identifiers), {"NBS-0001", "NBS-0002"})

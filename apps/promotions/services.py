@@ -25,15 +25,15 @@ def eligible_enrollments(batch):
 
 
 def destination(batch, enrollment, decision):
-    if decision in ('promoted', 'repeating'):
+    if decision in ('promoted', 'probation', 'repeating'):
         if not batch.destination_year_id or not batch.enrollment_date:
             raise ValidationError('Promotion and repetition require a destination year and enrollment date.')
         classroom = enrollment.academic_class if decision == 'repeating' else batch.destination_class
         stream = enrollment.stream if decision == 'repeating' else batch.destination_stream
         if batch.destination_year.start_date <= enrollment.academic_year.end_date:
             raise ValidationError('Choose a destination year after the source year.')
-        if classroom is None or (decision == 'promoted' and not type(classroom).objects.filter(pk=classroom.pk).filter(higher_classes(enrollment.academic_class)).exists()):
-            raise ValidationError('Choose a higher destination class for promotion, or use Repeat.')
+        if classroom is None or (decision in ('promoted', 'probation') and not type(classroom).objects.filter(pk=classroom.pk).filter(higher_classes(enrollment.academic_class)).exists()):
+            raise ValidationError('Choose a higher destination class for promotion, or choose Try Again.')
         return classroom, stream
     return None, None
 
@@ -95,9 +95,10 @@ def confirm_batch(batch, revision, actor):
             raise ValidationError('An enrollment is no longer current. No decisions were applied.')
         classroom, stream = destination(batch, source, decision.decision)
         student = Student.objects.select_for_update().get(pk=source.student_id)
-        source.status, source.completion_date = decision.decision, batch.completion_date
+        status = 'promoted' if decision.decision == 'probation' else decision.decision
+        source.status, source.completion_date = status, batch.completion_date
         write_record(source, actor, 'Closed source enrollment through promotion batch.', update_fields=['status', 'completion_date'])
-        student.status = decision.decision
+        student.status = status
         write_record(student, actor, 'Updated student status through promotion batch.', update_fields=['status'])
         if classroom:
             created = Enrollment(student=student, academic_year=batch.destination_year, section=classroom.section, academic_class=classroom, stream=stream, enrollment_date=batch.enrollment_date)

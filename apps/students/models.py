@@ -32,6 +32,11 @@ class Student(AuditedModel):
         GRADUATED = "graduated", "Graduated"
         INACTIVE = "inactive", "Inactive"
 
+    class Religion(models.TextChoices):
+        MOSLEM = "Moslem", "Moslem"
+        CHRISTIAN = "Christian", "Christian"
+        OTHER = "Other", "Other"
+
     class Gender(models.TextChoices):
         FEMALE = "female", "Female"
         MALE = "male", "Male"
@@ -47,8 +52,7 @@ class Student(AuditedModel):
     admission_date = models.DateField(default=timezone.localdate)
     admission_number = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE, db_index=True)
-    religion = models.CharField(max_length=100, blank=True)
-    contact_phone = models.CharField(max_length=40, blank=True)
+    religion = models.CharField(max_length=100, choices=Religion.choices, blank=True)
     portal_user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, editable=False, on_delete=models.PROTECT, related_name="portal_student")
 
     class Meta:

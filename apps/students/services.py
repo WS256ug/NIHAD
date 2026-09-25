@@ -35,7 +35,7 @@ def save_student(form, actor):
                 counter, _ = StudentNumber.objects.get_or_create(school=school)
                 StudentNumber.objects.filter(pk=counter.pk).update(last_value=models.F("last_value") + 1)
                 counter.refresh_from_db()
-                record.student_id = f"STD-{counter.last_value:06d}"
+                record.student_id = f"NBS-{counter.last_value:04d}"
             else:
                 previous = lock_student(record.pk, school)
                 record.status = previous.status

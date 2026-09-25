@@ -52,16 +52,18 @@ class StudentTestCase(SchoolTestCase):
 
 class StudentRecordTests(StudentTestCase):
     def test_religion_registration_edit_and_profile(self):
-        form = StudentRegistrationForm(self.student_data(religion="Islam"), school=self.school)
+        form = StudentRegistrationForm(self.student_data(religion="Moslem"), school=self.school)
         self.assertNotIn("address", form.fields)
+        self.assertNotIn("contact_phone", form.fields)
+        self.assertIn("guardian_phone", form.fields)
         self.assertEqual(form.fields["guardian_address"].label, "Address")
         self.assertTrue(form.is_valid(), form.errors)
         student = services.save_student(form, self.actor)
         student.refresh_from_db()
-        self.assertEqual(student.religion, "Islam")
+        self.assertEqual(student.religion, "Moslem")
         self.client.force_login(self.actor)
         response = self.client.get(reverse("students:detail", args=[student.pk]))
-        self.assertContains(response, "<dt>Religion</dt><dd>Islam</dd>", html=True)
+        self.assertContains(response, "<dt>Religion</dt><dd>Moslem</dd>", html=True)
         form = StudentForm(self.student_data(religion=""), instance=student, school=self.school)
         self.assertTrue(form.is_valid(), form.errors)
         services.save_student(form, self.actor)
@@ -69,8 +71,20 @@ class StudentRecordTests(StudentTestCase):
         self.assertEqual(student.religion, "")
 
 
+    def test_religion_choices_and_invalid_input(self):
+        from django.forms import Select
+        form = StudentForm(school=self.school)
+        self.assertIsInstance(form.fields["religion"].widget, Select)
+        self.assertEqual(list(form.fields["religion"].choices), [("", "---------"), ("Moslem", "Moslem"), ("Christian", "Christian"), ("Other", "Other")])
+        for religion in ("Moslem", "Christian", "Other", ""):
+            form = StudentForm(self.student_data(religion=religion), school=self.school)
+            self.assertTrue(form.is_valid(), form.errors)
+        form = StudentForm(self.student_data(religion="Invalid"), school=self.school)
+        self.assertFalse(form.is_valid())
+        self.assertIn("religion", form.errors)
+
     def test_ids_are_generated_unique_immutable_and_not_taken_from_post(self):
-        for expected in ("STD-000002", "STD-000003"):
+        for expected in ("NBS-0002", "NBS-0003"):
             form = StudentRegistrationForm(self.student_data(student_id="FORGED", school="999", status="graduated", created_by="999"), school=self.school)
             self.assertTrue(form.is_valid(), form.errors)
             student = services.save_student(form, self.actor)
@@ -383,7 +397,7 @@ class StudentViewTests(StudentTestCase):
     def test_full_registration_link_enrollment_and_status_workflow(self):
         self.client.force_login(self.actor)
         response = self.client.post(reverse("students:create"), self.student_data())
-        student = Student.objects.get(student_id="STD-000002")
+        student = Student.objects.get(student_id="NBS-0002")
         self.assertRedirects(response, reverse("students:detail", args=[student.pk]))
         self.assertEqual(student.guardian_links.get().guardian, self.guardian)
         self.assertRedirects(self.client.post(reverse("students:enroll", args=[student.pk]), self.enrollment_data()), reverse("students:detail", args=[student.pk]))

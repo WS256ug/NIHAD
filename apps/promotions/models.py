@@ -59,11 +59,16 @@ class PromotionBatch(AuditedModel):
 
 class PromotionDecision(AuditedModel):
     class Decision(models.TextChoices):
-        PROMOTE = 'promoted', 'Promote'
-        REPEAT = 'repeating', 'Repeat'
+        PROMOTE = 'promoted', 'Promoted'
+        PROBATION = 'probation', 'Promoted On Probation'
+        REPEAT = 'repeating', 'Try Again'
         TRANSFER = 'transferred', 'Transfer out'
         WITHDRAW = 'withdrawn', 'Withdraw'
         GRADUATE = 'graduated', 'Graduate'
+
+    @classmethod
+    def current_choices(cls):
+        return [(value, value.label) for value in (cls.Decision.PROMOTE, cls.Decision.PROBATION, cls.Decision.REPEAT)]
 
     batch = models.ForeignKey(PromotionBatch, on_delete=models.PROTECT, related_name='decisions')
     enrollment = models.ForeignKey('students.Enrollment', on_delete=models.PROTECT, related_name='promotion_decisions')
@@ -75,7 +80,7 @@ class PromotionDecision(AuditedModel):
 
     class Meta:
         ordering = ('enrollment__student__last_name', 'enrollment__student__first_name', 'pk')
-        constraints = [models.UniqueConstraint(fields=('batch', 'enrollment'), name='promotions_decision_unique'), models.CheckConstraint(condition=models.Q(decision__in=['promoted', 'repeating', 'transferred', 'withdrawn', 'graduated']), name='promotions_decision_valid')]
+        constraints = [models.UniqueConstraint(fields=('batch', 'enrollment'), name='promotions_decision_unique'), models.CheckConstraint(condition=models.Q(decision__in=['promoted', 'probation', 'repeating', 'transferred', 'withdrawn', 'graduated']), name='promotions_decision_valid')]
 
     def __str__(self):
         return f'{self.enrollment.student.student_id} / {self.get_decision_display()}'

@@ -17,5 +17,5 @@ class StudentRecordAdmin(ConfigurationAdmin):
             counter, _ = StudentNumber.objects.select_for_update().get_or_create(school=obj.school)
             StudentNumber.objects.filter(pk=counter.pk).update(last_value=F("last_value") + 1)
             counter.refresh_from_db()
-            obj.student_id = f"STD-{counter.last_value:06d}"
+            obj.student_id = f"NBS-{counter.last_value:04d}"
         super().save_model(request, obj, form, change)

@@ -36,7 +36,7 @@ def batch_create(request):
         batch = attempt(form, lambda: create_batch(form, request.user))
         if batch:
             return form_redirect(request, 'promotions:edit', pk=batch.pk)
-    return form_page(request, form, 'Create promotion batch', reverse('promotions:list'), form_id='promotion-batch-form', is_form_dialog=dialog, form_base_template='includes/dialog_base.html' if dialog else 'base.html', explanation='Choose the source class and year. Set a later destination year for promotion or repetition. Transfer, withdrawal and graduation close the source enrollment without creating a new one.')
+    return form_page(request, form, 'Create promotion batch', reverse('promotions:list'), form_id='promotion-batch-form', is_form_dialog=dialog, form_base_template='includes/dialog_base.html' if dialog else 'base.html', explanation='Choose the source class and a later destination year. Promoted and Promoted On Probation move students to the higher destination class. Try Again keeps them in the source class in the new year.')
 
 
 @role_required(*ROLES)

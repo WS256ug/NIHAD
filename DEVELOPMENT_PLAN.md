@@ -470,3 +470,39 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Applied the review-default migration locally. Browser verification could not run because no browser is connected; automated tests cover form refresh responses and preserved dialog submission attributes.
 - Next milestone: browser verification of promotion dropdown changes and the optional review checkbox when a browser is connected.
 - Final verification: all 270 Django tests pass; system checks, migration-drift check and diff check pass.
+
+
+## Student religion choices
+
+- Religion now uses an optional dropdown with Moslem, Christian and Other in registration, editing and Django admin. Django model/form validation rejects values outside these choices.
+- Applied migration 0007 locally: normalized Islam/Muslim/Moslem to Moslem, Christian/Christianity to Christian, other nonblank values to Other, and preserved blanks.
+- Verified registration/edit/profile coverage and choice validation; system and migration-drift checks pass.
+- Next milestone: continue student profile refinements as requested.
+- Final verification: all 271 Django tests pass.
+
+
+## Guardian-only contact details
+
+- Removed Student.contact_phone from the model, registration/edit forms and student profile. Guardian phone/email fields and linked guardian contact displays remain available.
+- Applied migration 0008 locally to remove the student contact column. Updated registration coverage to verify that guardian phone remains and student contact phone is absent.
+- System and migration-drift checks pass. Next milestone: continue student registration refinements as requested.
+- Final verification: all 271 Django tests pass; diff check is clean.
+
+
+## NBS registration numbers for new students
+
+- New registrations through the student workspace and Django admin now use NBS-0001 format with a minimum of four digits; numbers naturally expand after 9999.
+- Kept the existing transactional counter, existing student numbers, portal usernames and historical records unchanged. No schema or data migration is needed.
+- Updated registration and admin tests to verify the NBS format and continued numbering alongside legacy STD records.
+- Next milestone: continue registration refinements as requested.
+- Verification: all 271 Django tests pass; system, migration-drift and diff checks pass.
+
+
+## Promotion decision terminology and probation
+
+- The promotion decision dropdown now offers Promoted, Promoted On Probation and Try Again.
+- Both promotion outcomes advance to a higher class in a later academic year. Try Again repeats the source class/stream in that later year.
+- Probation is stored as a distinct promotion decision and included in the historical snapshot; student and completed source enrollment status remain Promoted. Legacy transfer, withdrawal and graduation decisions remain readable and preserved.
+- Updated draft preview and batch instructions. Applied promotions migration 0002 locally; system and migration-drift checks pass.
+- Next milestone: continue promotion workflow refinements as requested.
+- Final verification: all 273 Django tests pass, including probation advancement and exact dropdown choices; diff check passes.

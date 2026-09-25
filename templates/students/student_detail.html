@@ -15,7 +15,7 @@
         <div><dt>Date of birth</dt><dd>{{ student.date_of_birth|date:'j M Y' }}</dd></div>
         <div><dt>Admission date</dt><dd>{{ student.admission_date|date:'j M Y' }}</dd></div>
         <div><dt>Admission number</dt><dd>{{ student.admission_number|default:'Not provided' }}</dd></div>
-        {% if user.role != 'teacher' %}<div><dt>Contact phone</dt><dd>{{ student.contact_phone|default:'Not provided' }}</dd></div>
+        {% if user.role != 'teacher' %}
         <div><dt>Religion</dt><dd>{{ student.religion|default:'Not provided' }}</dd></div>{% endif %}
       </dl>
     </section>

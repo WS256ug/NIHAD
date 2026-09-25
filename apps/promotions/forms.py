@@ -38,14 +38,14 @@ class BatchForm(forms.ModelForm):
                 'hx-params': ','.join(self._meta.fields),
             })
         self.fields['destination_year'].help_text = 'Choose a source year first. Only later active years are available.'
-        self.fields['destination_class'].help_text = 'Promoted students enter this class. Repeating students remain in their source class in the new year.'
+        self.fields['destination_class'].help_text = 'Promoted students enter this class. Try Again keeps students in their source class in the new year.'
         set_date_widgets(self)
 
 
 class DecisionForm(forms.Form):
     enrollment = forms.ModelChoiceField(queryset=Enrollment.objects.none(), widget=forms.HiddenInput)
     selected = forms.BooleanField(required=False, label='Include student')
-    decision = forms.ChoiceField(choices=PromotionDecision.Decision.choices)
+    decision = forms.ChoiceField(choices=PromotionDecision.current_choices())
     notes = forms.CharField(max_length=500, required=False)
 
     def __init__(self, *args, enrollments, **kwargs):

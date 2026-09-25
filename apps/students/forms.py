@@ -25,7 +25,7 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ("first_name", "middle_name", "last_name", "gender", "date_of_birth", "admission_date", "admission_number", "photo", "religion", "contact_phone")
+        fields = ("first_name", "middle_name", "last_name", "gender", "date_of_birth", "admission_date", "admission_number", "photo", "religion")
 
     def __init__(self, *args, school, **kwargs):
         super().__init__(*args, **kwargs)
