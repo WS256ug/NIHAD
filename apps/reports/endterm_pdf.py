@@ -15,10 +15,10 @@ def endterm_pdf(report):
     data = report.snapshot
     output = BytesIO()
     width = 186 * mm
-    green, navy, pale, line = [colors.HexColor(c) for c in ('#005a4e', '#063e72', '#edf7fc', '#b9d9e7')]
-    body = ParagraphStyle('Report', fontName='Helvetica', fontSize=9, leading=13, textColor=navy)
+    burgundy, charcoal, pale, line, gold = [colors.HexColor(c) for c in ('#800020', '#333333', '#F8F1F3', '#e4d4d9', '#B89B5E')]
+    body = ParagraphStyle('Report', fontName='Helvetica', fontSize=9, leading=13, textColor=charcoal)
     small = ParagraphStyle('Small', parent=body, fontSize=8, leading=11)
-    title = ParagraphStyle('School', parent=body, fontName='Helvetica-Bold', fontSize=18, leading=21, textColor=green)
+    title = ParagraphStyle('School', parent=body, fontName='Helvetica-Bold', fontSize=18, leading=21, textColor=burgundy)
     heading = ParagraphStyle('Heading', parent=body, fontName='Helvetica-Bold', textColor=colors.white)
 
     def p(value, style=body):
@@ -30,14 +30,14 @@ def endterm_pdf(report):
                  ('RIGHTPADDING', (0, 0), (-1, -1), 7), ('TOPPADDING', (0, 0), (-1, -1), 4),
                  ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]
         if header:
-            rules += [('BACKGROUND', (0, 0), (-1, 0), navy), ('GRID', (0, 0), (-1, -1), .4, line),
+            rules += [('BACKGROUND', (0, 0), (-1, 0), burgundy), ('GRID', (0, 0), (-1, -1), .4, line),
                       ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, pale])]
         result.setStyle(TableStyle(rules))
         return result
 
     def section(text):
         result = table([[p(text, heading)]], [width])
-        result.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), navy)]))
+        result.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), burgundy), ('LINEBELOW', (0,0),(-1,-1),.6,gold)]))
         result.keepWithNext = True
         return result
 
@@ -77,7 +77,7 @@ def endterm_pdf(report):
         values += [row.get('grade')] + ([row.get('points')] if points else [])
         rows.append([p(value) for value in values])
     marks_table = table(rows, [64*mm] + [(width-64*mm)/(len(columns)-1)]*(len(columns)-1), header=True, repeatRows=2)
-    marks_table.setStyle(TableStyle([('SPAN', (0,0),(-1,0)), ('BACKGROUND',(0,1),(-1,1),navy)]))
+    marks_table.setStyle(TableStyle([('SPAN', (0,0),(-1,0)), ('LINEBELOW',(0,0),(-1,0),.6,gold), ('BACKGROUND',(0,1),(-1,1),burgundy)]))
     story.append(marks_table)
     if numeric:
         story.append(p('Marks out of ' + report_number(data['maximum_score']) + ('. Final mark = ' + ' + '.join(f"{s['name']} ({report_number(s['weight'])}%)" for s in sets) if sets else ''), small))
@@ -111,7 +111,7 @@ def endterm_pdf(report):
     def footer(canvas, doc):
         canvas.saveState()
         canvas.setFont('Helvetica', 8)
-        canvas.setFillColor(navy)
+        canvas.setFillColor(charcoal)
         canvas.drawString(12*mm, 10*mm, f"{data['registration_number']} | {report.get_status_display()} | Version {report.version}")
         canvas.drawRightString(198*mm, 10*mm, f'Page {doc.page}')
         canvas.restoreState()

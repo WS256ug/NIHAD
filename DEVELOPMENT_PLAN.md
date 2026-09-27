@@ -544,3 +544,10 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Visually checked a one-page eight-subject PDF and a multi-page stress report with repeated table headers and lengthy comments. Sample-only previews are in output/pdf; no student data was used. Browser visual review remains a next milestone.
 - Next milestone: review the End-Term layout with school staff using an actual draft report and confirm school contact details and term dates.
 - Final verification: all 289 Django tests pass; Django system, migration-drift and diff checks pass.
+
+## End-Term burgundy school palette
+
+- Applied burgundy and white with charcoal text, soft blush surfaces and restrained gold accents to End-Term HTML, browser print and PDF output.
+- Refreshed the sample PDF and image; visually verified the one-page layout. Added a PDF binary Git attribute to prevent line-ending conversion of report artifacts.
+- Next milestone: school review of the updated palette in the browser and a printed draft.
+- Verification: all 289 Django tests pass; system and migration checks pass; refreshed PDF visually checked.
