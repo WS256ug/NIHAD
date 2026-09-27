@@ -52,12 +52,18 @@ def generate_reports(assessment, actor):
         results[enrollment.pk] = calculate_results(assessment.grading_scheme, marks, assessment.maximum_score)
     rank = school.enable_ranking and assessment.grading_scheme.mode == 'numeric'
     positions = competition_positions(results) if rank else {}
+    from apps.schools.models import Term
+    next_term = Term.objects.filter(academic_year__school=school, start_date__gt=assessment.term.end_date).order_by('start_date').first()
+    final_term = not Term.objects.filter(academic_year=assessment.term.academic_year, start_date__gt=assessment.term.start_date).exists()
     reports = []
     for enrollment in enrollments:
         result = results[enrollment.pk]
         snapshot = {
             'schema_version': 1, 'school': school.name, 'motto': school.motto,
             'school_address': school.address, 'school_phone': school.phone,
+            'gender': enrollment.student.get_gender_display(), 'date_of_birth': enrollment.student.date_of_birth.isoformat(),
+            'school_email': school.email, 'school_website': school.website,
+            'next_term_start': next_term.start_date.isoformat() if next_term else None,
             'student': enrollment.student.full_name, 'registration_number': enrollment.student.student_id,
             'section': enrollment.section.name, 'class': enrollment.academic_class.name,
             'stream': enrollment.stream.name if enrollment.stream_id else '',
@@ -67,6 +73,10 @@ def generate_reports(assessment, actor):
             'position': positions.get(enrollment.pk), 'cohort_size': len(positions) if rank else None,
             **result,
         }
+        if final_term:
+            decision = enrollment.promotion_decisions.filter(selected=True, batch__status='confirmed').order_by('-batch__confirmed_at').first()
+            if decision:
+                snapshot['promotion_decision'] = decision.snapshot.get('decision') or decision.get_decision_display()
         report = assessment.reports.filter(enrollment=enrollment, is_current=True).first() or StudentReport(assessment=assessment, enrollment=enrollment)
         report.snapshot = snapshot
         report.teacher_comment = report.headteacher_comment = ''
@@ -89,6 +99,7 @@ def teacher_comment(report, comment, actor):
     report = current_report(report)
     if not can_comment(actor, report):
         raise PermissionDenied
+    report.snapshot = {**report.snapshot, 'teacher_name': actor.get_full_name() or actor.username, 'teacher_comment_date': timezone.localdate().isoformat()}
     report.teacher_comment = comment.strip()
     report.status = 'review'
     return write_record(report, actor, 'Submitted class-teacher comment for headteacher review.')
@@ -102,6 +113,7 @@ def review_report(report, comment, approve, actor):
     report = current_report(report)
     if report.status != 'review' or not comment.strip():
         raise ValidationError('Review requires a submitted report and a headteacher comment.')
+    report.snapshot = {**report.snapshot, 'headteacher_name': actor.get_full_name() or actor.username, 'headteacher_comment_date': timezone.localdate().isoformat()}
     report.headteacher_comment = comment.strip()
     report.status = 'approved' if approve else 'draft'
     return write_record(report, actor, 'Approved report.' if approve else 'Returned report for correction.')

@@ -77,7 +77,7 @@ class ClassTeacherAssignmentForm(AssignmentForm):
 class AssessmentTypeForm(forms.ModelForm):
     class Meta:
         model = AssessmentType
-        fields = ("name", "two_exam_sets")
+        fields = ("name", "two_exam_sets", "screen_only_report")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)

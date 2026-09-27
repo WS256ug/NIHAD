@@ -44,21 +44,8 @@ def document_pdf(title, subtitle, columns, rows, paragraphs=()):
 
 
 def report_pdf(report):
-    data = report.snapshot
-    numeric = data['mode'] == 'numeric'
-    columns = ['Subject', 'Score', 'Grade', 'Points'] if numeric else ['Learning area', 'Level']
-    rows = [[row['subject'], report_number(row['score']), row['grade'], row['points']] if numeric else [row['subject'], row['grade']] for row in data['subjects']]
-    if data.get('exam_sets'):
-        columns = ['Subject'] + [f"{item['name']} ({report_number(item['weight'])}%)" for item in data['exam_sets']] + ['Final mark', 'Grade', 'Points']
-        rows = [[row['subject']] + [('Absent' if item['absent'] else report_number(item['score'])) for item in row['exam_sets']] + [report_number(row['score']), row['grade'], row['points']] for row in data['subjects']]
-    details = [('Student', f"{data['student']} · {data['registration_number']}"), ('Class and period', f"{data['section']} / {data['class']} {data['stream']} · {data['year']} / {data['term']} / {data['assessment']}")]
-    if numeric and data['average'] is not None:
-        details.append(('Results', f"Total: {report_number(data['total'])} · Average: {report_number(data['average'])}% · Maximum per subject: {report_number(data['maximum_score'])}"))
-    elif numeric:
-        details.append(('Results', 'Absent for one or more subjects. Overall results and position are not calculated.'))
-    if data['aggregate'] is not None:
-        details.append(('Aggregate and division', f"Aggregate: {data['aggregate']} · Division: {data['division']}"))
-    if data['position'] is not None:
-        details.append(('Position', f"{data['position']} / {data['cohort_size']}"))
-    details += [('Class-teacher comment', report.teacher_comment or 'Pending'), ('Headteacher comment', report.headteacher_comment or 'Pending')]
-    return document_pdf(data['school'], f"Student report · {data['student']} · {data['registration_number']} · {report.get_status_display()} · Version {report.version}", columns, rows, details)
+    if report.screen_only:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("This report is available for viewing online only.")
+    from .endterm_pdf import endterm_pdf
+    return endterm_pdf(report)

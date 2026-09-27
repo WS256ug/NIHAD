@@ -288,3 +288,80 @@ main:focus { outline: none; }
 
 .login-brand-panel { align-items: center; justify-content: center; padding: clamp(2rem, 5vw, 4rem); }
 .login-school-logo { display: block; width: 100%; max-width: 360px; height: auto; object-fit: contain; }
+
+/* Compact online assessment reports. */
+.midterm-report { display: grid; gap: 1rem; }
+.midterm-report .workspace-card { margin: 0; min-width: 0; }
+.midterm-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; border-top: 4px solid #174e48; }
+.midterm-header h2 { margin: .35rem 0; }
+.midterm-header p { margin: .35rem 0 0; }
+.midterm-student { flex-basis: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: .5rem 0 0; }
+.midterm-student dt, .midterm-summary span { color: #52635e; font-size: .85rem; }
+.midterm-student dd { margin: .3rem 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.midterm-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .75rem; }
+.midterm-summary strong { display: block; font-size: 1.65rem; color: #174e48; margin-top: .35rem; }
+.midterm-results h2, .midterm-comments h2 { font-size: 1.1rem; margin: 0 0 .85rem; }
+.midterm-grade { display: inline-block; padding: .2rem .55rem; border-radius: .35rem; background: #edf5f2; color: #174e48; font-weight: 600; }
+.midterm-comments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.midterm-comments .workspace-card { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .midterm-student, .midterm-comments { grid-template-columns: 1fr; }
+}
+
+/* A4 End-Term stationery, shared by screen and browser print. */
+.endterm-report { max-width: 210mm; margin: 0 auto; padding: 8mm; background: #fff; color: #173149; border: 1px solid #cddfe4; border-radius: 10px; font-size: .9rem; }
+.endterm-brand { display: grid; grid-template-columns: 24mm minmax(0, 1fr) 46mm; align-items: center; gap: 4mm; border-bottom: 3px solid #176149; padding-bottom: 5mm; }
+.endterm-logo { width: 100%; height: 25mm; object-fit: contain; }
+.endterm-school { text-align: center; }
+.endterm-school h2 { font-family: Georgia, serif; color: #12543f; font-size: 1.55rem; line-height: 1.15; margin: 0; }
+.endterm-school p { margin: .35rem 0; font-size: .75rem; overflow-wrap: anywhere; }
+.endterm-motto { color: #173149; font-style: italic; }
+.endterm-period { background: #eff7f6; border: 1px solid #cddfe4; border-radius: 5px; overflow: hidden; font-size: .72rem; }
+.endterm-period h3 { background: #12543f; color: #fff; padding: .55rem; margin: 0; text-transform: uppercase; font-size: .8rem; }
+.endterm-period p { margin: .45rem .55rem; }
+.endterm-student-panel, .endterm-academics { border: 1px solid #c2dce7; border-radius: 6px; overflow: hidden; margin-top: 4mm; }
+.endterm-section-heading { padding: .5rem .7rem; background: #12543f; color: #fff; font-size: .95rem; margin: 0; text-transform: uppercase; }
+.endterm-student-panel .endterm-section-heading { background: #eaf5fa; color: #193c5c; }
+.endterm-student-content { display: flex; align-items: center; gap: 4mm; padding: 3mm; }
+.endterm-photo { width: 25mm; height: 30mm; border-radius: 4px; object-fit: cover; }
+.endterm-student-grid { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3mm; margin: 0; }
+.endterm-student-grid dt { font-size: .7rem; color: #52635e; }
+.endterm-student-grid dd { margin: .1rem 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.endterm-marks { width: 100%; margin: 0; border-collapse: collapse; font-size: .8rem; }
+.endterm-marks caption { font-size: .7rem; padding: 2mm; }
+.endterm-marks th, .endterm-marks td { border: 1px solid #d9e8ef; padding: 2.2mm; text-align: center; }
+.endterm-marks th:first-child { text-align: left; }
+.endterm-marks thead th { background: #eaf5fa; }
+.endterm-marks thead small { display: block; }
+.endterm-marks tbody tr:nth-child(even) { background: #f5fafc; }
+.endterm-grade { background: #e8f4ec; border-radius: 3px; padding: .2rem .4rem; color: #12543f; font-weight: 700; }
+.endterm-calculation { text-align: center; font-size: .75rem; padding: 2mm; margin: 0; background: #edf7fa; }
+.endterm-summary { display: flex; flex-wrap: wrap; margin: 2mm; border: 1px solid #c2dce7; border-radius: 4px; }
+.endterm-summary > div { flex: 1; min-width: 24mm; padding: 3mm 2mm; text-align: center; background: #f1f8fb; }
+.endterm-summary dt { font-size: .65rem; text-transform: uppercase; }
+.endterm-summary dd { margin: 1mm 0 0; font-size: 1.15rem; font-weight: 700; }
+.endterm-decision { margin-top: 3mm; background: #12543f; color: #fff; padding: 3mm; text-align: center; border-radius: 4px; text-transform: uppercase; }
+.endterm-comments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; margin-top: 4mm; }
+.endterm-comments > div { border: 1px solid #c2dce7; border-radius: 5px; overflow-wrap: anywhere; }
+.endterm-comments h3 { background: #193c5c; color: #fff; font-size: .8rem; padding: 3mm; margin: 0; }
+.endterm-comments p { padding: 0 3mm; font-size: .8rem; }
+.endterm-signoff { margin-top: 5mm; }
+.endterm-signoff p { font-size: .7rem; }
+.endterm-footer { display: flex; justify-content: space-between; align-items: center; gap: 4mm; margin-top: 4mm; font-size: .75rem; }
+.endterm-stamp { border: 1px dashed #91a5b1; color: #52635e; padding: 8mm 5mm; min-width: 50mm; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+@media screen and (max-width: 720px) {
+  .endterm-report { padding: 4mm; }
+  .endterm-brand { grid-template-columns: 20mm minmax(0, 1fr); }
+  .endterm-period { grid-column: 1 / -1; }
+  .endterm-school h2 { font-size: 1.15rem; }
+  .endterm-student-grid, .endterm-comments { grid-template-columns: 1fr; }
+  .endterm-footer { flex-wrap: wrap; }
+}
+@media print {
+  @page { size: A4 portrait; margin: 10mm; }
+  .endterm-report { max-width: none; padding: 0; border: 0; border-radius: 0; font-size: 9pt; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .endterm-brand, .endterm-student-panel, .endterm-summary, .endterm-decision, .endterm-footer { break-inside: avoid; }
+  .endterm-comments h3 { break-after: avoid; }
+  .endterm-marks { font-size: 8pt; }
+  .endterm-marks th, .endterm-marks td { padding: 1.8mm; }
+}

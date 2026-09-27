@@ -32,6 +32,10 @@ class StudentReport(AuditedModel):
             models.CheckConstraint(condition=~models.Q(status='published') | models.Q(published_at__isnull=False), name='reports_publication_time'),
         ]
 
+    @property
+    def screen_only(self):
+        return self.assessment.assessment_type.screen_only_report
+
     def __str__(self):
         return f'{self.enrollment.student.student_id} / {self.assessment.assessment_type} / v{self.version}'
 

@@ -166,6 +166,7 @@ class ClassTeacherAssignment(Assignment):
 class AssessmentType(AuditedModel):
     school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="assessment_types")
     name = models.CharField(max_length=80)
+    screen_only_report = models.BooleanField(default=False, help_text="Show reports online without print or PDF downloads. Use for Mid-Term assessments.")
     two_exam_sets = models.BooleanField(default=False, help_text="Create Set One and Set Two for new assessments of this type.")
     is_active = models.BooleanField(default=True)
 

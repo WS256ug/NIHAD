@@ -519,3 +519,28 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Applied academics migration 0006 locally and verified End OF Term defaults to two sets while Mid-Term and Arabic Mid-Term remain single assessments.
 - Verification: all 281 Django tests pass, including separate entry/review, weighted totals, exclusion of Mid-Term, absence, missing sets, forged set selection and correction snapshots. System, migration-drift and diff checks pass.
 - Next milestone: browser review of set selection and report layout; create the next End OF Term assessment through the existing assessment form.
+
+
+## Mid-Term online report layout
+
+- Added a compact responsive online report showing student registration/class details, applicable result summaries, subject marks/grades/points and class-teacher/headteacher comments. No signature, stamp or promotion section is shown.
+- Added assessment-type screen-only report configuration. Migration 0007 enables it for existing Mid-Term and Arabic Mid-Term types; End-Term export remains enabled. Existing snapshots are unchanged.
+- Screen-only reports omit print/download controls and reject direct print/PDF endpoint requests after existing authorization and fee-access checks. The PDF generator also enforces the policy.
+- Approval, publication, historical versions, ranking configuration and student isolation continue through the shared report workflow.
+- Applied the migration locally. Targeted staff/portal/export/fee-policy tests and system/migration-drift checks pass.
+- Next milestone: visual browser review of the Mid-Term layout, followed by the End-Term report design when requested.
+- Final verification: all 286 Django tests pass; system, migration-drift and diff checks pass.
+
+## Mid-Term separator encoding fix
+
+- Replaced question marks introduced during template writing with HTML entities for middle-dot separators and missing-value dashes.
+- All five Mid-Term report tests and Django checks pass. Next milestone: continue report visual review.
+
+## End-Term report layout
+
+- Completed the branded End-Term screen, browser-print and A4 PDF layouts with the school logo, student information/photo, exam-set weights, final marks, applicable summaries, comments, signature spaces and a stamp area.
+- End-Term uses only its recorded Set One/Set Two results. Mid-Term stays screen-only. Legacy and descriptive reports remain supported, and absence/ranking rules and authorization/fee checks remain enforced.
+- New snapshots capture student demographics, school contact details and the next configured term date. Comment author names/dates are recorded before approval. Confirmed promotion decisions are captured only when generating the final configured term's report; subsequent decisions do not rewrite historical snapshots.
+- Visually checked a one-page eight-subject PDF and a multi-page stress report with repeated table headers and lengthy comments. Sample-only previews are in output/pdf; no student data was used. Browser visual review remains a next milestone.
+- Next milestone: review the End-Term layout with school staff using an actual draft report and confirm school contact details and term dates.
+- Final verification: all 289 Django tests pass; Django system, migration-drift and diff checks pass.

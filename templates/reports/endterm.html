@@ -1,0 +1,43 @@
+{% extends 'reports/detail.html' %}
+{% load static %}
+{% block report_body %}
+{% if data %}
+<article class="endterm-report" aria-label="{{ data.assessment }} report">
+  <header class="endterm-brand">
+    <img class="endterm-logo" src="{% static 'img/nihad-logo.png' %}" alt="School logo">
+    <div class="endterm-school"><h2>{{ data.school }}</h2>{% if data.motto %}<p class="endterm-motto">{{ data.motto }}</p>{% endif %}
+      {% if data.school_address %}<p>{{ data.school_address }}</p>{% endif %}
+      <p>{{ data.school_phone }}{% if data.school_email %} &middot; {{ data.school_email }}{% endif %}</p>
+    </div>
+    <div class="endterm-period"><h3>{{ data.assessment }} report</h3><p><strong>Academic year:</strong> {{ data.year }}</p><p><strong>Term:</strong> {{ data.term }}</p><p>{{ report.get_status_display }} &middot; v{{ report.version }}</p></div>
+  </header>
+  <section class="endterm-student-panel">
+    <h3 class="endterm-section-heading">Student information</h3>
+    <div class="endterm-student-content">
+      {% if report.enrollment.student.photo %}<img class="endterm-photo" src="{% if portal_view %}{% url 'students:family_photo' report.enrollment.student_id %}{% else %}{% url 'students:photo' report.enrollment.student_id %}{% endif %}" alt="Student photograph">{% endif %}
+      <dl class="endterm-student-grid">
+        <div><dt>Student</dt><dd>{{ data.student }}</dd></div><div><dt>Registration number</dt><dd>{{ data.registration_number }}</dd></div>
+        <div><dt>Class</dt><dd>{{ data.class }}</dd></div>{% if data.stream %}<div><dt>Stream</dt><dd>{{ data.stream }}</dd></div>{% endif %}
+        {% if data.gender %}<div><dt>Gender</dt><dd>{{ data.gender }}</dd></div>{% endif %}{% if data.date_of_birth %}<div><dt>Date of birth</dt><dd>{{ data.date_of_birth }}</dd></div>{% endif %}
+      </dl>
+    </div>
+  </section>
+  <section class="endterm-academics">
+    <h3 class="endterm-section-heading">Academic performance</h3>
+    <div class="table-scroll"><table class="endterm-marks"><caption>{{ data.assessment }} results{% if data.mode == 'numeric' %} &middot; Marks out of {{ data.maximum_score|report_number }}{% endif %}</caption>
+      <thead><tr><th scope="col">Subject / learning area</th>{% for item in data.exam_sets %}<th scope="col">{{ item.name }}<small>{{ item.weight|report_number }}%</small></th>{% endfor %}{% if data.mode == 'numeric' %}<th scope="col">{% if data.exam_sets %}Final mark{% else %}Mark{% endif %}</th>{% endif %}<th scope="col">Grade / level</th>{% if data.aggregate != None %}<th scope="col">Points</th>{% endif %}</tr></thead>
+      <tbody>{% for row in data.subjects %}<tr><th scope="row">{{ row.subject }}</th>{% for item in row.exam_sets %}<td>{% if item.absent %}Absent{% else %}{{ item.score|report_number }}{% endif %}</td>{% endfor %}{% if data.mode == 'numeric' %}<td>{% if row.absent %}Absent{% else %}{{ row.score|report_number }}{% endif %}</td>{% endif %}<td><span class="endterm-grade">{{ row.grade }}</span></td>{% if data.aggregate != None %}<td>{{ row.points|default_if_none:'-' }}</td>{% endif %}</tr>{% endfor %}</tbody>
+    </table></div>
+    {% if data.exam_sets %}<p class="endterm-calculation">Final mark = {% for item in data.exam_sets %}{{ item.name }} ({{ item.weight|report_number }}%){% if not forloop.last %} + {% endif %}{% endfor %}</p>{% endif %}
+    {% if data.has_absences %}<p>Absent for one or more exam results. Overall results and position are not calculated.</p>{% endif %}
+    {% if summary_items %}<dl class="endterm-summary">{% for label, value in summary_items %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>{% endif %}
+  </section>
+  {% if data.promotion_decision %}<section class="endterm-decision"><strong>Promotion decision:</strong> {{ data.promotion_decision }}</section>{% endif %}
+  <section class="endterm-comments">
+    <div><h3>Class-teacher comment</h3><p>{{ report.teacher_comment|default:'Pending'|linebreaksbr }}</p><div class="endterm-signoff">{% if data.teacher_name %}<p><strong>Teacher:</strong> {{ data.teacher_name }}</p>{% endif %}{% if data.teacher_comment_date %}<p><strong>Date:</strong> {{ data.teacher_comment_date }}</p>{% endif %}<p>Signature: ____________________</p></div></div>
+    <div><h3>Headteacher comment</h3><p>{{ report.headteacher_comment|default:'Pending'|linebreaksbr }}</p><div class="endterm-signoff">{% if data.headteacher_name %}<p><strong>Headteacher:</strong> {{ data.headteacher_name }}</p>{% endif %}{% if data.headteacher_comment_date %}<p><strong>Date:</strong> {{ data.headteacher_comment_date }}</p>{% endif %}<p>Signature: ____________________</p></div></div>
+  </section>
+  <footer class="endterm-footer"><div>{% if data.next_term_start %}<strong>Next term begins:</strong> {{ data.next_term_start }}{% endif %}{% if report.published_at %}<p>Published {{ report.published_at|date:'j M Y' }}</p>{% endif %}<small>{{ data.registration_number }} &middot; {{ report.get_status_display }} &middot; Version {{ report.version }}</small></div><div class="endterm-stamp">School stamp</div></footer>
+</article>
+{% else %}<section class="workspace-card"><p>This revision awaits completed marks and report generation.</p></section>{% endif %}
+{% endblock %}

@@ -57,14 +57,18 @@ def detail(request, pk, output='html'):
         from apps.students.family import report_access_allowed
         if not report_access_allowed(report.enrollment.student):
             raise PermissionDenied('Fee clearance is required to view this report. Fees and payment history remain available in your portal.')
+    if report.screen_only and output in ('print', 'pdf'):
+        raise PermissionDenied('This report is available for viewing online only.')
     if output == 'pdf':
         if not report.snapshot:
             return HttpResponse('Generate this revision before downloading it.', status=409)
         response = HttpResponse(report_pdf(report), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="report-{report.enrollment.student.student_id}-v{report.version}.pdf"'
         return response
-    return render(request, 'reports/detail.html', {
-        'report': report, 'data': report.snapshot, 'print_view': output == 'print',
+    from .presentation import report_summary
+    return render(request, 'reports/midterm.html' if report.screen_only else 'reports/endterm.html', {
+        'summary_items': report_summary(report.snapshot),
+        'report': report, 'data': report.snapshot, 'screen_only': report.screen_only, 'print_view': output == 'print',
         'can_comment': can_comment(request.user, report),
         'can_review': has_role(request.user, User.Role.HEADTEACHER) and report.is_current and report.status == 'review',
         'can_publish': has_role(request.user, User.Role.SCHOOL_ADMIN) and report.is_current and report.status == 'approved',
