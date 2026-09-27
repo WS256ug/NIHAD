@@ -506,3 +506,16 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Updated draft preview and batch instructions. Applied promotions migration 0002 locally; system and migration-drift checks pass.
 - Next milestone: continue promotion workflow refinements as requested.
 - Final verification: all 273 Django tests pass, including probation advancement and exact dropdown choices; diff check passes.
+
+
+## End-Term Set One and Set Two
+
+- Added ExamSet under Assessment, with separate marks and review submissions per set. Legacy single-assessment marks remain unchanged and retain their uniqueness constraints.
+- Assessment types can default to two numeric exam sets. The migration enables the existing End OF Term type and eligible empty assessments; existing populated/closed assessments and report snapshots remain unchanged. Descriptive nursery assessments remain single assessments.
+- Assessment configuration defaults to 50% per set. Set One's weight is configurable; Set Two receives the remainder. Weights and mode cannot change after marks, submissions or reports exist.
+- Teachers select a set on the existing marks sheet. Authorization, revisions, roster signatures, review locks and correction workflows remain enforced per set. Both sets must be complete before closing/generating an End-Term report.
+- Reports combine only the two sets belonging to that assessment using Decimal arithmetic, then calculate grades, aggregate, division and optional ranking. Mid-Term never enters the End-Term calculation. Absence in either set produces an absent final subject result and suppresses incomplete overall results/ranking.
+- HTML, print and PDF reports show both sets, their weights and the final subject mark. Snapshots retain the set scores and weights for historical revisions. Teacher dashboard pending marks count both sets.
+- Applied academics migration 0006 locally and verified End OF Term defaults to two sets while Mid-Term and Arabic Mid-Term remain single assessments.
+- Verification: all 281 Django tests pass, including separate entry/review, weighted totals, exclusion of Mid-Term, absence, missing sets, forged set selection and correction snapshots. System, migration-drift and diff checks pass.
+- Next milestone: browser review of set selection and report layout; create the next End OF Term assessment through the existing assessment form.

@@ -77,7 +77,7 @@ class ClassTeacherAssignmentForm(AssignmentForm):
 class AssessmentTypeForm(forms.ModelForm):
     class Meta:
         model = AssessmentType
-        fields = ("name",)
+        fields = ("name", "two_exam_sets")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,10 +87,11 @@ class AssessmentTypeForm(forms.ModelForm):
 class AssessmentForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review")
+        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review", "two_exam_sets", "set_one_weight")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["set_one_weight"].required = False
         choices = {
             "assessment_type": AssessmentType.objects.filter(school=school, is_active=True),
             "term": Term.objects.filter(academic_year__school=school, academic_year__is_active=True, is_active=True).select_related("academic_year"),
@@ -109,6 +110,8 @@ class AssessmentForm(forms.ModelForm):
     def clean(self):
         from .section_grades import current_scheme
         data = super().clean()
+        if data.get("set_one_weight") is None:
+            data["set_one_weight"] = self.instance.set_one_weight
         academic_class = data.get("academic_class")
         if academic_class and not self.instance.grading_scheme_id:
             scheme = current_scheme(academic_class.section)
@@ -123,8 +126,9 @@ class MarkForm(forms.ModelForm):
         model = Mark
         fields = ("score", "level", "is_absent")
 
-    def __init__(self, *args, assessment, enrollment, subject, assignment, **kwargs):
+    def __init__(self, *args, assessment, enrollment, subject, assignment, exam_set=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.instance.exam_set = exam_set
         self.instance.assessment = assessment
         self.instance.enrollment = enrollment
         self.instance.subject = subject

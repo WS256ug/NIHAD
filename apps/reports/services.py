@@ -25,7 +25,7 @@ def generate_reports(assessment, actor):
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)
     if assessment.status != 'closed':
         raise ValidationError('Close marks entry before generating reports.')
-    if assessment.requires_mark_review:
+    if assessment.requires_mark_review or assessment.two_exam_sets:
         from apps.academics.mark_sheets import require_approved_sheets
         require_approved_sheets(assessment)
     if not assessment.grading_scheme_id:
@@ -41,6 +41,12 @@ def generate_reports(assessment, actor):
     for enrollment in enrollments:
         marks = list(assessment.marks.filter(enrollment=enrollment).select_related('subject', 'level'))
         expected = expected_subjects(assessment, enrollment)
+        if assessment.two_exam_sets:
+            from apps.academics.exam_sets import combined_results
+            results[enrollment.pk] = combined_results(assessment, marks, expected)
+            continue
+        if any(mark.exam_set_id for mark in marks):
+            raise ValidationError('Single assessments cannot include exam-set marks.')
         if not expected or {mark.subject_id for mark in marks} != expected:
             raise ValidationError(f'Complete all assigned subject marks for {enrollment.student.student_id} before generating reports.')
         results[enrollment.pk] = calculate_results(assessment.grading_scheme, marks, assessment.maximum_score)

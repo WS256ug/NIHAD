@@ -44,8 +44,8 @@ def sheet_enrollments(assessment, assignment):
     return records.select_related("student", "stream").order_by("student__last_name", "student__first_name", "pk")
 
 
-def roster_token(assessment, assignment, enrollments, actor):
-    return signing.dumps([assessment.pk, assignment.pk, actor.pk, [row.pk for row in enrollments]], salt="mark-sheet")
+def roster_token(assessment, assignment, enrollments, actor, exam_set=None):
+    return signing.dumps([assessment.pk, assignment.pk, actor.pk, [row.pk for row in enrollments]] + ([exam_set.pk] if exam_set else []), salt="mark-sheet")
 
 
 class SheetControlForm(forms.Form):
@@ -108,16 +108,16 @@ class SheetReviewForm(forms.Form):
         return data
 
 
-def sheet_snapshot(assessment, assignment):
+def sheet_snapshot(assessment, assignment, exam_set=None):
     ids = list(sheet_enrollments(assessment, assignment).values_list("pk", flat=True))
-    marks = dict(Mark.objects.filter(assessment=assessment, subject=assignment.subject, enrollment_id__in=ids).values_list("enrollment_id", "revision"))
+    marks = dict(Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment_id__in=ids).values_list("enrollment_id", "revision"))
     if not ids or len(marks) != len(ids):
         raise ValidationError("Every student needs a result or an Absent status before this sheet can be submitted or approved.")
     return [[pk, marks[pk]] for pk in ids]
 
 
 @transaction.atomic
-def save_sheet(assessment, assignment, row_forms, control, actor):
+def save_sheet(assessment, assignment, row_forms, control, actor, exam_set=None):
     from .services import save_mark
 
     if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.TEACHER):
@@ -134,9 +134,9 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
         token = signing.loads(control.cleaned_data["roster"], salt="mark-sheet", max_age=86400)
     except signing.BadSignature:
         raise ValidationError("This sheet has expired or changed. Reload before saving.") from None
-    if token != [assessment.pk, assignment.pk, actor.pk, ids] or [form.enrollment.pk for form in row_forms] != ids:
+    if token != [assessment.pk, assignment.pk, actor.pk, ids] + ([exam_set.pk] if exam_set else []) or [form.enrollment.pk for form in row_forms] != ids:
         raise ValidationError("The student list has changed. Reload the sheet before saving.")
-    submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, assignment=assignment).first()
+    submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, exam_set=exam_set, assignment=assignment).first()
     if (submission.revision if submission else 0) != control.cleaned_data["revision"]:
         raise ValidationError("This sheet changed in another request. Reload before saving.")
     if assessment.requires_mark_review and submission and submission.status in ("submitted", "approved"):
@@ -146,7 +146,7 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
     if not ids:
         raise ValidationError("There are no eligible students in this sheet.")
     for row in row_forms:
-        current = Mark.objects.filter(assessment=assessment, subject=assignment.subject, enrollment_id=row.enrollment.pk).first()
+        current = Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment_id=row.enrollment.pk).first()
         if (current.revision if current else 0) != row.cleaned_data["expected_revision"]:
             raise ValidationError(f"The result for {row.enrollment.student.full_name} changed. Reload before saving.")
         if not row.has_result():
@@ -156,18 +156,18 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
         data = row.cleaned_data.copy()
         data["level"] = data["level"].pk if data.get("level") else ""
         previous_value = (current.score, current.level_id, current.is_absent) if current else None
-        form = MarkForm(data, instance=current, assessment=assessment, enrollment=row.enrollment, subject=assignment.subject, assignment=assignment)
+        form = MarkForm(data, instance=current, assessment=assessment, enrollment=row.enrollment, subject=assignment.subject, assignment=assignment, exam_set=exam_set)
         if not form.is_valid():
             raise ValidationError([f"{row.enrollment.student.full_name}: {error}" for errors in form.errors.values() for error in errors])
         if previous_value == (form.cleaned_data.get("score"), form.cleaned_data.get("level").pk if form.cleaned_data.get("level") else None, form.cleaned_data["is_absent"]):
             continue
         save_mark(form, actor)
-    submission = submission or MarkSubmission(assessment=assessment, assignment=assignment)
+    submission = submission or MarkSubmission(assessment=assessment, exam_set=exam_set, assignment=assignment)
     submission.revision += 1
     if not assessment.requires_mark_review:
         submission.status = "draft"
     if control.cleaned_data["action"] == "submit":
-        submission.snapshot = sheet_snapshot(assessment, assignment)
+        submission.snapshot = sheet_snapshot(assessment, assignment, exam_set)
         submission.status = "submitted"
         submission.submitted_at, submission.submitted_by = timezone.now(), actor
         submission.reviewed_at, submission.reviewed_by = None, None
@@ -176,7 +176,7 @@ def save_sheet(assessment, assignment, row_forms, control, actor):
 
 
 @transaction.atomic
-def review_sheet(assessment, assignment, form, actor):
+def review_sheet(assessment, assignment, form, actor, exam_set=None):
     if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
         raise PermissionDenied
     lock_school()
@@ -185,13 +185,13 @@ def review_sheet(assessment, assignment, form, actor):
         raise ValidationError("Marks review is disabled for this assessment.")
     if assessment.status != "open" or not all_sheet_assignments(assessment).filter(pk=assignment.pk).exists():
         raise ValidationError("Only active sheets in an open assessment can be reviewed.")
-    submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, assignment=assignment).first()
+    submission = MarkSubmission.objects.select_for_update().filter(assessment=assessment, exam_set=exam_set, assignment=assignment).first()
     if not submission or submission.revision != form.cleaned_data["revision"]:
         raise ValidationError("This sheet has changed. Reload before reviewing it.")
     action = form.cleaned_data["action"]
     if submission.status != "submitted" and not (action == "return" and submission.status == "approved"):
         raise ValidationError("Submit the sheet before reviewing it.")
-    if action == "approve" and submission.snapshot != sheet_snapshot(assessment, assignment):
+    if action == "approve" and submission.snapshot != sheet_snapshot(assessment, assignment, exam_set):
         raise ValidationError("The results or student list changed. Return the sheet for correction.")
     submission.status = "approved" if action == "approve" else "returned"
     submission.review_note = form.cleaned_data["note"]
@@ -201,17 +201,21 @@ def review_sheet(assessment, assignment, form, actor):
 
 
 def require_approved_sheets(assessment):
+    sets = list(assessment.exam_sets.all()) if assessment.two_exam_sets else [None]
+    if assessment.two_exam_sets and [item.number for item in sets] != [1, 2]:
+        raise ValidationError("Configure Set One and Set Two before closing marks.")
     sheets = 0
     for assignment in all_sheet_assignments(assessment):
         if not sheet_enrollments(assessment, assignment).exists():
             continue
-        sheets += 1
-        if not assessment.requires_mark_review:
-            sheet_snapshot(assessment, assignment)
-            continue
-        submission = MarkSubmission.objects.filter(assessment=assessment, assignment=assignment, status="approved").first()
-        if not submission or submission.snapshot != sheet_snapshot(assessment, assignment):
-            raise ValidationError(f"Approve the complete marks sheet for {assignment.subject.name} / {assignment.stream or 'All streams'} before closing or generating reports.")
+        for exam_set in sets:
+            sheets += 1
+            if not assessment.requires_mark_review:
+                sheet_snapshot(assessment, assignment, exam_set)
+                continue
+            submission = MarkSubmission.objects.filter(assessment=assessment, exam_set=exam_set, assignment=assignment, status="approved").first()
+            if not submission or submission.snapshot != sheet_snapshot(assessment, assignment, exam_set):
+                raise ValidationError(f"Approve the complete marks sheet for {assignment.subject.name} / {exam_set or 'Assessment'} before closing or generating reports.")
     if not sheets:
         raise ValidationError("Assign teachers and enroll students before closing marks entry.")
 

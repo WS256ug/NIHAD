@@ -41,7 +41,7 @@ def dashboard_metrics(user, role):
         submitted = MarkSubmission.objects.filter(assessment__requires_mark_review=True, assessment__term__academic_year__school_id=1, status='submitted').select_related('assignment__subject', 'assessment__academic_class')
         card('Marks sheets awaiting review', submitted.count(), reverse('academics:marks_entry'))
         for sheet in submitted[:8]:
-            result['tasks'].append({'label': f'Review marks: {sheet.assessment.academic_class} / {sheet.assignment.subject}', 'url': reverse('academics:marks', args=[sheet.assessment_id]) + f'?assignment={sheet.assignment_id}'})
+            result['tasks'].append({'label': f'Review marks: {sheet.assessment.academic_class} / {sheet.assignment.subject}', 'url': reverse('academics:marks', args=[sheet.assessment_id]) + f'?assignment={sheet.assignment_id}' + (f'&exam_set={sheet.exam_set_id}' if sheet.exam_set_id else '')})
         card('Draft promotion batches', PromotionBatch.objects.filter(source_year__school_id=1, status='draft').count(), reverse('promotions:list'))
         enrollments = Enrollment.objects.filter(student__school_id=1, status='current')
         if school and school.current_academic_year_id:
@@ -68,8 +68,9 @@ def dashboard_metrics(user, role):
                 enrollments = assessment_enrollments(assessment, user, assignment.subject)
                 if assignment.stream_id:
                     enrollments = enrollments.filter(stream_id=assignment.stream_id)
-                entered = Mark.objects.filter(assessment=assessment, subject=assignment.subject).values('enrollment_id')
-                missing += enrollments.exclude(pk__in=entered).count()
+                for exam_set in (assessment.exam_sets.all() if assessment.two_exam_sets else [None]):
+                    entered = Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject).values('enrollment_id')
+                    missing += enrollments.exclude(pk__in=entered).count()
             pending += missing
             if missing:
                 result['tasks'].append({'label': f'{assessment}: {missing} marks to enter', 'url': reverse('academics:marks', args=[assessment.pk])})

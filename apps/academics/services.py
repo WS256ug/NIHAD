@@ -2,13 +2,22 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from apps.accounts.models import User
 from apps.schools.services import lock_school, write_record
-from .models import Assessment, GradingScheme, Mark, MarkSubmission, Teacher
+from .models import Assessment, ExamSet, GradingScheme, Mark, MarkSubmission, Teacher
 from .permissions import can_manage_academics, mark_assignment
 
 
 def require_manager(actor):
     if not can_manage_academics(actor):
         raise PermissionDenied
+
+
+def configure_exam_sets(record, actor):
+    if record.two_exam_sets:
+        for number in (1, 2):
+            if not record.exam_sets.filter(number=number).exists():
+                write_record(ExamSet(assessment=record, number=number), actor, "Created exam set.")
+    elif record.exam_sets.exists():
+        record.exam_sets.all().delete()
 
 
 @transaction.atomic
@@ -35,6 +44,8 @@ def save_academic(form, actor):
     if isinstance(record, Assessment):
         fields.append("grading_scheme")
     record = write_record(record, actor, "Saved academic configuration.", update_fields=fields)
+    if isinstance(record, Assessment):
+        configure_exam_sets(record, actor)
     form.save_m2m()
     return record
 
@@ -60,7 +71,7 @@ def set_assessment_status(assessment, status, actor):
         raise ValidationError("This assessment status transition is not available.")
     if status == "open" and record.reports.filter(is_current=True).exists():
         raise ValidationError("Use the report correction workflow to reopen an assessment with generated reports.")
-    if status == "closed" and record.requires_mark_review:
+    if status == "closed" and (record.requires_mark_review or record.two_exam_sets):
         from .mark_sheets import require_approved_sheets
         require_approved_sheets(record)
     record.status = status
@@ -80,9 +91,9 @@ def save_mark(form, actor):
     assignment = mark_assignment(assessment, proposed.enrollment, proposed.subject, actor)
     if assignment is None:
         raise PermissionDenied
-    if assessment.requires_mark_review and MarkSubmission.objects.filter(assessment=assessment, assignment=assignment, status__in=["submitted", "approved"]).exists():
+    if assessment.requires_mark_review and MarkSubmission.objects.filter(assessment=assessment, exam_set=proposed.exam_set, assignment=assignment, status__in=["submitted", "approved"]).exists():
         raise ValidationError("This marks sheet is locked. A reviewer must return it for correction before marks can change.")
-    existing = Mark.objects.select_for_update().filter(assessment=assessment, enrollment_id=proposed.enrollment_id, subject_id=proposed.subject_id).first()
+    existing = Mark.objects.select_for_update().filter(assessment=assessment, exam_set=proposed.exam_set, enrollment_id=proposed.enrollment_id, subject_id=proposed.subject_id).first()
     expected = form.cleaned_data["expected_revision"]
     if (existing.revision if existing else 0) != expected:
         raise ValidationError("This mark was changed in another request. Reload before editing it.")

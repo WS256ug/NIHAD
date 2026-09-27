@@ -166,6 +166,7 @@ class ClassTeacherAssignment(Assignment):
 class AssessmentType(AuditedModel):
     school = models.ForeignKey("schools.School", on_delete=models.PROTECT, related_name="assessment_types")
     name = models.CharField(max_length=80)
+    two_exam_sets = models.BooleanField(default=False, help_text="Create Set One and Set Two for new assessments of this type.")
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -196,6 +197,8 @@ class Assessment(AuditedModel):
     stream = models.ForeignKey("schools.Stream", on_delete=models.PROTECT, null=True, blank=True, related_name="assessments")
     date = models.DateField()
     maximum_score = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal("100"), validators=[MinValueValidator(Decimal("0.01"))])
+    two_exam_sets = models.BooleanField(default=False, verbose_name="Use Set One and Set Two")
+    set_one_weight = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("50"), validators=[MinValueValidator(Decimal("0.01"))], help_text="Set One percentage. Set Two receives the remaining percentage; both use this assessment's maximum score.")
     grading_scheme = models.ForeignKey("GradingScheme", on_delete=models.PROTECT, null=True, blank=True, related_name="assessments")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     requires_mark_review = models.BooleanField(default=False, verbose_name="Require marks review", help_text="Enable submission and approval of subject marks before closing the assessment.")
@@ -214,6 +217,16 @@ class Assessment(AuditedModel):
 
     def clean(self):
         super().clean()
+        if self._state.adding and self.assessment_type_id and self.assessment_type.two_exam_sets and not (self.grading_scheme_id and self.grading_scheme.mode == "descriptive"):
+            self.two_exam_sets = True
+        if self.set_one_weight is not None and not Decimal("0") < self.set_one_weight < Decimal("100"):
+            raise ValidationError({"set_one_weight": "Enter a percentage greater than 0 and less than 100."})
+        if self.two_exam_sets and self.grading_scheme_id and self.grading_scheme.mode != "numeric":
+            raise ValidationError("Two exam sets require numeric grading. Keep descriptive assessments separate.")
+        if self.pk and not self._state.adding and (self.marks.exists() or self.reports.exists() or self.mark_submissions.exists()):
+            previous = Assessment.objects.get(pk=self.pk)
+            if (self.two_exam_sets, self.set_one_weight) != (previous.two_exam_sets, previous.set_one_weight):
+                raise ValidationError("Exam sets and weights cannot change after marks or reports exist.")
         preserve_fields(self, ("assessment_type_id", "term_id", "academic_class_id", "stream_id"))
         if not (self.term_id and self.academic_class_id and self.assessment_type_id):
             return
@@ -241,7 +254,38 @@ class Assessment(AuditedModel):
                 raise ValidationError("Assessment date, maximum score and grading scheme cannot change after marks exist.")
 
 
+class ExamSet(AuditedModel):
+    assessment = models.ForeignKey(Assessment, on_delete=models.PROTECT, related_name="exam_sets")
+    number = models.PositiveSmallIntegerField(choices=[(1, "Set One"), (2, "Set Two")])
+
+    class Meta:
+        ordering = ("number",)
+        constraints = [models.UniqueConstraint(fields=("assessment", "number"), name="academics_exam_set_unique"), models.CheckConstraint(condition=models.Q(number__in=[1, 2]), name="academics_exam_set_number")]
+
+    @property
+    def weight(self):
+        return self.assessment.set_one_weight if self.number == 1 else Decimal("100") - self.assessment.set_one_weight
+
+    def __str__(self):
+        return self.get_number_display()
+
+    def clean(self):
+        super().clean()
+        preserve_fields(self, ("assessment_id", "number"))
+        if self.assessment_id and not self.assessment.two_exam_sets:
+            raise ValidationError("Enable two exam sets on the assessment first.")
+
+
+def validate_exam_set(record):
+    if record.assessment_id:
+        if record.exam_set_id and record.exam_set.assessment_id != record.assessment_id:
+            raise ValidationError("The exam set belongs to another assessment.")
+        if record.assessment.two_exam_sets != bool(record.exam_set_id):
+            raise ValidationError("Select an exam set for a two-set assessment only.")
+
+
 class Mark(AuditedModel):
+    exam_set = models.ForeignKey(ExamSet, on_delete=models.PROTECT, null=True, blank=True, related_name="marks")
     assessment = models.ForeignKey(Assessment, on_delete=models.PROTECT, related_name="marks")
     enrollment = models.ForeignKey("students.Enrollment", on_delete=models.PROTECT, related_name="marks")
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="marks")
@@ -254,7 +298,8 @@ class Mark(AuditedModel):
     class Meta:
         ordering = ("enrollment__student__last_name", "enrollment__student__first_name", "subject__name")
         constraints = [
-            models.UniqueConstraint(fields=("assessment", "enrollment", "subject"), name="academics_mark_unique"),
+            models.UniqueConstraint(fields=("assessment", "enrollment", "subject"), condition=models.Q(exam_set__isnull=True), name="academics_mark_unique"),
+            models.UniqueConstraint(fields=("assessment", "enrollment", "subject", "exam_set"), condition=models.Q(exam_set__isnull=False), name="academics_mark_set_unique"),
             models.CheckConstraint(condition=models.Q(score__gte=0), name="academics_mark_nonnegative"),
             models.CheckConstraint(condition=(models.Q(is_absent=True, score__isnull=True, level__isnull=True) | (models.Q(is_absent=False) & (models.Q(score__isnull=False, level__isnull=True) | models.Q(score__isnull=True, level__isnull=False)))), name="academics_mark_value_exclusive"),
         ]
@@ -264,7 +309,8 @@ class Mark(AuditedModel):
 
     def clean(self):
         super().clean()
-        preserve_fields(self, ("assessment_id", "enrollment_id", "subject_id"))
+        preserve_fields(self, ("assessment_id", "enrollment_id", "subject_id", "exam_set_id"))
+        validate_exam_set(self)
         if not (self.assessment_id and self.enrollment_id and self.subject_id and self.teaching_assignment_id):
             return
         assessment, enrollment, assignment = self.assessment, self.enrollment, self.teaching_assignment
@@ -292,6 +338,7 @@ class Mark(AuditedModel):
 
 
 class MarkSubmission(AuditedModel):
+    exam_set = models.ForeignKey(ExamSet, on_delete=models.PROTECT, null=True, blank=True, related_name="submissions")
     class Status(models.TextChoices):
         DRAFT = "draft", "In progress"
         SUBMITTED = "submitted", "Awaiting review"
@@ -311,7 +358,8 @@ class MarkSubmission(AuditedModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=("assessment", "assignment"), name="academics_submission_unique"),
+            models.UniqueConstraint(fields=("assessment", "assignment"), condition=models.Q(exam_set__isnull=True), name="academics_submission_unique"),
+            models.UniqueConstraint(fields=("assessment", "assignment", "exam_set"), condition=models.Q(exam_set__isnull=False), name="academics_submission_set_unique"),
             models.CheckConstraint(condition=models.Q(status__in=["draft", "submitted", "approved", "returned"]), name="academics_submission_status"),
         ]
 
@@ -320,7 +368,8 @@ class MarkSubmission(AuditedModel):
 
     def clean(self):
         super().clean()
-        preserve_fields(self, ("assessment_id", "assignment_id"))
+        preserve_fields(self, ("assessment_id", "assignment_id", "exam_set_id"))
+        validate_exam_set(self)
         if self.assessment_id and self.assignment_id:
             assessment, assignment = self.assessment, self.assignment
             if assignment.academic_class_id != assessment.academic_class_id or assignment.academic_year_id != assessment.term.academic_year_id or (assignment.term_id and assignment.term_id != assessment.term_id) or (assessment.stream_id and assignment.stream_id and assignment.stream_id != assessment.stream_id):

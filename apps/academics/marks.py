@@ -20,6 +20,13 @@ from .mark_sheets import (SheetControlForm, SheetReviewForm, SheetRowForm, revie
                          require_approved_sheets, all_sheet_assignments, roster_token, save_sheet, sheet_assignments, sheet_enrollments)
 
 
+def selected_exam_set(request, assessment):
+    sets = assessment.exam_sets.all()
+    if request.GET.get("exam_set"):
+        return get_object_or_404(sets, pk=selected_pk(request.GET["exam_set"]))
+    return sets.first() if assessment.two_exam_sets else None
+
+
 def available_subjects(assessment, actor):
     subjects = Subject.objects.filter(section_id=assessment.academic_class.section_id)
     if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER) or assessment_assignments(assessment, actor, ClassTeacherAssignment).exists():
@@ -32,6 +39,7 @@ def available_subjects(assessment, actor):
 @require_http_methods(["GET", "POST"])
 def roster(request, pk):
     assessment = get_object_or_404(visible_assessments(request.user).prefetch_related("grading_scheme__rules"), pk=pk)
+    exam_set = selected_exam_set(request, assessment)
     assignments = sheet_assignments(assessment, request.user)
     candidates = assignments
     if request.GET.get("subject") and not request.GET.get("assignment"):
@@ -40,8 +48,8 @@ def roster(request, pk):
     if request.GET.get("subject") and assignment is None:
         raise PermissionDenied
     enrollments = list(sheet_enrollments(assessment, assignment)) if assignment else []
-    marks = {mark.enrollment_id: mark for mark in Mark.objects.filter(assessment=assessment, subject=assignment.subject, enrollment__in=enrollments).select_related("level")} if assignment else {}
-    submission = assessment.mark_submissions.filter(assignment=assignment).first() if assignment else None
+    marks = {mark.enrollment_id: mark for mark in Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment__in=enrollments).select_related("level")} if assignment else {}
+    submission = assessment.mark_submissions.filter(assignment=assignment, exam_set=exam_set).first() if assignment else None
     reviewer = has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
     editable = bool(assignment and assessment.status == "open" and has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.TEACHER) and (not assessment.requires_mark_review or not submission or submission.status in ("draft", "returned")))
     reviewing = request.method == "POST" and "review-action" in request.POST
@@ -50,14 +58,14 @@ def roster(request, pk):
     rows = [SheetRowForm(request.POST if request.method == "POST" and not reviewing else None,
                          assessment=assessment, enrollment=enrollment, mark=marks.get(enrollment.pk)) for enrollment in enrollments]
     initial = {"revision": submission.revision if submission else 0,
-               "roster": roster_token(assessment, assignment, enrollments, request.user) if assignment else ""}
+               "roster": roster_token(assessment, assignment, enrollments, request.user, exam_set) if assignment else ""}
     control = SheetControlForm(request.POST if request.method == "POST" and not reviewing else None, initial=initial)
     review = SheetReviewForm(request.POST if reviewing else None, prefix="review", initial={"revision": initial["revision"]})
     if request.method == "POST":
         saved = None
         if reviewing:
             if review.is_valid():
-                saved = attempt(review, lambda: review_sheet(assessment, assignment, review, request.user))
+                saved = attempt(review, lambda: review_sheet(assessment, assignment, review, request.user, exam_set))
         else:
             valid = control.is_valid()
             for row in rows:
@@ -66,10 +74,10 @@ def roster(request, pk):
                     row.add_error(None, "Enter a result or mark this student absent before submitting.")
                     valid = False
             if valid:
-                saved = attempt(control, lambda: save_sheet(assessment, assignment, rows, control, request.user))
+                saved = attempt(control, lambda: save_sheet(assessment, assignment, rows, control, request.user, exam_set))
         if saved:
             messages.success(request, "Marks sheet approved." if reviewing and saved.status == "approved" else "Sheet returned for correction." if reviewing else "Marks submitted for review." if saved.status == "submitted" else "Progress saved. You can continue later.")
-            return redirect(reverse("academics:marks", args=[assessment.pk]) + f"?assignment={assignment.pk}")
+            return redirect(reverse("academics:marks", args=[assessment.pk]) + f"?assignment={assignment.pk}" + (f"&exam_set={exam_set.pk}" if exam_set else ""))
     rules = list(assessment.grading_scheme.rules.all()) if assessment.grading_scheme_id else []
     for row in rows:
         row.saved_grade = ""
@@ -91,7 +99,7 @@ def roster(request, pk):
         except ValidationError:
             pass
     return render(request, "academics/marks.html", {
-        "can_close_marks": can_close_marks,
+        "can_close_marks": can_close_marks, "exam_set": exam_set, "exam_sets": assessment.exam_sets.all(),
         "assessment": assessment, "assignments": assignments, "assignment": assignment,
         "rows": rows, "control": control, "review_form": review, "submission": submission,
         "can_edit": editable, "can_review": assessment.requires_mark_review and reviewer and assessment.status == "open" and submission and submission.status in ("submitted", "approved"),
@@ -123,13 +131,14 @@ def mark_form(request, pk, subject_pk, enrollment_pk):
     assignment = mark_assignment(assessment, enrollment, subject, request.user)
     if assignment is None:
         raise PermissionDenied
-    mark = Mark.objects.filter(assessment=assessment, subject=subject, enrollment=enrollment).first()
-    form = MarkForm(request.POST if request.method == "POST" else None, instance=mark, assessment=assessment, enrollment=enrollment, subject=subject, assignment=assignment)
+    exam_set = selected_exam_set(request, assessment)
+    mark = Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=subject, enrollment=enrollment).first()
+    form = MarkForm(request.POST if request.method == "POST" else None, instance=mark, assessment=assessment, enrollment=enrollment, subject=subject, assignment=assignment, exam_set=exam_set)
     if request.method == "POST" and form.is_valid():
         if attempt(form, lambda: save_mark(form, request.user)):
             messages.success(request, "Mark saved.")
-            return form_redirect(request, reverse("academics:marks", args=[pk]) + f"?subject={subject.pk}")
-    return form_page(request, form, f"{enrollment.student.full_name} / {subject.name}", reverse("academics:marks", args=[pk]) + f"?subject={subject.pk}", explanation=f"{assessment}. Maximum score: {assessment.maximum_score}.")
+            return form_redirect(request, reverse("academics:marks", args=[pk]) + f"?subject={subject.pk}" + (f"&exam_set={exam_set.pk}" if exam_set else ""))
+    return form_page(request, form, f"{enrollment.student.full_name} / {subject.name}", reverse("academics:marks", args=[pk]) + f"?subject={subject.pk}" + (f"&exam_set={exam_set.pk}" if exam_set else ""), explanation=f"{assessment}. Maximum score: {assessment.maximum_score}.")
 
 
 @role_required(User.Role.SCHOOL_ADMIN)
