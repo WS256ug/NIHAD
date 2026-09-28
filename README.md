@@ -289,3 +289,27 @@ for historical integrity. Registration creates contacts without login accounts.
 Report publication, student isolation and fee-clearance checks remain enforced.
 
 Superusers can open /admin/ directly for configuration management. The workspace no longer has an administration shortcut. School structure, subjects, assessment types and guardian contacts are editable; unused configuration can be deleted. Marks, reports, finance and history remain protected and use their workspace workflows.
+
+## Installable school app
+
+The shared staff and student login pages include a web app manifest and register
+a root-scoped service worker. Chrome can install the site with the school logo
+and launch it in a standalone window. The configured school name is used in the
+manifest. Existing login, role permissions and fee-access policies still apply.
+
+Deploy over HTTPS and run the normal `collectstatic` step to publish the app icons
+and registration script. Local development works on `http://localhost` or
+`http://127.0.0.1`; plain HTTP on a LAN IP is not a secure context.
+Open the site in Chrome and use its Install option when available.
+
+The worker embeds only a generic offline page. It does not use Cache Storage,
+save school records offline, or queue/retry submissions. GET navigations use the
+network with HTTP caching disabled; connection failures show the offline page.
+POST requests and HTMX requests retain their existing behavior. After an
+interrupted save, check the record before submitting again. First use requires
+a connection so the worker can install.
+
+Verification: `node --test tests/js/pwa.test.cjs` and
+`python manage.py test tests.test_pwa` (using the project virtual environment).
+On the deployed origin, check Chrome DevTools Application > Manifest and Service
+Workers, install the app, then verify offline navigation and reconnection.

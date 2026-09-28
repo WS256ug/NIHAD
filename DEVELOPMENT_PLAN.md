@@ -551,3 +551,11 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Refreshed the sample PDF and image; visually verified the one-page layout. Added a PDF binary Git attribute to prevent line-ending conversion of report artifacts.
 - Next milestone: school review of the updated palette in the browser and a printed draft.
 - Verification: all 289 Django tests pass; system and migration checks pass; refreshed PDF visually checked.
+
+## Installable PWA with online school operations
+
+- Added the public web app manifest, school-logo icons, standalone launch, shared template integration and root-scoped service worker.
+- The offline fallback is embedded in the worker; no school records or responses are stored in Cache Storage and no submissions are queued or replayed. Existing authentication and role/fee checks remain in place.
+- Public PWA endpoints remain accessible during mandatory password changes without exempting other workspace routes.
+- Verification: all 292 Django tests and three service-worker behavior tests pass; system, migration-drift and diff checks pass. Browser installation verification remains pending because no connected browser is available in this session.
+- Next milestone: deploy with HTTPS and collected static assets, then verify Chrome installation, standalone launch, offline fallback and reconnection on the target devices.

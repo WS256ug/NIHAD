@@ -13,6 +13,8 @@ class InitialPasswordChangeMiddleware:
     def __call__(self, request):
         from django.conf import settings
         from django.contrib.auth import logout
+        if request.path in {reverse("pwa_manifest"), reverse("pwa_service_worker")}:
+            return self.get_response(request)
         if request.user.is_authenticated and request.user.role == "guardian" and not settings.GUARDIAN_ACCOUNTS_ENABLED:
             logout(request)
             return redirect("students:portal_login")
