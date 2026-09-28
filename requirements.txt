@@ -8,3 +8,4 @@ tzdata==2026.4
 Pillow==12.3.0
 reportlab==5.0.1
 charset-normalizer==3.5.1
+whitenoise==6.12.0

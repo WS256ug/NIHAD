@@ -576,3 +576,25 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Shared school-profile fields are labelled Report comments. No additional migration is required.
 - Verification: the full 305-test run passed 304 tests and exposed a setup error in one new test; after correcting that fixture, all five class-teacher tests pass. System, migration-drift and diff checks pass.
 - Next milestone: school review of both automatic comments on a draft report.
+
+## MySQL production connection preparation
+
+- Added DJANGO_DATABASE_BACKEND=mysql with MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST and MYSQL_PORT, strict SQL mode, utf8mb4, InnoDB and read-committed isolation. PostgreSQL remains the default; development stays on SQLite.
+- Added optional requirements-mysql.txt and documented cPanel environment configuration. No credentials or existing database data were changed.
+- Verification: all 308 tests pass on local SQLite, including MySQL settings selection and missing-credential checks; system, migration-drift and diff checks pass. No live MySQL server was available for verification.
+- Not yet a completed MySQL deployment: conditional uniqueness needs compatible database enforcement; MariaDB expression-index differences and backup/restore also need validation.
+- Next milestone: obtain the Namecheap database server version, implement compatible uniqueness constraints, and run migration/workflow tests against an isolated matching database before live deployment.
+
+## Namecheap trial driver without compiler access
+
+- Added an explicit MYSQL_DRIVER=pymysql option for MySQL mode only and pinned PyMySQL 1.2.3 in requirements-namecheap.txt. Uses the driver's provided MySQLdb compatibility API without overriding driver version numbers.
+- Installed the pure-Python wheel in the local virtual environment and verified Django backend loading/connection parameter construction without a live database. PostgreSQL and SQLite never activate the trial driver.
+- Verification: all 311 tests pass on local SQLite, including subprocess checks for optional-driver activation and backend isolation. System, migration-drift and diff checks pass.
+- Next milestone: upload the settings/requirements to Namecheap, install the driver, set MYSQL_DRIVER=pymysql and run the live database check. MariaDB schema constraint and backup compatibility remain outstanding; this change resolves only the compiler-dependent driver installation.
+
+## Passenger static asset serving
+
+- Added pinned WhiteNoise 6.12.0 to shared requirements and enabled its middleware in production after SecurityMiddleware. Compressed manifest storage serves collected hashed assets through WSGI/Passenger with correct content types.
+- The fix addresses CSS, JavaScript, logo and PWA icon 404s when no public static alias is configured. No media directories or secrets are exposed; development serving and database selection remain unchanged.
+- Verification: all 312 tests pass, including actual collectstatic and requests for hashed CSS/JS/PNG assets plus negative checks for private paths. System, migration-drift and diff checks pass.
+- Next milestone: upload production.py and requirements.txt to Namecheap, install dependencies, collect static files, restart Passenger and confirm the styled login page. Cloudflare-injected script CSP warnings are separate from static asset delivery.

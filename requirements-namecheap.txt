@@ -1,0 +1,3 @@
+-r requirements.txt
+# Pure-Python MySQL/MariaDB driver for the Namecheap trial; no compiler required.
+PyMySQL==1.2.3

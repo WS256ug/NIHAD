@@ -290,7 +290,57 @@ Report publication, student isolation and fee-clearance checks remain enforced.
 
 Superusers can open /admin/ directly for configuration management. The workspace no longer has an administration shortcut. School structure, subjects, assessment types and guardian contacts are editable; unused configuration can be deleted. Marks, reports, finance and history remain protected and use their workspace workflows.
 
+## MySQL connection configuration (deployment verification pending)
+
+Production settings accept `DJANGO_DATABASE_BACKEND=mysql`. Install
+`requirements-mysql.txt` in the hosting Python environment, and set
+`MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`, and optionally
+`MYSQL_PORT` (default 3306). Use full cPanel-prefixed database/user names and
+assign the user to that database. Keep the existing secret, allowed hosts and
+HTTPS origins. PostgreSQL variables are not required in MySQL mode.
+The database connection uses utf8mb4, strict SQL mode, InnoDB and read-committed
+isolation. Development continues to use SQLite. No existing data is moved by
+changing the backend.
+
+This configures the connection, not a verified MySQL deployment. Before migrating
+real school data, confirm the host's MySQL/MariaDB version and verify the schema
+and full test suite on a separate database. Django does not create conditional
+unique constraints on MySQL/MariaDB; this project uses them for enrollment,
+marks, assignments, payments and reports. Equivalent database constraints still
+need implementation and validation. MariaDB also skips expression indexes.
+Do not silence the resulting Django database warnings as a workaround.
+The built-in backup/restore commands currently support only SQLite/PostgreSQL;
+MySQL needs a separately verified database backup/restore process plus private
+media backups. mysqlclient may need provider-installed client headers and build
+tools on shared hosting.
+
+For the Namecheap trial when `gcc` is denied, upload the updated
+`config/settings/production.py` and `requirements-namecheap.txt`, then install
+`python -m pip install -r requirements-namecheap.txt` inside the hosting virtual
+environment. Set `MYSQL_DRIVER=pymysql` alongside `DJANGO_DATABASE_BACKEND=mysql`
+in the server `.env`. This uses pinned PyMySQL 1.2.3 and its own MySQLdb
+compatibility API; no compiler or application-level version spoofing is needed.
+Do not install `requirements-mysql.txt` for this path, as it requests mysqlclient.
+PostgreSQL production and local SQLite do not import or activate PyMySQL.
+Restart the cPanel application after uploading and installing, and run the
+connection check below. This resolves the driver build issue only; MariaDB
+schema compatibility and live connection verification remain separate work.
+
+Run `SELECT VERSION();` in phpMyAdmin and retain its result for compatibility
+verification. Once configuration is uploaded, use
+`python manage.py check --database default --settings=config.settings.production`
+to check the actual target connection. Do not share database passwords in logs.
+
 ## Installable school app
+
+Production serves collected static assets through WhiteNoise immediately after
+SecurityMiddleware, including when hosted by Passenger without an Apache static
+alias. Install the updated requirements, run
+`python manage.py collectstatic --noinput --settings=config.settings.production`,
+then restart the hosting application. The compressed manifest storage retains
+hashed asset URLs and supplies the correct CSS/JavaScript/image content types.
+Only collected static assets are served; private media remains behind its
+existing authenticated endpoints. Development static serving is unchanged.
 
 The shared staff and student login pages include a web app manifest and register
 a root-scoped service worker. Chrome can install the site with the school logo
