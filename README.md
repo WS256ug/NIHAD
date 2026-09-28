@@ -313,3 +313,30 @@ Verification: `node --test tests/js/pwa.test.cjs` and
 `python manage.py test tests.test_pwa` (using the project virtual environment).
 On the deployed origin, check Chrome DevTools Application > Manifest and Service
 Workers, install the app, then verify offline navigation and reconnection.
+
+## Automatic headteacher comments
+
+Class teachers also receive the same automatic phrases and share the same
+performance cutoffs. Both comments are filled when reports are generated;
+teachers can edit their own comment before submitting for headteacher review.
+Existing uncommented drafts receive a suggestion when the class-teacher form
+opens. Automatic text does not submit or approve a report. The school profile
+labels these shared settings as "Report comments".
+
+Generating reports selects one headteacher comment from the school's supplied
+outstanding, moderate or low-performance phrases, using the saved overall
+percentage average (including the combined End-Term result). Defaults are
+outstanding at 80% and above, moderate from 50% to below 80%, and low below 50%.
+Administrators can change both cutoffs in the school profile; settings changes
+apply to new suggestions and do not rewrite saved reports.
+
+Selection is stable for the same assessment, enrollment and performance group.
+The suggestion and thresholds are saved with the report snapshot. Headteachers
+can edit the prefilled comment before approving. Approval remains required;
+returning a report requires a correction comment. Existing reports awaiting
+review with no comment get a suggestion when the review form opens. Descriptive
+results and incomplete/absent results without an overall average require a manual
+comment. Approved and published report history remains unchanged.
+
+Apply the school migration with the project virtual environment before running
+the updated application: `python manage.py migrate`.

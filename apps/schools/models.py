@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -27,6 +28,14 @@ class School(AuditedModel):
     currency_code = models.CharField(max_length=3, default="UGX", validators=[RegexValidator(r"^[A-Z]{3}$", "Use a three-letter uppercase currency code, such as UGX.")])
     enable_ranking = models.BooleanField(default=False)
     require_fee_clearance_for_reports = models.BooleanField(default=True)
+    headteacher_outstanding_min = models.DecimalField(
+        'Headteacher outstanding minimum (%)', max_digits=5, decimal_places=2,
+        default=80, validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    headteacher_moderate_min = models.DecimalField(
+        'Headteacher moderate minimum (%)', max_digits=5, decimal_places=2,
+        default=50, validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
     current_academic_year = models.ForeignKey("AcademicYear", null=True, blank=True, on_delete=models.PROTECT, related_name="current_for_schools")
     current_term = models.ForeignKey("Term", null=True, blank=True, on_delete=models.PROTECT, related_name="current_for_schools")
 
@@ -34,6 +43,11 @@ class School(AuditedModel):
         verbose_name = "school profile"
         constraints = [
             models.CheckConstraint(condition=models.Q(id=1), name="schools_single_profile"),
+            models.CheckConstraint(
+                condition=models.Q(headteacher_moderate_min__gte=0, headteacher_outstanding_min__lte=100,
+                                   headteacher_outstanding_min__gt=models.F('headteacher_moderate_min')),
+                name='schools_headteacher_comment_thresholds',
+            ),
             models.CheckConstraint(condition=models.Q(current_term__isnull=True) | models.Q(current_academic_year__isnull=False), name="schools_term_requires_year"),
         ]
 
@@ -43,6 +57,9 @@ class School(AuditedModel):
     def clean(self):
         super().clean()
         self.name = self.name.strip()
+        if self.headteacher_moderate_min is not None and self.headteacher_outstanding_min is not None:
+            if self.headteacher_moderate_min >= self.headteacher_outstanding_min:
+                raise ValidationError({'headteacher_outstanding_min': 'Outstanding must be higher than the moderate minimum.'})
         if not self.name:
             raise ValidationError({"name": "Enter the school name."})
         if self.pk and not self._state.adding:

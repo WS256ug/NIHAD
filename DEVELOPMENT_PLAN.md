@@ -559,3 +559,20 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Public PWA endpoints remain accessible during mandatory password changes without exempting other workspace routes.
 - Verification: all 292 Django tests and three service-worker behavior tests pass; system, migration-drift and diff checks pass. Browser installation verification remains pending because no connected browser is available in this session.
 - Next milestone: deploy with HTTPS and collected static assets, then verify Chrome installation, standalone launch, offline fallback and reconnection on the target devices.
+
+## Automatic headteacher comments
+
+- Added the three phrase groups supplied in the headteacher's reference image, with minor punctuation/grammar cleanup. Report generation chooses one stable comment using the saved overall percentage average, including combined End-Term results.
+- Default cutoffs are outstanding >=80%, moderate >=50% and <80%, and low <50%. Both cutoffs are editable in the school profile, validated in forms/models and constrained in the database.
+- Stored the generated suggestion and cutoff values in each report snapshot. Headteachers can edit the prefilled text before approval; approval and correction permissions remain enforced. Existing uncommented reports awaiting review receive a suggestion in the review form without GET requests changing records.
+- Descriptive, missing-average and absent results require manual comments. Existing approved/published reports are preserved.
+- Verification: all 300 Django tests pass, including cutoff boundaries, deterministic selection, manual fallbacks, configurable thresholds, review overrides and historical preservation. System, migration-drift and diff checks pass. Applied schools migration 0004 locally.
+- Next milestone: confirm the 80%/50% defaults with the school and review generated comments on a draft report.
+
+## Automatic class-teacher comments
+
+- Class teachers now use the same automatic phrases and configurable performance cutoffs as headteachers. New reports store both suggestions; existing uncommented drafts receive a prefilled suggestion in the class-teacher form.
+- Teachers can edit the comment before submission. Blank submission retains the saved text or generates a suggestion; incomplete/descriptive results still require manual text. Assignment checks, explicit submission, approval and published-history protections remain enforced.
+- Shared school-profile fields are labelled Report comments. No additional migration is required.
+- Verification: the full 305-test run passed 304 tests and exposed a setup error in one new test; after correcting that fixture, all five class-teacher tests pass. System, migration-drift and diff checks pass.
+- Next milestone: school review of both automatic comments on a draft report.

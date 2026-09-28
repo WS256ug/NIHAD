@@ -109,7 +109,26 @@ def report_action(request, pk, action):
         if not has_role(request.user, User.Role.SCHOOL_ADMIN):
             raise PermissionDenied
         form_type, title = ConfigurationStatusForm, 'Publish approved report'
-    form = form_type(request.POST if request.method == 'POST' else None)
+    form_kwargs = {}
+    if action == 'comment':
+        from .comments import suggest_headteacher_comment
+        suggestion = None
+        if not report.teacher_comment:
+            suggestion = suggest_headteacher_comment(
+                report.snapshot, report.enrollment.student.school,
+                assessment_id=report.assessment_id, enrollment_id=report.enrollment_id,
+            )
+        form_kwargs['suggested_comment'] = report.teacher_comment or (suggestion['comment'] if suggestion else '')
+    if action == 'review':
+        from .comments import suggest_headteacher_comment
+        suggestion = None
+        if not report.headteacher_comment and report.status == 'review' and report.is_current:
+            suggestion = suggest_headteacher_comment(
+                report.snapshot, report.enrollment.student.school,
+                assessment_id=report.assessment_id, enrollment_id=report.enrollment_id,
+            )
+        form_kwargs['suggested_comment'] = report.headteacher_comment or (suggestion['comment'] if suggestion else '')
+    form = form_type(request.POST if request.method == 'POST' else None, **form_kwargs)
     if request.method == 'POST' and form.is_valid():
         if action == 'comment':
             operation = lambda: services.teacher_comment(report, form.cleaned_data['comment'], request.user)

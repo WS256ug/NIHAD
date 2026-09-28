@@ -4,11 +4,29 @@ from .models import AcademicClass, AcademicYear, School, Section, Stream, Term
 
 
 class SchoolForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('headteacher_outstanding_min', 'headteacher_moderate_min'):
+            self.fields[name].required = False
+
+    def clean(self):
+        data = super().clean()
+        for name in ('headteacher_outstanding_min', 'headteacher_moderate_min'):
+            if name not in self.errors and data.get(name) is None:
+                data[name] = getattr(self.instance, name)
+        return data
+
     class Meta:
         model = School
-        fields = ("name", "motto", "address", "phone", "email", "website", "currency_code", "enable_ranking", "require_fee_clearance_for_reports")
+        fields = ("name", "motto", "address", "phone", "email", "website", "currency_code", "enable_ranking", "require_fee_clearance_for_reports", "headteacher_outstanding_min", "headteacher_moderate_min")
         widgets = {"address": forms.Textarea(attrs={"rows": 3})}
+        labels = {
+            'headteacher_outstanding_min': 'Report comments: outstanding minimum (%)',
+            'headteacher_moderate_min': 'Report comments: moderate minimum (%)',
+        }
         help_texts = {
+            'headteacher_outstanding_min': 'Class-teacher and headteacher comments share these cutoffs. Overall average at or above this percentage gets an outstanding comment. Blank keeps the current setting.',
+            'headteacher_moderate_min': 'Overall average below this percentage gets a low-performance comment. Blank keeps the current setting. Changes apply to newly generated suggestions.',
             "enable_ranking": "Use ranking when academic reports are introduced.",
             "require_fee_clearance_for_reports": "Require fee clearance when guardian report access is introduced.",
         }

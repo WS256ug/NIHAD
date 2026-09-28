@@ -11,6 +11,7 @@ from apps.academics.services import require_manager
 from apps.schools.services import lock_school, write_record
 from .models import StudentReport
 from .permissions import can_comment
+from .comments import suggest_headteacher_comment
 
 
 def expected_subjects(assessment, enrollment):
@@ -79,7 +80,12 @@ def generate_reports(assessment, actor):
                 snapshot['promotion_decision'] = decision.snapshot.get('decision') or decision.get_decision_display()
         report = assessment.reports.filter(enrollment=enrollment, is_current=True).first() or StudentReport(assessment=assessment, enrollment=enrollment)
         report.snapshot = snapshot
-        report.teacher_comment = report.headteacher_comment = ''
+        suggestion = suggest_headteacher_comment(snapshot, school, assessment_id=assessment.pk, enrollment_id=enrollment.pk)
+        report.teacher_comment = suggestion['comment'] if suggestion else ''
+        report.headteacher_comment = suggestion['comment'] if suggestion else ''
+        if suggestion:
+            report.snapshot['teacher_comment_suggestion'] = suggestion.copy()
+            report.snapshot['headteacher_comment_suggestion'] = suggestion
         reports.append(write_record(report, actor, 'Generated report snapshot from completed marks.'))
     return reports
 
@@ -95,10 +101,17 @@ def current_report(report):
 
 @transaction.atomic
 def teacher_comment(report, comment, actor):
-    lock_school()
+    school = lock_school()
     report = current_report(report)
     if not can_comment(actor, report):
         raise PermissionDenied
+    if not comment.strip():
+        comment = report.teacher_comment
+        if not comment:
+            suggestion = suggest_headteacher_comment(report.snapshot, school, assessment_id=report.assessment_id, enrollment_id=report.enrollment_id)
+            if suggestion:
+                comment = suggestion['comment']
+                report.snapshot = {**report.snapshot, 'teacher_comment_suggestion': suggestion}
     report.snapshot = {**report.snapshot, 'teacher_name': actor.get_full_name() or actor.username, 'teacher_comment_date': timezone.localdate().isoformat()}
     report.teacher_comment = comment.strip()
     report.status = 'review'
@@ -109,8 +122,15 @@ def teacher_comment(report, comment, actor):
 def review_report(report, comment, approve, actor):
     if not has_role(actor, User.Role.HEADTEACHER):
         raise PermissionDenied
-    lock_school()
+    school = lock_school()
     report = current_report(report)
+    if report.status == 'review' and approve and not comment.strip():
+        comment = report.headteacher_comment
+        if not comment:
+            suggestion = suggest_headteacher_comment(report.snapshot, school, assessment_id=report.assessment_id, enrollment_id=report.enrollment_id)
+            if suggestion:
+                comment = suggestion['comment']
+                report.snapshot = {**report.snapshot, 'headteacher_comment_suggestion': suggestion}
     if report.status != 'review' or not comment.strip():
         raise ValidationError('Review requires a submitted report and a headteacher comment.')
     report.snapshot = {**report.snapshot, 'headteacher_name': actor.get_full_name() or actor.username, 'headteacher_comment_date': timezone.localdate().isoformat()}
