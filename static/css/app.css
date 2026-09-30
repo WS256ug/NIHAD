@@ -199,6 +199,10 @@ main:focus { outline: none; }
 .table-scroll { overflow-x: auto; }
 .table-scroll table { width: 100%; text-align: left; }
 .table-scroll caption { text-align: left; margin-bottom: 1rem; }
+#student-results .table-scroll table { min-width: 40rem; }
+#student-results .person-identity { min-width: 14rem; }
+#student-results .person-identity > span:last-child { overflow-wrap: normal; word-break: normal; }
+#student-results .person-identity .table-secondary { white-space: nowrap; }
 .table-secondary { display: block; color: var(--muted-foreground); font-weight: 400; overflow-wrap: anywhere; }
 .table-actions { white-space: normal; }
 .table-actions a[role="button"] { margin: .2rem .3rem .2rem 0; }

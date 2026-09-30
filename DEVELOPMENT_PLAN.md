@@ -598,3 +598,9 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - The fix addresses CSS, JavaScript, logo and PWA icon 404s when no public static alias is configured. No media directories or secrets are exposed; development serving and database selection remain unchanged.
 - Verification: all 312 tests pass, including actual collectstatic and requests for hashed CSS/JS/PNG assets plus negative checks for private paths. System, migration-drift and diff checks pass.
 - Next milestone: upload production.py and requirements.txt to Namecheap, install dependencies, collect static files, restart Passenger and confirm the styled login page. Cloudflare-injected script CSP warnings are separate from static asset delivery.
+
+## Mobile student table readability
+
+- Set minimum widths for the student table and identity column, keeping names readable and registration numbers on one line with horizontal scrolling.
+- Verification: Django check and all 44 student tests pass. Mobile browser appearance still needs visual verification.
+- Next milestone: upload static/css/app.css, collect production static files, restart the hosted app and verify the student list on a phone.
