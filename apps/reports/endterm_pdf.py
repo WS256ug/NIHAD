@@ -44,10 +44,14 @@ def endterm_pdf(report):
     logo = settings.BASE_DIR / 'static' / 'img' / 'nihad-logo.png'
     brand = [p(data['school'], title)]
     brand += [p(data[key], small) for key in ('motto', 'school_address', 'school_phone', 'school_email') if data.get(key)]
-    period = [p(data['assessment'] + ' report'), p('Academic year: ' + data['year'], small), p('Term: ' + data['term'], small), p(f'{report.get_status_display()} | v{report.version}', small)]
+    period = [
+    p(data['assessment'] + ' report'),
+    p('Academic year: ' + data['year'], small),
+    p('Term: ' + data['term'], small),
+]
     story = [table([[Image(str(logo), width=23*mm, height=23*mm, kind='proportional') if logo.exists() else '', brand, period]], [28*mm, 111*mm, 47*mm]), Spacer(1, 4*mm), section('STUDENT INFORMATION')]
     info = [('Student', data['student']), ('Registration number', data['registration_number']), ('Class', data['class'])]
-    info += [(label, data[key]) for key, label in [('stream', 'Stream'), ('gender', 'Gender'), ('date_of_birth', 'Date of birth')] if data.get(key)]
+    info += [(label, data[key]) for key, label in [('stream', 'Stream'), ('gender', 'Gender')] if data.get(key)]
     info_cells = [[p(label, small), p(value)] for label, value in info]
     info_rows = [info_cells[i:i+2] + ([''] if len(info_cells[i:i+2]) == 1 else []) for i in range(0, len(info_cells), 2)]
     student_info = table(info_rows, [73*mm, 73*mm])
@@ -92,18 +96,18 @@ def endterm_pdf(report):
     comments = []
     for key, label, comment in [('teacher', 'Class-teacher comment', report.teacher_comment), ('headteacher', 'Headteacher comment', report.headteacher_comment)]:
         cell = [p(label), Spacer(1, 2*mm), p(comment or 'Pending'), Spacer(1, 5*mm)]
-        if data.get(key + '_name'):
-            cell.append(p(data[key + '_name'], small))
-        if data.get(key + '_comment_date'):
-            cell.append(p('Date: ' + data[key + '_comment_date'], small))
-        cell += [Spacer(1, 3*mm), p('Signature: ____________________', small)]
+        # if data.get(key + '_name'):
+        #     cell.append(p(data[key + '_name'], small))
+        # if data.get(key + '_comment_date'):
+        #     cell.append(p('Date: ' + data[key + '_comment_date'], small))
+        #cell += [Spacer(1, 3*mm), p('Signature: ____________________', small)]
         comments.append(cell)
     comment_table = table([comments], [width/2]*2, splitInRow=1)
     comment_table.setStyle(TableStyle([('BACKGROUND', (0,0),(-1,-1),pale), ('BOX',(0,0),(-1,-1),.5,line), ('LINEAFTER',(0,0),(0,-1),.5,line)]))
     story += [comment_table, Spacer(1, 5*mm)]
     closing = [p('Next term begins: ' + data['next_term_start'])] if data.get('next_term_start') else []
-    if report.published_at:
-        closing.append(p('Published ' + report.published_at.strftime('%d %b %Y'), small))
+    # if report.published_at:
+    #     closing.append(p('Published ' + report.published_at.strftime('%d %b %Y'), small))
     stamp = table([[p('School stamp', small)], ['']], [48*mm], rowHeights=[10*mm, 16*mm])
     stamp.setStyle(TableStyle([('BOX',(0,0),(-1,-1),.5,line)]))
     story.append(table([[closing, stamp]], [132*mm, 54*mm]))
@@ -112,7 +116,7 @@ def endterm_pdf(report):
         canvas.saveState()
         canvas.setFont('Helvetica', 8)
         canvas.setFillColor(charcoal)
-        canvas.drawString(12*mm, 10*mm, f"{data['registration_number']} | {report.get_status_display()} | Version {report.version}")
+        # canvas.drawString(12*mm, 10*mm, f"{data['registration_number']} | {report.get_status_display()} | Version {report.version}")
         canvas.drawRightString(198*mm, 10*mm, f'Page {doc.page}')
         canvas.restoreState()
 
