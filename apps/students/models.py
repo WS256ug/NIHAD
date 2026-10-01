@@ -33,7 +33,7 @@ class Student(AuditedModel):
         INACTIVE = "inactive", "Inactive"
 
     class Religion(models.TextChoices):
-        MOSLEM = "Moslem", "Moslem"
+        MOSLEM = "Moslem", "Islam"
         CHRISTIAN = "Christian", "Christian"
         OTHER = "Other", "Other"
 

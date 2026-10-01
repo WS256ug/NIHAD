@@ -15,6 +15,8 @@ def visible_reports(user):
         for model in (TeachingAssignment, ClassTeacherAssignment):
             for assignment in teacher_assignments(user, model):
                 match = Q(assessment__academic_class_id=assignment.academic_class_id, assessment__term__academic_year_id=assignment.academic_year_id)
+                if model == TeachingAssignment:
+                    match &= Q(assessment__report_group=assignment.subject.report_group)
                 if assignment.term_id:
                     match &= Q(assessment__term_id=assignment.term_id)
                 if assignment.stream_id:

@@ -185,3 +185,7 @@ Separate guardian login, sessions and account provisioning are disabled by defau
 (`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
 for historical integrity. Registration creates contacts without login accounts.
 Report publication, student isolation and fee-clearance checks remain enforced.
+
+## Report groups (2026-10-01)
+
+Subject.report_group and Assessment.report_group use main/islamic. Assessment uniqueness includes report_group. Existing records default to main. Student religion retains stored Moslem with display label Islam. Islamic eligibility is the registered religion or existing marks/reports in that assessment, preserving corrections. Report snapshots record report_group and the group-specific assessment title. No historical marks or report snapshots are rewritten.

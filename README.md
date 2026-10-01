@@ -390,3 +390,7 @@ comment. Approved and published report history remains unchanged.
 
 Apply the school migration with the project virtual environment before running
 the updated application: `python manage.py migrate`.
+
+## Islamic Studies reports
+
+See [ISLAMIC_STUDIES.md](ISLAMIC_STUDIES.md) for religion-based eligibility, subject/assessment setup, historical data rules and Namecheap migration instructions.

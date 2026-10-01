@@ -63,3 +63,7 @@ Separate guardian login, sessions and account provisioning are disabled by defau
 (`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
 for historical integrity. Registration creates contacts without login accounts.
 Report publication, student isolation and fee-clearance checks remain enforced.
+
+## Islamic Studies reports (2026-10-01)
+
+Students registered with religion Islam receive separate Islamic Studies Mid-Term and End-Term reports. Common subjects remain on the Main School report. Totals and ranking are independent. Existing assessment participation survives later religion edits; future eligibility follows registration. See ISLAMIC_STUDIES.md for setup and historical-record handling.

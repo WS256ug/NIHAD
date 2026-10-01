@@ -41,6 +41,10 @@ class StudentReport(AuditedModel):
 
     def clean(self):
         super().clean()
+        if self._state.adding and self.assessment_id and self.enrollment_id:
+            from apps.academics.participation import eligible_enrollments
+            if not eligible_enrollments(self.assessment).filter(pk=self.enrollment_id).exists():
+                raise ValidationError('This student is not eligible for this assessment report.')
         preserve_fields(self, ('assessment_id', 'enrollment_id', 'version', 'previous_id', 'correction_reason'))
         if self.pk:
             previous = StudentReport.objects.get(pk=self.pk)

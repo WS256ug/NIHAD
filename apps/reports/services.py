@@ -16,7 +16,7 @@ from .comments import suggest_headteacher_comment
 
 def expected_subjects(assessment, enrollment):
     # Include historical assignments so deactivating an assignment cannot hide a missing result.
-    return set(TeachingAssignment.objects.filter(academic_year_id=enrollment.academic_year_id, academic_class_id=enrollment.academic_class_id).filter(Q(term__isnull=True) | Q(term_id=assessment.term_id)).filter(Q(stream__isnull=True) | Q(stream_id=enrollment.stream_id)).values_list('subject_id', flat=True))
+    return set(TeachingAssignment.objects.filter(academic_year_id=enrollment.academic_year_id, academic_class_id=enrollment.academic_class_id, subject__report_group=assessment.report_group).filter(Q(term__isnull=True) | Q(term_id=assessment.term_id)).filter(Q(stream__isnull=True) | Q(stream_id=enrollment.stream_id)).values_list('subject_id', flat=True))
 
 
 @transaction.atomic
@@ -69,7 +69,8 @@ def generate_reports(assessment, actor):
             'section': enrollment.section.name, 'class': enrollment.academic_class.name,
             'stream': enrollment.stream.name if enrollment.stream_id else '',
             'year': assessment.term.academic_year.name, 'term': assessment.term.name,
-            'assessment': assessment.assessment_type.name, 'date': assessment.date.isoformat(),
+            'assessment': assessment.report_title, 'date': assessment.date.isoformat(),
+            'report_group': assessment.report_group,
             'maximum_score': str(assessment.maximum_score), 'generated_at': timezone.now().isoformat(),
             'position': positions.get(enrollment.pk), 'cohort_size': len(positions) if rank else None,
             **result,

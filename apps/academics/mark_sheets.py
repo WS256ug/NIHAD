@@ -12,12 +12,14 @@ from apps.schools.services import lock_school, write_record
 from apps.students.models import Enrollment
 from .forms import MarkForm
 from .models import Assessment, GradeRule, Mark, MarkSubmission, TeachingAssignment
+from .participation import eligible_enrollments
 
 
 def all_sheet_assignments(assessment):
     records = TeachingAssignment.objects.filter(
         academic_year_id=assessment.term.academic_year_id, academic_class_id=assessment.academic_class_id,
         is_active=True, teacher__employment_status="active", teacher__user__is_active=True,
+        subject__report_group=assessment.report_group,
     ).filter(Q(term__isnull=True) | Q(term_id=assessment.term_id))
     if assessment.stream_id:
         records = records.filter(Q(stream__isnull=True) | Q(stream_id=assessment.stream_id))
@@ -32,11 +34,9 @@ def sheet_assignments(assessment, actor):
 
 
 def sheet_enrollments(assessment, assignment):
-    records = Enrollment.objects.filter(
-        student__school_id=assessment.term.academic_year.school_id,
-        academic_year_id=assessment.term.academic_year_id, academic_class_id=assessment.academic_class_id,
-        enrollment_date__lte=assessment.date,
-    ).filter(Q(completion_date__isnull=True) | Q(completion_date__gte=assessment.date))
+    records = eligible_enrollments(assessment)
+    if assignment.subject.report_group != assessment.report_group:
+        return records.none()
     if assessment.stream_id:
         records = records.filter(stream_id=assessment.stream_id)
     if assignment.stream_id:

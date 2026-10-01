@@ -16,7 +16,7 @@
         <div><dt>Admission date</dt><dd>{{ student.admission_date|date:'j M Y' }}</dd></div>
         <div><dt>Admission number</dt><dd>{{ student.admission_number|default:'Not provided' }}</dd></div>
         {% if user.role != 'teacher' %}
-        <div><dt>Religion</dt><dd>{{ student.religion|default:'Not provided' }}</dd></div>{% endif %}
+        <div><dt>Religion</dt><dd>{{ student.get_religion_display|default:'Not provided' }}</dd></div>{% endif %}
       </dl>
     </section>
     {% if user.role != 'teacher' %}<section class="workspace-card"><h2>Guardians</h2>

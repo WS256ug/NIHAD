@@ -25,14 +25,19 @@ class TeacherForm(forms.ModelForm):
 class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
-        fields = ("section", "code", "name")
+        fields = ("section", "code", "name", "report_group")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["section"].queryset = Section.objects.filter(school=school, is_active=True)
+        self.fields["report_group"].required = False
+        self.fields["report_group"].help_text = "Keep Islamic subjects separate from the main school report. Subjects with saved marks cannot change group."
         if self.instance.pk:
             self.fields["section"].disabled = True
             self.fields["section"].queryset = Section.objects.filter(pk=self.instance.section_id, school=school)
+
+    def clean_report_group(self):
+        return self.cleaned_data.get("report_group") or self.instance.report_group
 
 
 class AssignmentForm(forms.ModelForm):
@@ -87,11 +92,14 @@ class AssessmentTypeForm(forms.ModelForm):
 class AssessmentForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ("assessment_type", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review", "two_exam_sets", "set_one_weight")
+        fields = ("assessment_type", "report_group", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review", "two_exam_sets", "set_one_weight")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["set_one_weight"].required = False
+        self.fields["report_group"].required = False
+        if self.instance.pk:
+            self.fields["report_group"].disabled = True
         choices = {
             "assessment_type": AssessmentType.objects.filter(school=school, is_active=True),
             "term": Term.objects.filter(academic_year__school=school, academic_year__is_active=True, is_active=True).select_related("academic_year"),
@@ -110,6 +118,7 @@ class AssessmentForm(forms.ModelForm):
     def clean(self):
         from .section_grades import current_scheme
         data = super().clean()
+        data["report_group"] = data.get("report_group") or self.instance.report_group
         if data.get("set_one_weight") is None:
             data["set_one_weight"] = self.instance.set_one_weight
         academic_class = data.get("academic_class")

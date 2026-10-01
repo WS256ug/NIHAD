@@ -101,3 +101,7 @@ Separate guardian login, sessions and account provisioning are disabled by defau
 (`GUARDIAN_ACCOUNTS_ENABLED = False`). Existing accounts and links are retained
 for historical integrity. Registration creates contacts without login accounts.
 Report publication, student isolation and fee-clearance checks remain enforced.
+
+## Islamic Studies reports
+
+Separate Main School and Islamic Studies subjects and assessments, with religion-based Islamic rosters, server-side mark/report eligibility, independent totals/ranking, and Mid-Term/End-Term report titles. Existing review, publication, fee clearance and student portal controls apply. See ISLAMIC_STUDIES.md for setup and deployment.

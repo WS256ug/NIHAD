@@ -604,3 +604,11 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Set minimum widths for the student table and identity column, keeping names readable and registration numbers on one line with horizontal scrolling.
 - Verification: Django check and all 44 student tests pass. Mobile browser appearance still needs visual verification.
 - Next milestone: upload static/css/app.css, collect production static files, restart the hosted app and verify the student list on a phone.
+
+## Separate Islamic Studies reports (2026-10-01)
+
+- Added Main School/Islamic Studies groups to subjects and assessments, separate assessment uniqueness, and religion-based marks/report eligibility. Registration displays Islam while preserving the existing Moslem stored value.
+- Islamic Mid-Term/End-Term report snapshots identify the group and calculate results/ranking from only that assessment's subjects and eligible students. Existing publication, portal access, fee policy and two-set workflows remain in use.
+- Historical participation remains available for corrections after religion edits; used subjects and assessment groups cannot be reassigned. Existing records migrate to Main School without rewriting report snapshots.
+- Verification: all 326 tests pass on SQLite, including 14 Islamic report tests; Django check and migration-drift checks pass. Local migrations applied. Hosted MySQL deployment and visual review have not been performed.
+- Next milestone: upload the updated code and two migrations to Namecheap, run migrate/check, restart the app, and configure Islamic subjects and assessments using ISLAMIC_STUDIES.md.

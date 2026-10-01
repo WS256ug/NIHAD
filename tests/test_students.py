@@ -63,7 +63,7 @@ class StudentRecordTests(StudentTestCase):
         self.assertEqual(student.religion, "Moslem")
         self.client.force_login(self.actor)
         response = self.client.get(reverse("students:detail", args=[student.pk]))
-        self.assertContains(response, "<dt>Religion</dt><dd>Moslem</dd>", html=True)
+        self.assertContains(response, "<dt>Religion</dt><dd>Islam</dd>", html=True)
         form = StudentForm(self.student_data(religion=""), instance=student, school=self.school)
         self.assertTrue(form.is_valid(), form.errors)
         services.save_student(form, self.actor)
@@ -75,7 +75,7 @@ class StudentRecordTests(StudentTestCase):
         from django.forms import Select
         form = StudentForm(school=self.school)
         self.assertIsInstance(form.fields["religion"].widget, Select)
-        self.assertEqual(list(form.fields["religion"].choices), [("", "---------"), ("Moslem", "Moslem"), ("Christian", "Christian"), ("Other", "Other")])
+        self.assertEqual(list(form.fields["religion"].choices), [("", "---------"), ("Moslem", "Islam"), ("Christian", "Christian"), ("Other", "Other")])
         for religion in ("Moslem", "Christian", "Other", ""):
             form = StudentForm(self.student_data(religion=religion), school=self.school)
             self.assertTrue(form.is_valid(), form.errors)

@@ -28,7 +28,7 @@ def selected_exam_set(request, assessment):
 
 
 def available_subjects(assessment, actor):
-    subjects = Subject.objects.filter(section_id=assessment.academic_class.section_id)
+    subjects = Subject.objects.filter(section_id=assessment.academic_class.section_id, report_group=assessment.report_group)
     if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER) or assessment_assignments(assessment, actor, ClassTeacherAssignment).exists():
         return subjects
     return subjects.filter(pk__in=assessment_assignments(assessment, actor).values("subject_id"))
@@ -104,7 +104,7 @@ def roster(request, pk):
         "rows": rows, "control": control, "review_form": review, "submission": submission,
         "can_edit": editable, "can_review": assessment.requires_mark_review and reviewer and assessment.status == "open" and submission and submission.status in ("submitted", "approved"),
         "can_manage_academics": can_manage_academics(request.user),
-        "unassigned_subjects": Subject.objects.filter(section_id=assessment.academic_class.section_id).exclude(pk__in=all_sheet_assignments(assessment).values("subject_id")) if reviewer else Subject.objects.none(),
+        "unassigned_subjects": Subject.objects.filter(section_id=assessment.academic_class.section_id, report_group=assessment.report_group).exclude(pk__in=all_sheet_assignments(assessment).values("subject_id")) if reviewer else Subject.objects.none(),
         "completed": len(marks), "total": len(enrollments),
         "sheet_unsaved": request.method == "POST" and not reviewing,
         "descriptive": assessment.grading_scheme_id and assessment.grading_scheme.mode == "descriptive",

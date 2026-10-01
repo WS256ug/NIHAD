@@ -51,7 +51,13 @@ class Teacher(AuditedModel):
                 raise ValidationError("Deactivate this teacher's assignments first.")
 
 
+class ReportGroup(models.TextChoices):
+    MAIN = "main", "Main School"
+    ISLAMIC = "islamic", "Islamic Studies"
+
+
 class Subject(AuditedModel):
+    report_group = models.CharField(max_length=10, choices=ReportGroup.choices, default=ReportGroup.MAIN)
     section = models.ForeignKey("schools.Section", on_delete=models.PROTECT, related_name="subjects")
     code = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
@@ -62,14 +68,18 @@ class Subject(AuditedModel):
         constraints = [
             models.UniqueConstraint(Lower("code"), "section", name="academics_subject_code_unique", violation_error_message="This subject code is already used in the section."),
             models.UniqueConstraint(Lower("name"), "section", name="academics_subject_name_unique", violation_error_message="This subject name is already used in the section."),
+            models.CheckConstraint(condition=models.Q(report_group__in=["main", "islamic"]), name="academics_subject_group"),
         ]
 
     def __str__(self):
-        return f"{self.section} / {self.name}"
+        suffix = " / Islamic Studies" if self.report_group == ReportGroup.ISLAMIC else ""
+        return f"{self.section} / {self.name}" + suffix
 
     def clean(self):
         super().clean()
         preserve_fields(self, ("section_id",))
+        if self.pk and (self.marks.exists() or self.assignments.filter(mark_submissions__isnull=False).exists()):
+            preserve_fields(self, ("report_group",))
         self.code, self.name = self.code.strip().upper(), self.name.strip()
         if not self.code or not self.name:
             raise ValidationError("Enter a subject code and name.")
@@ -192,6 +202,7 @@ class Assessment(AuditedModel):
         OPEN = "open", "Open for marks"
         CLOSED = "closed", "Marks closed"
 
+    report_group = models.CharField(max_length=10, choices=ReportGroup.choices, default=ReportGroup.MAIN, help_text="Islamic Studies includes only students registered with religion Islam and Islamic subjects.")
     assessment_type = models.ForeignKey(AssessmentType, on_delete=models.PROTECT, related_name="assessments")
     term = models.ForeignKey("schools.Term", on_delete=models.PROTECT, related_name="assessments")
     academic_class = models.ForeignKey("schools.AcademicClass", on_delete=models.PROTECT, related_name="assessments")
@@ -209,12 +220,18 @@ class Assessment(AuditedModel):
         constraints = [
             models.CheckConstraint(condition=models.Q(maximum_score__gt=0), name="academics_assessment_max_positive"),
             models.CheckConstraint(condition=models.Q(status__in=["draft", "open", "closed"]), name="academics_assessment_status"),
-            models.UniqueConstraint(fields=("assessment_type", "term", "academic_class", "stream"), condition=models.Q(stream__isnull=False), name="academics_assessment_stream_unique"),
-            models.UniqueConstraint(fields=("assessment_type", "term", "academic_class"), condition=models.Q(stream__isnull=True), name="academics_assessment_class_unique"),
+            models.UniqueConstraint(fields=("assessment_type", "term", "academic_class", "stream", "report_group"), condition=models.Q(stream__isnull=False), name="academics_assessment_stream_unique"),
+            models.UniqueConstraint(fields=("assessment_type", "term", "academic_class", "report_group"), condition=models.Q(stream__isnull=True), name="academics_assessment_class_unique"),
+            models.CheckConstraint(condition=models.Q(report_group__in=["main", "islamic"]), name="academics_assessment_group"),
         ]
 
     def __str__(self):
-        return f"{self.term} / {self.academic_class.name}" + (f" {self.stream.name}" if self.stream_id else "") + f" / {self.assessment_type}"
+        return f"{self.term} / {self.academic_class.name}" + (f" {self.stream.name}" if self.stream_id else "") + f" / {self.report_title}"
+
+    @property
+    def report_title(self):
+        prefix = "Islamic Studies / " if self.report_group == ReportGroup.ISLAMIC else ""
+        return prefix + self.assessment_type.name
 
     def clean(self):
         super().clean()
@@ -228,7 +245,7 @@ class Assessment(AuditedModel):
             previous = Assessment.objects.get(pk=self.pk)
             if (self.two_exam_sets, self.set_one_weight) != (previous.two_exam_sets, previous.set_one_weight):
                 raise ValidationError("Exam sets and weights cannot change after marks or reports exist.")
-        preserve_fields(self, ("assessment_type_id", "term_id", "academic_class_id", "stream_id"))
+        preserve_fields(self, ("assessment_type_id", "term_id", "academic_class_id", "stream_id", "report_group"))
         if not (self.term_id and self.academic_class_id and self.assessment_type_id):
             return
         if self.term.academic_year.school_id != self.academic_class.section.school_id or self.assessment_type.school_id != self.term.academic_year.school_id:
@@ -239,7 +256,7 @@ class Assessment(AuditedModel):
             raise ValidationError("Choose an active grading scheme from the class's section.")
         if self.date and not self.term.start_date <= self.date <= self.term.end_date:
             raise ValidationError({"date": "Assessment date must fall within the selected term."})
-        overlaps = Assessment.objects.filter(assessment_type_id=self.assessment_type_id, term_id=self.term_id, academic_class_id=self.academic_class_id).exclude(pk=self.pk)
+        overlaps = Assessment.objects.filter(assessment_type_id=self.assessment_type_id, term_id=self.term_id, academic_class_id=self.academic_class_id, report_group=self.report_group).exclude(pk=self.pk)
         if self.stream_id:
             overlaps = overlaps.filter(models.Q(stream__isnull=True) | models.Q(stream_id=self.stream_id))
         if overlaps.exists():
@@ -315,6 +332,11 @@ class Mark(AuditedModel):
         if not (self.assessment_id and self.enrollment_id and self.subject_id and self.teaching_assignment_id):
             return
         assessment, enrollment, assignment = self.assessment, self.enrollment, self.teaching_assignment
+        from .participation import eligible_enrollments
+        if self.subject.report_group != assessment.report_group:
+            raise ValidationError("Choose a subject from this assessment's report group.")
+        if not eligible_enrollments(assessment).filter(pk=enrollment.pk).exists():
+            raise ValidationError("This student is not eligible for this assessment.")
         scheme = assessment.grading_scheme
         if self.is_absent:
             if self.score is not None or self.level_id:
@@ -373,6 +395,8 @@ class MarkSubmission(AuditedModel):
         validate_exam_set(self)
         if self.assessment_id and self.assignment_id:
             assessment, assignment = self.assessment, self.assignment
+            if assignment.subject.report_group != assessment.report_group:
+                raise ValidationError("This subject belongs to another report group.")
             if assignment.academic_class_id != assessment.academic_class_id or assignment.academic_year_id != assessment.term.academic_year_id or (assignment.term_id and assignment.term_id != assessment.term_id) or (assessment.stream_id and assignment.stream_id and assignment.stream_id != assessment.stream_id):
                 raise ValidationError("This teaching assignment does not belong to the assessment.")
 
