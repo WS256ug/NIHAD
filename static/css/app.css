@@ -352,6 +352,13 @@ main:focus { outline: none; }
 .endterm-signoff { margin-top: 5mm; }
 .endterm-signoff p { font-size: .7rem; }
 .endterm-footer { display: flex; justify-content: space-between; align-items: center; gap: 4mm; margin-top: 4mm; font-size: .75rem; }
+.endterm-closing { flex: 1; min-width: 0; }
+.endterm-grading-key { width: 100%; border-collapse: collapse; font-size: .65rem; }
+.endterm-grading-key caption { text-align: left; font-weight: 700; color: #800020; padding-bottom: 1mm; }
+.endterm-grading-key th, .endterm-grading-key td { padding: 1.5mm 1mm; border: 1px solid #e4d4d9; text-align: center; }
+.endterm-grading-key thead th { background: #800020; color: #fff; }
+.endterm-grading-key tbody th { background: #F8F1F3; }
+.endterm-grading-note { margin: 1mm 0 2mm; font-size: .6rem; }
 .endterm-stamp { border: 1px dashed #B89B5E; color: #666666; padding: 8mm 5mm; min-width: 50mm; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 @media screen and (max-width: 720px) {
   .endterm-report { padding: 4mm; }
@@ -360,6 +367,7 @@ main:focus { outline: none; }
   .endterm-school h2 { font-size: 1.15rem; }
   .endterm-student-grid, .endterm-comments { grid-template-columns: 1fr; }
   .endterm-footer { flex-wrap: wrap; }
+  .endterm-closing { flex-basis: 100%; }
 }
 @media print {
   @page { size: A4 portrait; margin: 10mm; }

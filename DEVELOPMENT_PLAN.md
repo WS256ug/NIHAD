@@ -612,3 +612,10 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Historical participation remains available for corrections after religion edits; used subjects and assessment groups cannot be reassigned. Existing records migrate to Main School without rewriting report snapshots.
 - Verification: all 326 tests pass on SQLite, including 14 Islamic report tests; Django check and migration-drift checks pass. Local migrations applied. Hosted MySQL deployment and visual review have not been performed.
 - Next milestone: upload the updated code and two migrations to Namecheap, run migrate/check, restart the app, and configure Islamic subjects and assessments using ISLAMIC_STUDIES.md.
+
+## Report grading key (2026-10-01)
+
+- Added a compact Grade / Range (%) key beside the school stamp in End-Term HTML, print and PDF output. Mobile layouts place the key above the stamp.
+- New report snapshots preserve the assessment's effective percentage intervals, including exclusive upper boundaries and consecutive integer bands. Descriptive reports omit the numeric key; existing snapshots without saved ranges remain unchanged. Generate drafts again or use the existing correction workflow for published reports to obtain the key.
+- Verification: all 328 Django tests pass; system, migration-drift and diff checks pass. Visually verified the one-page PDF preview using local report data without saving changes to the database. Browser/mobile visual verification remains pending.
+- Next milestone: school review of the grading-key preview, then deploy the code, collect static files and generate new reports.

@@ -37,7 +37,15 @@
     <div><h3>Class-teacher comment</h3><p>{{ report.teacher_comment|default:'Pending'|linebreaksbr }}</p><div class="endterm-signoff">{% if data.teacher_name %}<p><strong>Teacher:</strong> {{ data.teacher_name }}</p>{% endif %}{% if data.teacher_comment_date %}<p><strong>Date:</strong> {{ data.teacher_comment_date }}</p>{% endif %}<p>Signature: ____________________</p></div></div>
     <div><h3>Headteacher comment</h3><p>{{ report.headteacher_comment|default:'Pending'|linebreaksbr }}</p><div class="endterm-signoff">{% if data.headteacher_name %}<p><strong>Headteacher:</strong> {{ data.headteacher_name }}</p>{% endif %}{% if data.headteacher_comment_date %}<p><strong>Date:</strong> {{ data.headteacher_comment_date }}</p>{% endif %}<p>Signature: ____________________</p></div></div>
   </section>
-  <footer class="endterm-footer"><div>{% if data.next_term_start %}<strong>Next term begins:</strong> {{ data.next_term_start }}{% endif %}{% if report.published_at %}<p>Published {{ report.published_at|date:'j M Y' }}</p>{% endif %}<small>{{ data.registration_number }} &middot; {{ report.get_status_display }} &middot; Version {{ report.version }}</small></div><div class="endterm-stamp">School stamp</div></footer>
+  <footer class="endterm-footer"><div class="endterm-closing">
+    {% if data.mode == 'numeric' and data.grading_key %}
+    <div class="table-scroll"><table class="endterm-grading-key">
+      <caption>Grading key</caption>
+      <thead><tr><th scope="row">Grade</th>{% for item in data.grading_key %}<th scope="col">{{ item.grade }}</th>{% endfor %}</tr></thead>
+      <tbody><tr><th scope="row">Range (%)</th>{% for item in data.grading_key %}<td>{{ item.range }}</td>{% endfor %}</tr></tbody>
+    </table></div><p class="endterm-grading-note">&lt; means below the upper limit.</p>
+    {% endif %}
+    {% if data.next_term_start %}<strong>Next term begins:</strong> {{ data.next_term_start }}{% endif %}{% if report.published_at %}<p>Published {{ report.published_at|date:'j M Y' }}</p>{% endif %}<small>{{ data.registration_number }} &middot; {{ report.get_status_display }} &middot; Version {{ report.version }}</small></div><div class="endterm-stamp">School stamp</div></footer>
 </article>
 {% else %}<section class="workspace-card"><p>This revision awaits completed marks and report generation.</p></section>{% endif %}
 {% endblock %}

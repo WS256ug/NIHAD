@@ -12,6 +12,7 @@ from apps.schools.services import lock_school, write_record
 from .models import StudentReport
 from .permissions import can_comment
 from .comments import suggest_headteacher_comment
+from .grading_key import grading_key_snapshot
 
 
 def expected_subjects(assessment, enrollment):
@@ -57,6 +58,7 @@ def generate_reports(assessment, actor):
     next_term = Term.objects.filter(academic_year__school=school, start_date__gt=assessment.term.end_date).order_by('start_date').first()
     final_term = not Term.objects.filter(academic_year=assessment.term.academic_year, start_date__gt=assessment.term.start_date).exists()
     reports = []
+    grading_key = grading_key_snapshot(assessment.grading_scheme)
     for enrollment in enrollments:
         result = results[enrollment.pk]
         snapshot = {
@@ -74,6 +76,7 @@ def generate_reports(assessment, actor):
             'maximum_score': str(assessment.maximum_score), 'generated_at': timezone.now().isoformat(),
             'position': positions.get(enrollment.pk), 'cohort_size': len(positions) if rank else None,
             **result,
+            'grading_key': grading_key,
         }
         if final_term:
             decision = enrollment.promotion_decisions.filter(selected=True, batch__status='confirmed').order_by('-batch__confirmed_at').first()

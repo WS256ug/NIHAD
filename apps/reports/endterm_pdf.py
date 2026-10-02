@@ -106,6 +106,21 @@ def endterm_pdf(report):
     comment_table.setStyle(TableStyle([('BACKGROUND', (0,0),(-1,-1),pale), ('BOX',(0,0),(-1,-1),.5,line), ('LINEAFTER',(0,0),(0,-1),.5,line)]))
     story += [comment_table, Spacer(1, 5*mm)]
     closing = [p('Next term begins: ' + data['next_term_start'])] if data.get('next_term_start') else []
+    if numeric and data.get('grading_key'):
+        key_style = ParagraphStyle('GradingKey', parent=small, fontSize=6.5, leading=9, alignment=1)
+        key_heading = ParagraphStyle('GradingKeyHeading', parent=key_style, textColor=colors.white, fontName='Helvetica-Bold')
+        # Keep configurable schemes readable, even with more than nine grades.
+        key_content = [p('Grading key', small), Spacer(1, 1*mm)]
+        for start in range(0, len(data['grading_key']), 9):
+            bands = data['grading_key'][start:start+9]
+            key_table = table([
+                [p('Grade', key_heading)] + [p(item['grade'], key_heading) for item in bands],
+                [p('Range (%)', key_style)] + [p(item['range'], key_style) for item in bands],
+            ], [19*mm] + [109*mm/len(bands)]*len(bands), header=True)
+            key_table.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 2), ('RIGHTPADDING', (0,0), (-1,-1), 2)]))
+            key_content += [key_table, Spacer(1, 1*mm)]
+        key_content += [p('< means below the upper limit.', small), Spacer(1, 2*mm)]
+        closing = key_content + closing
     # if report.published_at:
     #     closing.append(p('Published ' + report.published_at.strftime('%d %b %Y'), small))
     stamp = table([[p('School stamp', small)], ['']], [48*mm], rowHeights=[10*mm, 16*mm])
