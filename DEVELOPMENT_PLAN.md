@@ -619,3 +619,12 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - New report snapshots preserve the assessment's effective percentage intervals, including exclusive upper boundaries and consecutive integer bands. Descriptive reports omit the numeric key; existing snapshots without saved ranges remain unchanged. Generate drafts again or use the existing correction workflow for published reports to obtain the key.
 - Verification: all 328 Django tests pass; system, migration-drift and diff checks pass. Visually verified the one-page PDF preview using local report data without saving changes to the database. Browser/mobile visual verification remains pending.
 - Next milestone: school review of the grading-key preview, then deploy the code, collect static files and generate new reports.
+
+## School logo report watermark (2026-10-02)
+
+- Added the existing school logo as a centered 110 mm watermark at 5% opacity in End-Term HTML, browser print and every PDF page. The decorative HTML image is hidden from assistive technology and does not intercept clicks. Marks retain translucent alternating row shading so the watermark remains visible behind readable text.
+- This is a presentation change; existing reports receive the watermark when viewed/downloaded without changing saved results or requiring migrations.
+- Verification: all 328 tests passed; all five End-Term layout tests passed again after the final PDF shading adjustment. Django system and migration-drift checks pass. Visually verified the one-page PDF preview. Browser and physical print appearance remain to be checked.
+- Next milestone: upload artifacts/namecheap-report-update.zip, collect static files, restart the hosted Python app and review HTML/print and PDF output on Namecheap.
+
+- Watermark visibility adjustment: increased HTML/print and PDF opacity to 10% following school feedback.

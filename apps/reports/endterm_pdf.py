@@ -24,14 +24,14 @@ def endterm_pdf(report):
     def p(value, style=body):
         return Paragraph(escape(str(value if value is not None else '-')).replace('\n', '<br/>'), style)
 
-    def table(rows, widths, header=False, **kwargs):
+    def table(rows, widths, header=False, row_backgrounds=None, **kwargs):
         result = Table(rows, colWidths=widths, hAlign='LEFT', **kwargs)
         rules = [('VALIGN', (0, 0), (-1, -1), 'TOP'), ('LEFTPADDING', (0, 0), (-1, -1), 7),
                  ('RIGHTPADDING', (0, 0), (-1, -1), 7), ('TOPPADDING', (0, 0), (-1, -1), 4),
                  ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]
         if header:
             rules += [('BACKGROUND', (0, 0), (-1, 0), burgundy), ('GRID', (0, 0), (-1, -1), .4, line),
-                      ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, pale])]
+                      ('ROWBACKGROUNDS', (0, 1), (-1, -1), row_backgrounds or [colors.white, pale])]
         result.setStyle(TableStyle(rules))
         return result
 
@@ -80,7 +80,8 @@ def endterm_pdf(report):
             values += ['Absent' if row.get('absent') else report_number(row.get('score'))]
         values += [row.get('grade')] + ([row.get('points')] if points else [])
         rows.append([p(value) for value in values])
-    marks_table = table(rows, [64*mm] + [(width-64*mm)/(len(columns)-1)]*(len(columns)-1), header=True, repeatRows=2)
+    marks_table = table(rows, [64*mm] + [(width-64*mm)/(len(columns)-1)]*(len(columns)-1), header=True, repeatRows=2,
+                        row_backgrounds=[colors.Color(1,1,1,alpha=0), colors.Color(248/255,241/255,243/255,alpha=.55)])
     marks_table.setStyle(TableStyle([('SPAN', (0,0),(-1,0)), ('LINEBELOW',(0,0),(-1,0),.6,gold), ('BACKGROUND',(0,1),(-1,1),burgundy)]))
     story.append(marks_table)
     if numeric:
@@ -128,6 +129,14 @@ def endterm_pdf(report):
     story.append(table([[closing, stamp]], [132*mm, 54*mm]))
 
     def footer(canvas, doc):
+        if logo.exists():
+            canvas.saveState()
+            canvas.setFillAlpha(.10)
+            size = 110 * mm
+            canvas.drawImage(str(logo), (A4[0]-size)/2, (A4[1]-size)/2,
+                             width=size, height=size, preserveAspectRatio=True,
+                             anchor='c', mask='auto')
+            canvas.restoreState()
         canvas.saveState()
         canvas.setFont('Helvetica', 8)
         canvas.setFillColor(charcoal)

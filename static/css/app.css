@@ -313,7 +313,8 @@ main:focus { outline: none; }
 }
 
 /* A4 End-Term stationery, shared by screen and browser print. */
-.endterm-report { max-width: 210mm; margin: 0 auto; padding: 8mm; background: #fff; color: #333333; border: 1px solid #e4d4d9; border-radius: 10px; font-size: .9rem; }
+.endterm-report { position: relative; isolation: isolate; max-width: 210mm; margin: 0 auto; padding: 8mm; background: #fff; color: #333333; border: 1px solid #e4d4d9; border-radius: 10px; font-size: .9rem; }
+.endterm-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 110mm; max-width: 75%; height: auto; opacity: .10; z-index: -1; pointer-events: none; user-select: none; }
 .endterm-brand { display: grid; grid-template-columns: 24mm minmax(0, 1fr) 46mm; align-items: center; gap: 4mm; border-bottom: 3px solid #B89B5E; padding-bottom: 5mm; }
 .endterm-logo { width: 100%; height: 25mm; object-fit: contain; }
 .endterm-school { text-align: center; }
@@ -337,7 +338,8 @@ main:focus { outline: none; }
 .endterm-marks th:first-child { text-align: left; }
 .endterm-marks thead th { background: #800020; color: #fff; }
 .endterm-marks thead small { display: block; }
-.endterm-marks tbody tr:nth-child(even) { background: #F8F1F3; }
+.endterm-marks tbody tr { background: transparent; }
+.endterm-marks tbody tr:nth-child(even) { background: rgb(248 241 243 / 55%); }
 .endterm-grade { background: #F8F1F3; border-radius: 3px; padding: .2rem .4rem; color: #800020; font-weight: 700; }
 .endterm-calculation { text-align: center; font-size: .75rem; padding: 2mm; margin: 0; background: #F8F1F3; }
 .endterm-summary { display: flex; flex-wrap: wrap; margin: 2mm; border: 1px solid #e4d4d9; border-radius: 4px; }
@@ -371,6 +373,7 @@ main:focus { outline: none; }
 }
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
+  .endterm-watermark { position: fixed; }
   .endterm-report { max-width: none; padding: 0; border: 0; border-radius: 0; font-size: 9pt; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .endterm-brand, .endterm-student-panel, .endterm-summary, .endterm-decision, .endterm-footer { break-inside: avoid; }
   .endterm-comments h3 { break-after: avoid; }

@@ -3,6 +3,7 @@
 {% block report_body %}
 {% if data %}
 <article class="endterm-report" aria-label="{{ data.assessment }} report">
+  <img class="endterm-watermark" src="{% static 'img/nihad-logo.png' %}" alt="" aria-hidden="true">
   <header class="endterm-brand">
     <img class="endterm-logo" src="{% static 'img/nihad-logo.png' %}" alt="School logo">
     <div class="endterm-school"><h2>{{ data.school }}</h2>{% if data.motto %}<p class="endterm-motto">{{ data.motto }}</p>{% endif %}
