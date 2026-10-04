@@ -1,10 +1,40 @@
+from decimal import Decimal, InvalidOperation
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from apps.schools.services import lock_school, write_record
 from apps.students.models import Enrollment
-from .models import ChargeCancellation, FeeCharge, FeeStructure, Payment, PaymentReversal, ReceiptNumber
+from .models import ChargeCancellation, ConcessionReversal, FeeCharge, FeeConcession, FeeStructure, Payment, PaymentReversal, ReceiptNumber
 from .permissions import can_manage_finance
 from .queries import balance_summary, charge_balance
+
+
+@transaction.atomic
+def agree_fee(charge, agreed_amount, reason, actor):
+    require_finance(actor)
+    school = lock_school()
+    charge = FeeCharge.objects.select_for_update().get(pk=charge.pk, enrollment__student__school=school)
+    try:
+        agreed_amount = Decimal(str(agreed_amount))
+        valid = agreed_amount.is_finite() and agreed_amount >= 0 and agreed_amount < charge.amount and agreed_amount == agreed_amount.quantize(Decimal('.01'))
+    except (InvalidOperation, ValueError, TypeError):
+        valid = False
+    if not valid:
+        raise ValidationError('Enter an agreed fee from zero up to, but below, the original charge, with at most two decimal places.')
+    if hasattr(charge, 'cancellation') or charge.concessions.filter(reversal__isnull=True).exists():
+        raise ValidationError('Choose an active charge without an existing agreement. Reverse the previous concession before replacing it.')
+    if charge.amount - agreed_amount > charge_balance(charge):
+        raise ValidationError('The agreed fee cannot be less than payments already received. A credit/refund workflow is required.')
+    return write_record(FeeConcession(charge=charge, amount=charge.amount-agreed_amount, reason=reason.strip()), actor, 'Approved individual fee agreement.')
+
+
+@transaction.atomic
+def reverse_concession(concession, reason, actor):
+    require_finance(actor)
+    school = lock_school()
+    concession = FeeConcession.objects.select_for_update().get(pk=concession.pk, charge__enrollment__student__school=school)
+    if hasattr(concession, 'reversal'):
+        raise ValidationError('This concession has already been reversed.')
+    return write_record(ConcessionReversal(concession=concession, reason=reason.strip()), actor, 'Reversed fee concession; original agreement preserved.')
 
 
 def require_finance(actor):

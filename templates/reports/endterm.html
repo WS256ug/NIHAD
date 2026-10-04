@@ -10,7 +10,7 @@
       {% if data.school_address %}<p>{{ data.school_address }}</p>{% endif %}
       <p>{{ data.school_phone }}{% if data.school_email %} &middot; {{ data.school_email }}{% endif %}</p>
     </div>
-    <div class="endterm-period"><h3>{{ data.assessment }} report</h3><p><strong>Academic year:</strong> {{ data.year }}</p><p><strong>Term:</strong> {{ data.term }}</p><p>{{ report.get_status_display }} &middot; v{{ report.version }}</p></div>
+    <div class="endterm-period"><h3>{{ data.assessment }} report</h3><p><strong>Academic year:</strong> {{ data.year }}</p><p><strong>Term:</strong> {{ data.term }}</p>{% if not portal_view %}<p>{{ report.get_status_display }} &middot; v{{ report.version }}</p>{% endif %}</div>
   </header>
   <section class="endterm-student-panel">
     <h3 class="endterm-section-heading">Student information</h3>
@@ -46,7 +46,7 @@
       <tbody><tr><th scope="row">Range (%)</th>{% for item in data.grading_key %}<td>{{ item.range }}</td>{% endfor %}</tr></tbody>
     </table></div><p class="endterm-grading-note">&lt; means below the upper limit.</p>
     {% endif %}
-    {% if data.next_term_start %}<strong>Next term begins:</strong> {{ data.next_term_start }}{% endif %}{% if report.published_at %}<p>Published {{ report.published_at|date:'j M Y' }}</p>{% endif %}<small>{{ data.registration_number }} &middot; {{ report.get_status_display }} &middot; Version {{ report.version }}</small></div><div class="endterm-stamp">School stamp</div></footer>
+    {% if data.next_term_start %}<strong>Next term begins:</strong> {{ data.next_term_start }}{% endif %}{% if report.published_at %}<p>Published {{ report.published_at|date:'j M Y' }}</p>{% endif %}<small>{{ data.registration_number }}{% if not portal_view %} &middot; {{ report.get_status_display }} &middot; Version {{ report.version }}{% endif %}</small></div><div class="endterm-stamp">School stamp</div></footer>
 </article>
 {% else %}<section class="workspace-card"><p>This revision awaits completed marks and report generation.</p></section>{% endif %}
 {% endblock %}

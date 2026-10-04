@@ -16,8 +16,8 @@ from apps.schools.models import School
 from apps.students.models import Student
 from apps.students.views import attempt, form_page
 from . import services
-from .forms import ChargeForm, FeeStructureForm, PaymentForm, ReversalForm
-from .models import FeeCharge, FeeStructure, Payment
+from .forms import ChargeForm, FeeAgreementForm, FeeStructureForm, PaymentForm, ReversalForm
+from .models import FeeCharge, FeeConcession, FeeStructure, Payment
 from .queries import balance_summary, charge_balance, finance_totals, student_balances
 
 FINANCE_ROLES = (User.Role.SCHOOL_ADMIN, User.Role.BURSAR)
@@ -32,9 +32,12 @@ def scoped_payments():
 
 
 def statement_context(student):
-    charges = scoped_charges().filter(enrollment__student=student)
+    charges = list(scoped_charges().filter(enrollment__student=student).prefetch_related('concessions__reversal'))
+    for charge in charges:
+        charge.agreed_amount = charge.amount - sum(item.amount for item in charge.concessions.all() if not hasattr(item, 'reversal'))
     payments = scoped_payments().filter(charge__enrollment__student=student)
-    return {'student': student, 'summary': balance_summary(student), 'charges': charges, 'payments': payments, 'school': student.school}
+    concessions = FeeConcession.objects.filter(charge__enrollment__student=student).select_related('charge__structure__term', 'charge__cancellation', 'created_by', 'reversal')
+    return {'student': student, 'summary': balance_summary(student), 'charges': charges, 'payments': payments, 'concessions': concessions, 'school': student.school}
 
 
 @role_required(*FINANCE_ROLES)
@@ -104,11 +107,36 @@ def statement(request, pk, output='html'):
     if output == 'pdf':
         rows = [[charge.description, charge.due_date.isoformat(), str(charge.amount), 'Cancelled' if hasattr(charge, 'cancellation') else 'Charged'] for charge in context['charges']]
         rows += [[payment.receipt_number, payment.date.isoformat(), str(payment.amount), 'Reversed' if hasattr(payment, 'reversal') else 'Paid'] for payment in context['payments']]
+        rows += [[f'Concession: {item.charge.description}', item.created_at.date().isoformat(), str(item.amount), 'Reversed' if hasattr(item, 'reversal') else ('Charge cancelled' if hasattr(item.charge, 'cancellation') else 'Concession')] for item in context['concessions']]
         response = HttpResponse(document_pdf(student.school.name, f'{student.full_name} / {student.student_id} / Fee statement ({student.school.currency_code})', ['Record', 'Date', 'Amount', 'Status'], rows, [('Account totals', f"Charged: {context['summary']['charged']} · Paid: {context['summary']['paid']} · Balance: {context['summary']['balance']}")]), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="statement-{student.student_id}.pdf"'
         return response
     context['can_manage_finance'] = True
     return render(request, 'finance/statement.html', context)
+
+
+@role_required(*FINANCE_ROLES)
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def fee_agreement(request, pk):
+    charge = get_object_or_404(scoped_charges(), pk=pk)
+    form = FeeAgreementForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid() and attempt(form, lambda: services.agree_fee(charge, form.cleaned_data['agreed_amount'], form.cleaned_data['reason'], request.user)):
+        messages.success(request, 'Fee agreement approved. The concession is reflected in the balance and report clearance.')
+        return form_redirect(request, 'finance:statement', pk=charge.enrollment.student_id)
+    return form_page(request, form, 'Set agreed fee', reverse('finance:statement', args=[charge.enrollment.student_id]), explanation=f'{charge.enrollment.student.full_name} / {charge.structure.term} / {charge.description}. Original charge: {charge.currency} {charge.amount}. Enter the total agreed fee for this charge, not the remaining payment.')
+
+
+@role_required(*FINANCE_ROLES)
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def concession_reverse(request, pk):
+    concession = get_object_or_404(FeeConcession.objects.select_related('charge__enrollment'), pk=pk, charge__enrollment__student__school_id=1)
+    form = ReversalForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid() and attempt(form, lambda: services.reverse_concession(concession, form.cleaned_data['reason'], request.user)):
+        messages.success(request, 'Concession reversed. The balance and report clearance have been recalculated.')
+        return form_redirect(request, 'finance:statement', pk=concession.charge.enrollment.student_id)
+    return form_page(request, form, 'Reverse fee concession', reverse('finance:statement', args=[concession.charge.enrollment.student_id]), explanation='Reversing this concession restores the fee owed and may restrict report access.')
 
 
 @role_required(*FINANCE_ROLES)

@@ -48,3 +48,9 @@ class PaymentForm(forms.Form):
 class ReversalForm(forms.Form):
     reason = forms.CharField(max_length=500, widget=forms.Textarea(attrs={'rows': 4}))
     confirm = forms.BooleanField(label='Confirm this reversal')
+
+
+class FeeAgreementForm(forms.Form):
+    agreed_amount = forms.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal('0'), label='Agreed fee')
+    reason = forms.CharField(max_length=500, widget=forms.Textarea(attrs={'rows': 3}))
+    confirm = forms.BooleanField(label='Approve this individual fee agreement')

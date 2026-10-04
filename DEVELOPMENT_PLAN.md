@@ -628,3 +628,46 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Next milestone: upload artifacts/namecheap-report-update.zip, collect static files, restart the hosted Python app and review HTML/print and PDF output on Namecheap.
 
 - Watermark visibility adjustment: increased HTML/print and PDF opacity to 10% following school feedback.
+
+## Individual fee agreements (2026-10-04)
+
+- Added audited fee concessions and separate reversal records against each student's assigned term charge. Standard fee structures, original charges and receipts remain intact.
+- School administrators and bursars can open Fees > student statement > Set agreed fee, enter the total agreed fee for that charge and record the approval reason. Statements show original/agreed fees and concession history; PDF statements include concession records. If a term has several charges, agreements apply individually to the selected charge.
+- Net charges now subtract active concessions consistently in payment limits, new receipt balances, statements, finance summaries, outstanding lists and all existing report-access checks. Reversals restore the amount owed. Report clearance retains the existing overall-balance policy, including other terms; this does not introduce term-specific clearance.
+- Duplicate agreements, cancelled charges, invalid amounts and agreements below payments already received are rejected. Reverse the prior concession before recording a replacement. No credit/refund workflow is introduced.
+- Migration 0003 applied to local development SQLite. All 334 tests pass; the 16 finance/agreement tests passed again after the final statement display change. Django system, migration-drift and diff checks pass. Tests cover negotiated clearance on HTML/print/PDF, report lists and student portal, reversal, payment limits, invalid agreements, staff authorization, CSRF and audit rollback.
+- Next milestone: deploy the finance code and migration, run migrate, and review the agreement dialog and statements in the hosted school workflow. Browser/mobile visual verification remains pending.
+
+## Simplified student fee display (2026-10-04)
+
+- Student fee statements now use Charged, Paid and Balance. Each charge shows the student's applicable amount, including any approved agreement, without exposing the original fee or concession history. Payments and receipts remain available.
+- Staff statements retain original/agreed fees, approval details and reversal controls. Internal charge-cancellation reasons are also hidden from portal users. Balance calculations and report clearance are unchanged.
+- Added a portal/staff visibility regression test covering standard fees, negotiated fees, payment totals and hidden internal details.
+- Verification: all 335 tests pass; Django system, migration-drift and diff checks pass. Browser visual review remains pending.
+- Next milestone: deploy the template change with the fee-agreement implementation and visually review the student fee page on desktop/mobile.
+
+## Student portal fees navigation (2026-10-04)
+
+- Added Fees and payments to the student sidebar, linking to the signed-in student's existing protected fee statement. The link is highlighted on the fee page and appears only for a linked student account.
+- Verification: all 43 portal, accounts and fee-agreement tests pass; Django system and diff checks pass.
+- Next milestone: deploy the navigation update and review the student sidebar on desktop/mobile.
+
+## Portal fees summary card (2026-10-04)
+
+- Removed the View fees, payments and receipts button from the portal home card; Charged, Paid and Balance remain, with detailed fees available from the student sidebar.
+- Verification: all 17 portal/family tests and Django system check pass; diff check passes.
+- Next milestone: deploy the updated portal template and review the summary card in the browser.
+
+## Student reports navigation and summary (2026-10-04)
+
+- Added Reports to the student sidebar, with an active state for report pages. Portal home now shows an available-report count, no-published-reports message or fee-clearance message instead of report versions and individual links.
+- Added a dedicated parent report list showing year, term, assessment and supported View/Print/PDF actions, newest academic periods first. Islamic Studies reports remain identifiable. Blocked students see their balance and a Fees and payments link.
+- Published-report scope, latest published revisions, student isolation and server-side fee checks remain enforced. Staff retain workflow filters and revision details; portal HTML/print hides internal revisions and correction reasons.
+- Next milestone: deploy the updated portal views/templates and visually review desktop/mobile report navigation. Browser review remains pending.
+- Verification: all 336 tests pass, including report actions, negotiated-fee restrictions, portal summaries and hidden revisions; Django system, migration-drift and diff checks pass.
+
+## Namecheap portal update package (2026-10-04)
+
+- Prepared artifacts/namecheap-portal-fees-update-20261004.zip with the finance agreement migration, portal/sidebar/report changes, regression tests and NAMECHEAP_PORTAL_UPDATE.md. Archive uses application-root paths and includes a SHA-256 manifest; private/local files are excluded.
+- Validation: existing 336-test suite passed; packaging-time system and migration-drift checks passed. Hosted database migration and browser verification remain pending.
+- Next milestone: back up the hosted application/database, upload and extract the archive, run the documented production migration/check commands, restart the existing cPanel Python application and verify student/staff workflows.

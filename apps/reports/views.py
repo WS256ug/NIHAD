@@ -36,6 +36,15 @@ def report_list(request):
             records = records.filter(enrollment__student__in=student_balances().filter(balance__lte=0))
         latest = records.order_by().values('assessment_id', 'enrollment_id').annotate(latest=Max('pk')).values('latest')
         records = records.filter(pk__in=latest)
+        from apps.students.family import portal_students
+        blocked_students = []
+        if school and school.require_fee_clearance_for_reports:
+            blocked_students = student_balances().filter(pk__in=portal_students(request.user), balance__gt=0)
+        records = records.order_by('-assessment__term__academic_year__start_date', '-assessment__term__start_date', '-assessment__date', '-pk')
+        return render(request, 'reports/portal_list.html', {
+            'page_obj': Paginator(records, 30).get_page(request.GET.get('page')),
+            'blocked_students': blocked_students, 'school': school,
+        })
     else:
         records = records.filter(is_current=True)
     status = request.GET.get('status', '')

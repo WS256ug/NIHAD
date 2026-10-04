@@ -90,7 +90,7 @@ class FamilyPortalTests(ReportTestCase):
         report = self.published()
         begin_correction(self.assessment, 'Correct an entry.', self.actor)
         self.client.force_login(self.guardian.user)
-        self.assertContains(self.client.get(reverse('students:family_child', args=[self.student.pk])), reverse('reports:detail', args=[report.pk]))
+        self.assertContains(self.client.get(reverse('students:family_child', args=[self.student.pk])), '1 report available.')
         self.assertEqual(self.client.get(reverse('reports:pdf', args=[report.pk])).status_code, 200)
 
     def test_guardian_provisioning_first_password_change_and_role_integrity(self):

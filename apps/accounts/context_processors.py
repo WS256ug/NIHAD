@@ -17,6 +17,12 @@ def account_navigation(request):
         "bursar": "Dashboard", "student": "Student portal", "guardian": "Guardian portal",
     }
     links = [{"label": labels[role], "url": dashboard_url(request.user)}]
+    if role == "student":
+        from apps.students.models import Student
+        student_id = Student.objects.filter(portal_user=request.user, school_id=1).values_list("pk", flat=True).first()
+        if student_id is not None:
+            links.append({"label": "Fees and payments", "url": reverse("students:family_fees", args=[student_id])})
+            links.append({"label": "Reports", "url": reverse("reports:list")})
     if can_manage_accounts(request.user):
         links.append({"label": "Accounts", "url": reverse("accounts:user_list")})
     if can_manage_school(request.user):
@@ -42,6 +48,8 @@ def account_navigation(request):
         links.append({"label": "Finance", "url": reverse("expenses:overview")})
     for link in links:
         link["active"] = request.path == link["url"] or (link["label"] == "School setup" and request.path.startswith(link["url"]))
+        if link["label"] == "Reports":
+            link["active"] = request.path.startswith(link["url"])
         if link["label"] == "Students":
             link["active"] = request.path.startswith(link["url"])
             for child in link.get("children", []):

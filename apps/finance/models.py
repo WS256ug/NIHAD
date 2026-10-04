@@ -99,6 +99,26 @@ class ChargeCancellation(ImmutableRecord):
         return f'Cancelled charge {self.charge_id}'
 
 
+class FeeConcession(ImmutableRecord):
+    charge = models.ForeignKey(FeeCharge, on_delete=models.PROTECT, related_name='concessions')
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(MONEY_MIN)])
+    reason = models.CharField(max_length=500)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(amount__gt=0), name='finance_concession_positive')]
+
+    def __str__(self):
+        return f'Fee concession / {self.charge_id} / {self.amount}'
+
+
+class ConcessionReversal(ImmutableRecord):
+    concession = models.OneToOneField(FeeConcession, on_delete=models.PROTECT, related_name='reversal')
+    reason = models.CharField(max_length=500)
+
+    def __str__(self):
+        return f'Reversed concession {self.concession_id}'
+
+
 class ReceiptNumber(models.Model):
     school = models.OneToOneField('schools.School', on_delete=models.PROTECT, primary_key=True)
     last_value = models.PositiveBigIntegerField(default=0)

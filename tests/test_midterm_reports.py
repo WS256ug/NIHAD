@@ -24,6 +24,17 @@ class MidTermReportTests(ReportTestCase):
         user.save(update_fields=['must_change_password'])
         self.client.force_login(user)
 
+    def test_portal_list_offers_view_only_for_online_reports(self):
+        report = self.published()
+        self.student_login()
+        response = self.client.get(reverse('reports:list'))
+        self.assertContains(response, reverse('reports:detail', args=[report.pk]))
+        self.assertNotContains(response, reverse('reports:print', args=[report.pk]))
+        self.assertNotContains(response, reverse('reports:pdf', args=[report.pk]))
+        self.assertNotContains(response, 'Version')
+        navigation = response.context['account_navigation']
+        self.assertTrue(next(link for link in navigation if link['label'] == 'Reports')['active'])
+
     def test_screen_layout_and_staff_cannot_export(self):
         report = self.published()
         snapshot = deepcopy(report.snapshot)
