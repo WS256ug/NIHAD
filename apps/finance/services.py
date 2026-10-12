@@ -74,6 +74,34 @@ def assign_charge(enrollment, structure, actor):
 
 
 @transaction.atomic
+def assign_class_charges(structure, actor):
+    require_finance(actor)
+    school = lock_school()
+    structure = FeeStructure.objects.select_related('term').get(pk=structure.pk, term__academic_year__school=school)
+    if not structure.is_active:
+        raise ValidationError('Select an active fee structure.')
+    enrollments = Enrollment.objects.filter(
+        student__school=school, academic_year=structure.term.academic_year,
+        academic_class=structure.academic_class, status=Enrollment.Status.CURRENT,
+        enrollment_date__lte=structure.term.end_date,
+    )
+    if structure.stream_id:
+        enrollments = enrollments.filter(stream_id=structure.stream_id)
+    enrollments = list(enrollments.select_for_update())
+    if not enrollments:
+        raise ValidationError('No matching current enrollments were found for this fee structure.')
+    existing = set(FeeCharge.objects.filter(structure=structure).values_list('enrollment_id', flat=True))
+    created = skipped = 0
+    for enrollment in enrollments:
+        if enrollment.pk in existing:
+            skipped += 1
+            continue
+        assign_charge(enrollment, structure, actor)
+        created += 1
+    return created, skipped
+
+
+@transaction.atomic
 def record_payment(charge, data, actor):
     require_finance(actor)
     school = lock_school()

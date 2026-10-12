@@ -666,6 +666,14 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Next milestone: deploy the updated portal views/templates and visually review desktop/mobile report navigation. Browser review remains pending.
 - Verification: all 336 tests pass, including report actions, negotiated-fee restrictions, portal summaries and hidden revisions; Django system, migration-drift and diff checks pass.
 
+## Class fee assignment (2026-10-12)
+
+- Added Fees > Assign class fees. Select a fee structure identifying the class, term, category and optional stream, then confirm assignment to matching current enrollments. Individual assignment remains available for student-specific categories and exceptions.
+- Class assignment uses the fee structure's academic year and stream and excludes enrollments starting after the term. Existing assignments (including cancelled charges and negotiated agreements) are skipped, so repeat submissions can add newly enrolled students without duplicate charges.
+- The batch uses the existing audited charge service inside one transaction and retains school-admin/bursar permissions. Failures roll back the entire batch. No database migration is required.
+- Verification: all 341 tests pass, including five new class-assignment tests for filtering, duplicate prevention, cancellation preservation, rollback, permissions, confirmation and form submission. Django system, migration-drift and diff checks pass. Browser visual review remains pending.
+- Next milestone: deploy the updated finance code and review class fee assignment in the hosted school workflow.
+
 ## Namecheap portal update package (2026-10-04)
 
 - Prepared artifacts/namecheap-portal-fees-update-20261004.zip with the finance agreement migration, portal/sidebar/report changes, regression tests and NAMECHEAP_PORTAL_UPDATE.md. Archive uses application-root paths and includes a SHA-256 manifest; private/local files are excluded.

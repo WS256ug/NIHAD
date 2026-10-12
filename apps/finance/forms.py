@@ -36,6 +36,18 @@ class ChargeForm(forms.Form):
         self.fields['structure'].queryset = FeeStructure.objects.filter(term__academic_year__school_id=1, is_active=True).select_related('term__academic_year', 'academic_class')
 
 
+class ClassChargeForm(ChargeForm):
+    enrollment = None
+    confirm = forms.BooleanField(label='Assign this fee to all matching current enrollments in the class')
+
+    def __init__(self, *args, **kwargs):
+        forms.Form.__init__(self, *args, **kwargs)
+        self.fields['structure'].queryset = FeeStructure.objects.filter(
+            term__academic_year__school_id=1, is_active=True,
+        ).select_related('term__academic_year', 'academic_class', 'stream')
+        self.fields['structure'].label_from_instance = lambda obj: f'{obj} / {obj.stream.name if obj.stream_id else "All streams"}'
+
+
 class PaymentForm(forms.Form):
     amount = forms.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal('.01'))
     date = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date'}))

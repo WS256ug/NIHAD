@@ -10,6 +10,7 @@ urlpatterns = [
     path('structures/<int:pk>/activate/', views.structure_status, {'active': True}, name='structure_activate'),
     path('structures/<int:pk>/deactivate/', views.structure_status, {'active': False}, name='structure_deactivate'),
     path('charges/new/', views.charge_form, name='charge_create'),
+    path('charges/class/', views.class_charge_form, name='class_charge_create'),
     path('charges/<int:pk>/agreement/', views.fee_agreement, name='fee_agreement'),
     path('concessions/<int:pk>/reverse/', views.concession_reverse, name='concession_reverse'),
     path('charges/<int:pk>/pay/', views.payment_form, name='payment_create'),

@@ -16,7 +16,7 @@ from apps.schools.models import School
 from apps.students.models import Student
 from apps.students.views import attempt, form_page
 from . import services
-from .forms import ChargeForm, FeeAgreementForm, FeeStructureForm, PaymentForm, ReversalForm
+from .forms import ChargeForm, ClassChargeForm, FeeAgreementForm, FeeStructureForm, PaymentForm, ReversalForm
 from .models import FeeCharge, FeeConcession, FeeStructure, Payment
 from .queries import balance_summary, charge_balance, finance_totals, student_balances
 
@@ -96,6 +96,20 @@ def charge_form(request):
             messages.success(request, 'Student fees assigned.')
             return form_redirect(request, 'finance:statement', pk=charge.enrollment.student_id)
     return form_page(request, form, 'Assign student fees', reverse('finance:overview'))
+
+
+@role_required(*FINANCE_ROLES)
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def class_charge_form(request):
+    form = ClassChargeForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid():
+        result = attempt(form, lambda: services.assign_class_charges(form.cleaned_data['structure'], request.user))
+        if result is not None:
+            created, skipped = result
+            messages.success(request, f'Fees assigned to {created} students. {skipped} existing assignments skipped.')
+            return form_redirect(request, 'finance:overview')
+    return form_page(request, form, 'Assign class fees', reverse('finance:overview'), explanation='Choose the fee structure for the class and term. This assigns its amount to all matching current enrollments, limited to its stream when specified. Check that its category (such as Day or Boarding) applies to the whole group; otherwise assign individually. Existing assignments, including cancelled charges and individual agreements, are left unchanged.')
 
 
 @role_required(*FINANCE_ROLES)
