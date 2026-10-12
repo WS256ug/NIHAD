@@ -674,6 +674,11 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Verification: all 341 tests pass, including five new class-assignment tests for filtering, duplicate prevention, cancellation preservation, rollback, permissions, confirmation and form submission. Django system, migration-drift and diff checks pass. Browser visual review remains pending.
 - Next milestone: deploy the updated finance code and review class fee assignment in the hosted school workflow.
 
+### Namecheap class fee update package
+
+- Prepared `artifacts/namecheap-class-fees-update-20261012.zip` with the five changed runtime files, regression tests, this plan, installation guide and SHA-256 manifest. Requires the October 4 fees/portal baseline; no additional migrations, dependencies or static assets.
+- Next milestone: upload and extract in the hosted application root, run the guide's checks, restart the cPanel Python application and verify class assignment. Hosted deployment remains pending.
+
 ## Namecheap portal update package (2026-10-04)
 
 - Prepared artifacts/namecheap-portal-fees-update-20261004.zip with the finance agreement migration, portal/sidebar/report changes, regression tests and NAMECHEAP_PORTAL_UPDATE.md. Archive uses application-root paths and includes a SHA-256 manifest; private/local files are excluded.
