@@ -80,13 +80,13 @@ def calculate_results(scheme, marks, maximum):
 
 
 def competition_positions(results):
-    """Equal averages share a position; the next position skips tied students."""
-    ordered = sorted(((key, result) for key, result in results.items() if result['average'] is not None), key=lambda item: (-Decimal(item[1]['average']), item[0]))
+    """Rank by total score; equal totals share a competition position."""
+    ordered = sorted(((key, result) for key, result in results.items() if result['total'] is not None), key=lambda item: (-Decimal(item[1]['total']), item[0]))
     positions, previous, position = {}, None, 0
     for index, (key, result) in enumerate(ordered, 1):
-        average = Decimal(result['average'])
-        if average != previous:
+        total = Decimal(result['total'])
+        if total != previous:
             position = index
         positions[key] = position
-        previous = average
+        previous = total
     return positions

@@ -87,7 +87,20 @@ class GradingTests(GradingTestCase):
         self.assertFalse(form.is_valid())
 
     def test_tied_positions_use_competition_ranking(self):
-        self.assertEqual(competition_positions({4: {'average': '80.00'}, 2: {'average': '90.00'}, 1: {'average': '80.00'}, 3: {'average': '60.00'}}), {2: 1, 1: 2, 4: 2, 3: 4})
+        self.assertEqual(competition_positions({4: {'total': '320.00'}, 2: {'total': '360.00'}, 1: {'total': '320.00'}, 3: {'total': '240.00'}}), {2: 1, 1: 2, 4: 2, 3: 4})
+
+    def test_positions_use_total_even_when_average_order_differs(self):
+        results = {1: {'total': '320.00', 'average': '80.00'},
+                   2: {'total': '270.00', 'average': '90.00'}}
+        self.assertEqual(competition_positions(results), {1: 1, 2: 2})
+
+    def test_distinct_totals_with_equal_rounded_averages_are_not_tied(self):
+        results = {1: {'total': '320.00', 'average': '80.00'},
+                   2: {'total': '320.01', 'average': '80.00'}}
+        self.assertEqual(competition_positions(results), {2: 1, 1: 2})
+
+    def test_positions_include_zero_and_exclude_missing_totals(self):
+        self.assertEqual(competition_positions({1: {'total': None}, 2: {'total': '0.00'}}), {2: 1})
 
     def test_descriptive_learning_levels_have_no_numeric_summary(self):
         scheme = GradingScheme.objects.create(section=self.primary, name='Early learning', mode='descriptive')

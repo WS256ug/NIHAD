@@ -1,0 +1,11 @@
+[
+  {"label": "F9", "minimum": 0, "maximum": 39, "points": 9},
+  {"label": "P8", "minimum": 40, "maximum": 44, "points": 8},
+  {"label": "P7", "minimum": 45, "maximum": 49, "points": 7},
+  {"label": "C6", "minimum": 50, "maximum": 59, "points": 6},
+  {"label": "C5", "minimum": 60, "maximum": 64, "points": 5},
+  {"label": "C4", "minimum": 65, "maximum": 74, "points": 4},
+  {"label": "C3", "minimum": 75, "maximum": 79, "points": 3},
+  {"label": "D2", "minimum": 80, "maximum": 89, "points": 2},
+  {"label": "D1", "minimum": 90, "maximum": 100, "points": 1}
+]

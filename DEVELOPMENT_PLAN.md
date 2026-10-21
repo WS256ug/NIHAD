@@ -684,3 +684,20 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Prepared artifacts/namecheap-portal-fees-update-20261004.zip with the finance agreement migration, portal/sidebar/report changes, regression tests and NAMECHEAP_PORTAL_UPDATE.md. Archive uses application-root paths and includes a SHA-256 manifest; private/local files are excluded.
 - Validation: existing 336-test suite passed; packaging-time system and migration-drift checks passed. Hosted database migration and browser verification remain pending.
 - Next milestone: back up the hosted application/database, upload and extract the archive, run the documented production migration/check commands, restart the existing cPanel Python application and verify student/staff workflows.
+
+## Position based on total score (2026-10-21)
+
+- Changed report ranking to use total score descending. Equal totals share competition positions (1, 2, 2, 4); zero totals remain eligible and absent/incomplete totals remain excluded.
+- Added regression coverage for totals versus averages, distinct totals with equal rounded averages, ties, zero and missing totals. Two-set assessments use their existing weighted combined total.
+- Existing report snapshots retain their recorded positions. Regenerate draft reports or use the authorized correction workflow for reports under review/published when recalculation is required.
+- No migration or dependency changes. Validation: all 344 tests pass; system and migration-drift checks pass.
+- Next milestone: deploy apps/academics/grading.py to Namecheap, run the production system check, restart the Python application, and verify newly generated report positions. The hosted grade-range correction remains separate and pending.
+
+## Hosted grading correction (2026-10-21)
+
+- Added an audited management command with preview-by-default, explicit assessment/current-scheme/administrator selection, transactional writes, and rejection of closed assessments or any generated reports. Correction creates a separate numeric grading version, preserving marks, old schemes, aggregate settings and divisions.
+- Added the school's nine supplied bands as deployment JSON; the calculator remains configurable. Grade points use the corresponding 1–9 scale.
+- Added regression tests for preview rollback, correct grade boundaries, mark/history preservation, stale retries, authorization, report/closed guards and rollback on errors.
+- Namecheap instructions cover preview, apply, restart and verification. No migrations or dependencies. Hosted execution remains pending; assessments with existing reports need a separate correction workflow.
+- Next milestone: deploy the package and preview assessment 9 against hosted scheme 2 before applying; verify saved grades on reload.
+- Validation: all 348 tests pass; Django system, migration-drift and diff checks pass.
