@@ -57,5 +57,5 @@ class StudentReport(AuditedModel):
         if self.status in (self.Status.APPROVED, self.Status.PUBLISHED) and not self.headteacher_comment.strip():
             raise ValidationError('Approval requires a headteacher comment.')
         if self.assessment_id and self.enrollment_id:
-            if self.assessment.academic_class_id != self.enrollment.academic_class_id or self.assessment.term.academic_year_id != self.enrollment.academic_year_id:
+            if self.assessment.report_group != self.enrollment.programme or self.assessment.academic_class_id != self.enrollment.academic_class_id or self.assessment.term.academic_year_id != self.enrollment.academic_year_id:
                 raise ValidationError('The report enrollment must match its assessment.')

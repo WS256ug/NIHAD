@@ -22,6 +22,11 @@ class IslamicReportTests(ReportTestCase):
         super().setUp()
         self.student.religion = Student.Religion.MOSLEM
         self.student.save()
+        self.islamic_enrollment = Enrollment.objects.create(
+            student=self.student, academic_year=self.year, section=self.primary,
+            academic_class=self.academic_class, stream=self.stream,
+            enrollment_date=self.enrollment.enrollment_date, programme='islamic',
+        )
         self.other = Student.objects.create(
             school=self.school, student_id='STD-000002', first_name='Other', last_name='Learner',
             gender='male', date_of_birth=date(2018, 1, 1), admission_date=date(2025, 1, 1),
@@ -46,7 +51,7 @@ class IslamicReportTests(ReportTestCase):
     def islamic_mark(self, score='90', exam_set=None):
         form = MarkForm(
             {'score': score, 'expected_revision': 0}, assessment=self.islamic,
-            enrollment=self.enrollment, subject=self.islamic_subject,
+            enrollment=self.islamic_enrollment, subject=self.islamic_subject,
             assignment=self.islamic_assignment, exam_set=exam_set,
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -62,11 +67,11 @@ class IslamicReportTests(ReportTestCase):
         self.assertEqual(Assessment.objects.count(), 2)
 
     def test_only_islam_students_on_roster_and_only_matching_subjects(self):
-        self.assertQuerySetEqual(eligible_enrollments(self.islamic), [self.enrollment], ordered=False)
+        self.assertQuerySetEqual(eligible_enrollments(self.islamic), [self.islamic_enrollment], ordered=False)
         self.assertEqual(eligible_enrollments(self.assessment).count(), 2)
         self.assertQuerySetEqual(all_sheet_assignments(self.islamic), [self.islamic_assignment])
         self.assertQuerySetEqual(all_sheet_assignments(self.assessment), [self.assignment])
-        self.assertQuerySetEqual(sheet_enrollments(self.islamic, self.islamic_assignment), [self.enrollment])
+        self.assertQuerySetEqual(sheet_enrollments(self.islamic, self.islamic_assignment), [self.islamic_enrollment])
         self.assertFalse(sheet_enrollments(self.islamic, self.assignment).exists())
         self.assertFalse(assessment_assignments(self.assessment, self.actor, subject=self.islamic_subject).exists())
 
@@ -126,7 +131,7 @@ class IslamicReportTests(ReportTestCase):
         self.assertEqual(report.snapshot, snapshot)
         corrected = begin_correction(self.islamic, 'Correct mark', self.actor)
         regenerated = generate_reports(set_assessment_status(corrected, 'closed', self.actor), self.actor)[0]
-        self.assertEqual(regenerated.enrollment_id, self.enrollment.pk)
+        self.assertEqual(regenerated.enrollment_id, self.islamic_enrollment.pk)
         another_type = AssessmentType.objects.create(school=self.school, name='Another term exam')
         future = Assessment.objects.create(assessment_type=another_type, term=self.term,
             academic_class=self.academic_class, date=self.assessment.date, report_group='islamic')

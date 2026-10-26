@@ -18,8 +18,12 @@ def teacher_assignments(user, model=TeachingAssignment):
     return model.objects.filter(teacher__user=user, teacher__employment_status="active", teacher__user__is_active=True, is_active=True, academic_year__school_id=1).select_related("term", "academic_class", "stream", "teacher__user")
 
 
+def assignment_programme(assignment):
+    return assignment.subject.report_group if isinstance(assignment, TeachingAssignment) else assignment.report_group
+
+
 def enrollment_scope(assignment):
-    scope = Q(academic_year_id=assignment.academic_year_id, academic_class_id=assignment.academic_class_id)
+    scope = Q(academic_year_id=assignment.academic_year_id, academic_class_id=assignment.academic_class_id, programme=assignment_programme(assignment))
     if assignment.stream_id:
         scope &= Q(stream_id=assignment.stream_id)
     if assignment.term_id:
@@ -45,6 +49,8 @@ def assessment_assignments(assessment, user, model=TeachingAssignment, subject=N
     records = model.objects.filter(is_active=True, teacher__employment_status="active", teacher__user__is_active=True, academic_year_id=assessment.term.academic_year_id, academic_class_id=assessment.academic_class_id).filter(Q(term__isnull=True) | Q(term_id=assessment.term_id)).select_related("teacher__user", "term", "subject" if model == TeachingAssignment else "academic_class")
     if model == TeachingAssignment:
         records = records.filter(subject__report_group=assessment.report_group)
+    else:
+        records = records.filter(report_group=assessment.report_group)
     if assessment.stream_id:
         records = records.filter(Q(stream__isnull=True) | Q(stream_id=assessment.stream_id))
     if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
@@ -64,8 +70,7 @@ def visible_assessments(user):
     for model in (TeachingAssignment, ClassTeacherAssignment):
         for assignment in teacher_assignments(user, model):
             match = Q(term__academic_year_id=assignment.academic_year_id, academic_class_id=assignment.academic_class_id)
-            if model == TeachingAssignment:
-                match &= Q(report_group=assignment.subject.report_group)
+            match &= Q(report_group=assignment_programme(assignment))
             if assignment.term_id:
                 match &= Q(term_id=assignment.term_id)
             if assignment.stream_id:

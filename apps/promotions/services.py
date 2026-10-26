@@ -18,7 +18,7 @@ def require_manager(actor):
 
 
 def eligible_enrollments(batch):
-    records = Enrollment.objects.filter(student__school_id=1, academic_year_id=batch.source_year_id, academic_class_id=batch.source_class_id, status='current')
+    records = Enrollment.objects.filter(student__school_id=1, academic_year_id=batch.source_year_id, academic_class_id=batch.source_class_id, programme=batch.programme, status='current')
     if batch.source_stream_id:
         records = records.filter(stream_id=batch.source_stream_id)
     return records.select_related('student', 'academic_year', 'academic_class__section', 'stream')
@@ -98,12 +98,13 @@ def confirm_batch(batch, revision, actor):
         status = 'promoted' if decision.decision == 'probation' else decision.decision
         source.status, source.completion_date = status, batch.completion_date
         write_record(source, actor, 'Closed source enrollment through promotion batch.', update_fields=['status', 'completion_date'])
-        student.status = status
-        write_record(student, actor, 'Updated student status through promotion batch.', update_fields=['status'])
+        if batch.programme == Enrollment.Programme.MAIN:
+            student.status = status
+            write_record(student, actor, 'Updated student status through promotion batch.', update_fields=['status'])
         if classroom:
-            created = Enrollment(student=student, academic_year=batch.destination_year, section=classroom.section, academic_class=classroom, stream=stream, enrollment_date=batch.enrollment_date)
+            created = Enrollment(programme=batch.programme, student=student, academic_year=batch.destination_year, section=classroom.section, academic_class=classroom, stream=stream, enrollment_date=batch.enrollment_date)
             decision.new_enrollment = write_record(created, actor, 'Created next-year enrollment; source history retained.')
-        decision.snapshot = {'student': student.full_name, 'registration_number': student.student_id, 'source_year': source.academic_year.name, 'source_class': source.academic_class.name, 'source_stream': source.stream.name if source.stream_id else '', 'decision': decision.get_decision_display(), 'destination_year': batch.destination_year.name if classroom else '', 'destination_class': classroom.name if classroom else '', 'destination_stream': stream.name if stream else ''}
+        decision.snapshot = {'programme': batch.programme, 'student': student.full_name, 'registration_number': student.student_id, 'source_year': source.academic_year.name, 'source_class': source.academic_class.name, 'source_stream': source.stream.name if source.stream_id else '', 'decision': decision.get_decision_display(), 'destination_year': batch.destination_year.name if classroom else '', 'destination_class': classroom.name if classroom else '', 'destination_stream': stream.name if stream else ''}
         write_record(decision, actor, 'Applied promotion decision and stored history snapshot.', update_fields=['new_enrollment', 'snapshot'])
     batch.status, batch.confirmed_at = 'confirmed', timezone.now()
     return write_record(batch, actor, 'Confirmed promotion batch atomically.', update_fields=['status', 'confirmed_at'])

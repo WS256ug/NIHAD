@@ -123,6 +123,8 @@ class Assignment(AuditedModel):
         immutable = ["teacher_id", "academic_year_id", "term_id", "section_id", "academic_class_id", "stream_id"]
         if hasattr(self, "subject_id"):
             immutable.append("subject_id")
+        if hasattr(self, "report_group"):
+            immutable.append("report_group")
         preserve_fields(self, immutable)
         if not (self.teacher_id and self.academic_year_id and self.academic_class_id):
             return
@@ -145,6 +147,8 @@ class Assignment(AuditedModel):
         overlaps = type(self).objects.filter(academic_year_id=self.academic_year_id, academic_class_id=self.academic_class_id, is_active=True).exclude(pk=self.pk)
         if subject:
             overlaps = overlaps.filter(subject_id=self.subject_id)
+        elif hasattr(self, "report_group"):
+            overlaps = overlaps.filter(report_group=self.report_group)
         if self.term_id:
             overlaps = overlaps.filter(models.Q(term__isnull=True) | models.Q(term_id=self.term_id))
         if self.stream_id:
@@ -166,11 +170,15 @@ class TeachingAssignment(Assignment):
 
 
 class ClassTeacherAssignment(Assignment):
+    report_group = models.CharField("Programme", max_length=12, choices=ReportGroup.choices, default=ReportGroup.MAIN)
     teacher = models.ForeignKey(Teacher, on_delete=models.PROTECT, related_name="class_assignments")
 
     class Meta(Assignment.Meta):
         abstract = False
-        constraints = scope_constraints("academics_class_teacher_scope")
+        constraints = scope_constraints("academics_class_teacher_scope", ("report_group",)) + [models.CheckConstraint(condition=models.Q(report_group__in=["main", "islamic"]), name="academics_class_teacher_group")]
+
+    def __str__(self):
+        return f"{super().__str__()} / {self.get_report_group_display()}"
 
 
 class AssessmentType(AuditedModel):

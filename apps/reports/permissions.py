@@ -2,7 +2,7 @@ from django.db.models import Q
 from apps.accounts.models import User
 from apps.accounts.permissions import has_role
 from apps.academics.models import ClassTeacherAssignment, TeachingAssignment
-from apps.academics.permissions import assessment_assignments, enrollment_scope, teacher_assignments
+from apps.academics.permissions import assessment_assignments, assignment_programme, enrollment_scope, teacher_assignments
 from .models import StudentReport
 
 
@@ -15,8 +15,7 @@ def visible_reports(user):
         for model in (TeachingAssignment, ClassTeacherAssignment):
             for assignment in teacher_assignments(user, model):
                 match = Q(assessment__academic_class_id=assignment.academic_class_id, assessment__term__academic_year_id=assignment.academic_year_id)
-                if model == TeachingAssignment:
-                    match &= Q(assessment__report_group=assignment.subject.report_group)
+                match &= Q(assessment__report_group=assignment_programme(assignment))
                 if assignment.term_id:
                     match &= Q(assessment__term_id=assignment.term_id)
                 if assignment.stream_id:

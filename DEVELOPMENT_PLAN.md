@@ -701,3 +701,13 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Namecheap instructions cover preview, apply, restart and verification. No migrations or dependencies. Hosted execution remains pending; assessments with existing reports need a separate correction workflow.
 - Next milestone: deploy the package and preview assessment 9 against hosted scheme 2 before applying; verify saved grades on reload.
 - Validation: all 348 tests pass; Django system, migration-drift and diff checks pass.
+
+## Independent Islamic Studies enrollment (2026-10-25)
+
+- Added Main/Islamic Studies programme to enrollment, with independent current-placement uniqueness and date-overlap validation. New Islamic enrollment requires religion Islam at form and transactional service/model validation. One student account and permanent registration number remain.
+- Student enrollment forms, search filters and staff/parent history show programme. Main and Islamic classes/streams can differ. Teachers, class-teacher comments, marks rosters, assessment visibility, report context and rankings follow the relevant placement; ordinary fees and section counts remain based on Main enrollment.
+- Promotion batches select a programme. Islamic promotion/repetition creates Islamic enrollment only and preserves Main enrollment and overall student status.
+- Added schema/data migrations retaining original Main enrollments and creating matching Islamic history only for recorded Islamic marks/reports. All report versions/snapshots and mark values survive; submitted/approved sheet enrollment references are remapped. Former class teachers retain prior access as separate programme assignments, which administrators should review.
+- Students with no Islamic results require an explicit placement. Already-assessed class mistakes need a reviewed academic correction rather than reassignment of preserved history. Nursery grading/report changes are outside this milestone.
+- Validation: all 355 tests in the full suite pass; the subsequent same-class isolation regression also passes (8 placement tests). Django system and migration-drift checks pass. Local database backed up and all four migrations applied successfully. Browser visual review and hosted verification remain pending.
+- Next milestone: stage and deploy the Namecheap Islamic placements package using NAMECHEAP_ISLAMIC_PLACEMENTS_UPDATE.md, run migrations, review migrated placements/teachers, and assign missing Islamic classes before marks entry.

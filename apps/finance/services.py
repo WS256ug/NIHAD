@@ -81,7 +81,7 @@ def assign_class_charges(structure, actor):
     if not structure.is_active:
         raise ValidationError('Select an active fee structure.')
     enrollments = Enrollment.objects.filter(
-        student__school=school, academic_year=structure.term.academic_year,
+        student__school=school, academic_year=structure.term.academic_year, programme=Enrollment.Programme.MAIN,
         academic_class=structure.academic_class, status=Enrollment.Status.CURRENT,
         enrollment_date__lte=structure.term.end_date,
     )

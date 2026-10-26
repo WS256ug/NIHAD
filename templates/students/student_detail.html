@@ -35,7 +35,7 @@
       <thead><tr><th scope="col">Academic year</th><th scope="col">Placement</th><th scope="col">Dates</th><th scope="col">Status</th>{% if can_manage_students %}<th scope="col">Action</th>{% endif %}</tr></thead>
       <tbody>{% for enrollment in enrollments %}<tr>
         <th scope="row">{{ enrollment.academic_year.name }}{% if enrollment.academic_year_id == student.school.current_academic_year_id %}<small class="table-secondary">Current school year</small>{% endif %}</th>
-        <td>{{ enrollment.section.name }} / {{ enrollment.academic_class.name }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}</td>
+        <td><strong>{{ enrollment.get_programme_display }}</strong><br>{{ enrollment.section.name }} / {{ enrollment.academic_class.name }}{% if enrollment.stream %} / {{ enrollment.stream.name }}{% endif %}</td>
         <td>{{ enrollment.enrollment_date|date:'j M Y' }}<small class="table-secondary">{% if enrollment.completion_date %}to {{ enrollment.completion_date|date:'j M Y' }}{% else %}Open{% endif %}</small></td>
         <td>{{ enrollment.get_status_display }}</td>
         {% if can_manage_students %}<td>{% if enrollment.status == 'current' %}<a href="{% url 'students:enrollment_close' student.pk enrollment.pk %}" role="button" class="outline small button" data-configuration-dialog hx-get="{% url 'students:enrollment_close' student.pk enrollment.pk %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML">Close enrollment</a>{% else %}Preserved{% endif %}</td>{% endif %}

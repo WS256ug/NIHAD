@@ -9,10 +9,11 @@ from .models import PromotionBatch, PromotionDecision, higher_classes
 class BatchForm(forms.ModelForm):
     class Meta:
         model = PromotionBatch
-        fields = ('source_year', 'source_class', 'source_stream', 'completion_date', 'destination_year', 'destination_class', 'destination_stream', 'enrollment_date')
+        fields = ('programme', 'source_year', 'source_class', 'source_stream', 'completion_date', 'destination_year', 'destination_class', 'destination_stream', 'enrollment_date')
 
     def __init__(self, *args, dialog=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['programme'].required = False
         for prefix in ('source', 'destination'):
             self.fields[prefix + '_year'].queryset = AcademicYear.objects.filter(school_id=1, is_active=True)
             self.fields[prefix + '_class'].queryset = AcademicClass.objects.filter(section__school_id=1, is_active=True)
@@ -40,6 +41,10 @@ class BatchForm(forms.ModelForm):
         self.fields['destination_year'].help_text = 'Choose a source year first. Only later active years are available.'
         self.fields['destination_class'].help_text = 'Promoted students enter this class. Try Again keeps students in their source class in the new year.'
         set_date_widgets(self)
+
+
+    def clean_programme(self):
+        return self.cleaned_data.get('programme') or Enrollment.Programme.MAIN
 
 
 class DecisionForm(forms.Form):

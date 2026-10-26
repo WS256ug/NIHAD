@@ -52,6 +52,8 @@ def student_list(request):
         value = request.GET.get(parameter, "")
         if value:
             enrollment_filters[field] = selected_pk(value) or 0
+    if request.GET.get("programme"):
+        enrollment_filters["programme"] = request.GET["programme"]
     if enrollment_filters:
         records = records.filter(enrollments__in=visible_enrollments(request.user).filter(**enrollment_filters)).distinct()
     enrollment_rows = visible_enrollments(request.user).filter(**enrollment_filters).select_related("academic_year", "academic_class", "stream")
@@ -60,7 +62,7 @@ def student_list(request):
     filters.pop("page", None)
     return render(request, "students/student_list.html", {
         "page_obj": Paginator(records, 20).get_page(request.GET.get("page")), "query": query,
-        "status_choices": Student.Status.choices,
+        "status_choices": Student.Status.choices, "programme_choices": Enrollment.Programme.choices,
         "selected_status": status, "filter_query": filters.urlencode(),
         "years": AcademicYear.objects.filter(school_id=1), "sections": Section.objects.filter(school_id=1),
         "classes": AcademicClass.objects.filter(section__school_id=1).select_related("section"),
@@ -222,7 +224,7 @@ def enrollment_create(request, student_pk):
         if attempt(form, lambda: services.enroll_student(form, request.user)):
             messages.success(request, "Enrollment added. Earlier records are preserved.")
             return form_redirect(request, "students:detail", pk=student_pk)
-    return form_page(request, form, f"Enroll {student.full_name}", reverse("students:detail", args=[student_pk]), explanation="The year, class, stream and enrollment date are permanent once saved. Close an enrollment before recording a later placement in the same year.")
+    return form_page(request, form, f"Enroll {student.full_name}", reverse("students:detail", args=[student_pk]), explanation="Select Main or Islamic Studies, then the class for that programme. Islamic Studies requires religion Islam. Each programme has independent history; close its existing enrollment before a later placement.")
 
 
 @role_required(User.Role.SCHOOL_ADMIN)

@@ -122,7 +122,7 @@ class LinkStatusForm(forms.Form):
 class EnrollmentForm(forms.ModelForm):
     class Meta:
         model = Enrollment
-        fields = ("academic_year", "academic_class", "stream", "enrollment_date", "status", "completion_date")
+        fields = ("programme", "academic_year", "academic_class", "stream", "enrollment_date", "status", "completion_date")
         help_texts = {
             "status": "Use Current for an open enrollment. Use a completed status and date when recording past enrollment.",
             "completion_date": "Leave blank for a current enrollment.",
@@ -132,6 +132,10 @@ class EnrollmentForm(forms.ModelForm):
     def __init__(self, *args, student, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.student = student
+        self.fields["programme"].required = False
+        self.fields["programme"].help_text = "Main and Islamic Studies have separate class placements. Islamic Studies requires religion Islam."
+        if student.religion != Student.Religion.MOSLEM:
+            self.fields["programme"].choices = [(Enrollment.Programme.MAIN, "Main")]
         self.fields["academic_year"].queryset = AcademicYear.objects.filter(school_id=student.school_id, is_active=True)
         self.fields["academic_class"].queryset = AcademicClass.objects.filter(section__school_id=student.school_id, section__is_active=True, is_active=True).select_related("section")
         streams = Stream.objects.filter(academic_class__section__school_id=student.school_id, academic_class__section__is_active=True, academic_class__is_active=True, is_active=True).select_related("academic_class__section")
@@ -141,6 +145,9 @@ class EnrollmentForm(forms.ModelForm):
         self.fields["stream"].queryset = streams
         self.initial.setdefault("academic_year", student.school.current_academic_year_id)
         set_date_widgets(self)
+
+    def clean_programme(self):
+        return self.cleaned_data.get("programme") or Enrollment.Programme.MAIN
 
     def clean(self):
         data = super().clean()

@@ -9,6 +9,7 @@ def eligible_enrollments(assessment):
         student__school_id=assessment.term.academic_year.school_id,
         academic_year_id=assessment.term.academic_year_id,
         academic_class_id=assessment.academic_class_id,
+        programme=assessment.report_group,
         enrollment_date__lte=assessment.date,
     ).filter(Q(completion_date__isnull=True) | Q(completion_date__gte=assessment.date))
     if assessment.stream_id:

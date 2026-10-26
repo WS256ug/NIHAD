@@ -16,7 +16,7 @@ from apps.students.models import Enrollment, Student
 def pending_comments(user):
     scope = Q(pk__in=[])
     for assignment in teacher_assignments(user, ClassTeacherAssignment):
-        match = Q(assessment__academic_class_id=assignment.academic_class_id, assessment__term__academic_year_id=assignment.academic_year_id)
+        match = Q(assessment__report_group=assignment.report_group, assessment__academic_class_id=assignment.academic_class_id, assessment__term__academic_year_id=assignment.academic_year_id)
         if assignment.term_id:
             match &= Q(assessment__term_id=assignment.term_id)
         if assignment.stream_id:
@@ -43,7 +43,7 @@ def dashboard_metrics(user, role):
         for sheet in submitted[:8]:
             result['tasks'].append({'label': f'Review marks: {sheet.assessment.academic_class} / {sheet.assignment.subject}', 'url': reverse('academics:marks', args=[sheet.assessment_id]) + f'?assignment={sheet.assignment_id}' + (f'&exam_set={sheet.exam_set_id}' if sheet.exam_set_id else '')})
         card('Draft promotion batches', PromotionBatch.objects.filter(source_year__school_id=1, status='draft').count(), reverse('promotions:list'))
-        enrollments = Enrollment.objects.filter(student__school_id=1, status='current')
+        enrollments = Enrollment.objects.filter(student__school_id=1, status='current', programme='main')
         if school and school.current_academic_year_id:
             enrollments = enrollments.filter(academic_year_id=school.current_academic_year_id)
         result['section_counts'] = enrollments.values('section__name').annotate(total=Count('student_id', distinct=True)).order_by('section__name')

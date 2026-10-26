@@ -32,7 +32,7 @@ class ChargeForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['enrollment'].queryset = Enrollment.objects.filter(student__school_id=1).select_related('student', 'academic_year', 'academic_class', 'stream')
+        self.fields['enrollment'].queryset = Enrollment.objects.filter(student__school_id=1, programme='main').select_related('student', 'academic_year', 'academic_class', 'stream')
         self.fields['structure'].queryset = FeeStructure.objects.filter(term__academic_year__school_id=1, is_active=True).select_related('term__academic_year', 'academic_class')
 
 

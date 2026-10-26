@@ -82,6 +82,8 @@ class FeeCharge(ImmutableRecord):
     def clean(self):
         super().clean()
         if self.enrollment_id and self.structure_id:
+            if self.enrollment.programme != "main":
+                raise ValidationError("Ordinary school fees require a Main enrollment.")
             template = self.structure
             if self.enrollment.academic_year_id != template.term.academic_year_id or self.enrollment.academic_class_id != template.academic_class_id or (template.stream_id and self.enrollment.stream_id != template.stream_id):
                 raise ValidationError('The student enrollment must match the fee structure period, class and stream.')

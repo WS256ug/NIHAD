@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from apps.schools.models import AuditedModel
-from apps.students.models import preserve_fields
+from apps.students.models import Enrollment, preserve_fields
 
 
 def higher_classes(source):
@@ -10,6 +10,7 @@ def higher_classes(source):
 
 
 class PromotionBatch(AuditedModel):
+    programme = models.CharField(max_length=12, choices=Enrollment.Programme.choices, default=Enrollment.Programme.MAIN)
     source_year = models.ForeignKey('schools.AcademicYear', on_delete=models.PROTECT, related_name='outgoing_batches')
     source_class = models.ForeignKey('schools.AcademicClass', on_delete=models.PROTECT, related_name='outgoing_batches')
     source_stream = models.ForeignKey('schools.Stream', on_delete=models.PROTECT, null=True, blank=True, related_name='outgoing_batches')
@@ -24,14 +25,14 @@ class PromotionBatch(AuditedModel):
 
     class Meta:
         ordering = ('-created_at', '-pk')
-        constraints = [models.CheckConstraint(condition=models.Q(status__in=['draft', 'confirmed']), name='promotions_batch_status'), models.CheckConstraint(condition=(models.Q(status='draft', confirmed_at__isnull=True) | models.Q(status='confirmed', confirmed_at__isnull=False)), name='promotions_confirmation_time')]
+        constraints = [models.CheckConstraint(condition=models.Q(programme__in=['main', 'islamic']), name='promotions_programme'), models.CheckConstraint(condition=models.Q(status__in=['draft', 'confirmed']), name='promotions_batch_status'), models.CheckConstraint(condition=(models.Q(status='draft', confirmed_at__isnull=True) | models.Q(status='confirmed', confirmed_at__isnull=False)), name='promotions_confirmation_time')]
 
     def __str__(self):
-        return f'{self.source_year} / {self.source_class.name} / Batch {self.pk or "new"}'
+        return f'{self.get_programme_display()} / {self.source_year} / {self.source_class.name} / Batch {self.pk or "new"}'
 
     def clean(self):
         super().clean()
-        identity = ('source_year_id', 'source_class_id', 'source_stream_id', 'destination_year_id', 'destination_class_id', 'destination_stream_id', 'completion_date', 'enrollment_date')
+        identity = ('programme', 'source_year_id', 'source_class_id', 'source_stream_id', 'destination_year_id', 'destination_class_id', 'destination_stream_id', 'completion_date', 'enrollment_date')
         preserve_fields(self, identity)
         if self.pk and PromotionBatch.objects.filter(pk=self.pk, status='confirmed').exists():
             preserve_fields(self, ('status', 'revision', 'confirmed_at'))
@@ -93,5 +94,5 @@ class PromotionDecision(AuditedModel):
                 raise ValidationError('Confirmed promotion batches cannot accept new decisions.')
             preserve_fields(self, ('decision', 'selected', 'notes', 'new_enrollment_id', 'snapshot'))
         if self.batch_id and self.enrollment_id:
-            if self.enrollment.academic_year_id != self.batch.source_year_id or self.enrollment.academic_class_id != self.batch.source_class_id or (self.batch.source_stream_id and self.enrollment.stream_id != self.batch.source_stream_id):
+            if self.enrollment.programme != self.batch.programme or self.enrollment.academic_year_id != self.batch.source_year_id or self.enrollment.academic_class_id != self.batch.source_class_id or (self.batch.source_stream_id and self.enrollment.stream_id != self.batch.source_stream_id):
                 raise ValidationError('This enrollment does not belong to the batch source.')

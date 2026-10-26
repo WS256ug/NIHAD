@@ -155,6 +155,12 @@ class StudentGuardian(AuditedModel):
 
 
 class Enrollment(AuditedModel):
+    class Programme(models.TextChoices):
+        MAIN = "main", "Main"
+        ISLAMIC = "islamic", "Islamic Studies"
+
+    programme = models.CharField(max_length=12, choices=Programme.choices, default=Programme.MAIN)
+
     class Status(models.TextChoices):
         CURRENT = "current", "Current"
         COMPLETED = "completed", "Completed"
@@ -176,18 +182,19 @@ class Enrollment(AuditedModel):
     class Meta:
         ordering = ("-academic_year__start_date", "-enrollment_date", "-pk")
         constraints = [
-            models.UniqueConstraint(fields=("student", "academic_year"), condition=models.Q(status="current"), name="students_current_enrollment_unique", violation_error_message="Close this student's current enrollment for this year first."),
+            models.UniqueConstraint(fields=("student", "academic_year", "programme"), condition=models.Q(status="current"), name="students_current_enrollment_unique", violation_error_message="Close this student's current enrollment for this programme and year first."),
+            models.CheckConstraint(condition=models.Q(programme__in=["main", "islamic"]), name="students_enrollment_programme"),
             models.CheckConstraint(condition=models.Q(status__in=["current", "completed", "promoted", "repeating", "transferred", "withdrawn", "graduated"]), name="students_enrollment_valid_status"),
             models.CheckConstraint(condition=(models.Q(status="current", completion_date__isnull=True) | (~models.Q(status="current") & models.Q(completion_date__isnull=False))), name="students_enrollment_completion"),
             models.CheckConstraint(condition=models.Q(completion_date__isnull=True) | models.Q(completion_date__gte=models.F("enrollment_date")), name="students_enrollment_dates"),
         ]
 
     def __str__(self):
-        return f"{self.student.student_id} / {self.academic_year} / {self.academic_class}"
+        return f"{self.student.student_id} / {self.academic_year} / {self.get_programme_display()} / {self.academic_class}"
 
     def clean(self):
         super().clean()
-        preserve_fields(self, ("student_id", "academic_year_id", "section_id", "academic_class_id", "stream_id", "enrollment_date"))
+        preserve_fields(self, ("student_id", "academic_year_id", "section_id", "academic_class_id", "stream_id", "enrollment_date", "programme"))
         if self.pk and not self._state.adding:
             original = Enrollment.objects.get(pk=self.pk)
             if original.status != self.Status.CURRENT and (original.status != self.status or original.completion_date != self.completion_date):
@@ -200,6 +207,8 @@ class Enrollment(AuditedModel):
         if self.stream_id and self.stream.academic_class_id != self.academic_class_id:
             raise ValidationError({"stream": "Choose a stream belonging to the selected class."})
         if self._state.adding:
+            if self.programme == self.Programme.ISLAMIC and student.religion != Student.Religion.MOSLEM:
+                raise ValidationError("Only students whose religion is Islam can enroll in Islamic Studies.")
             if not (year.is_active and classroom.is_active and classroom.section.is_active) or (self.stream_id and not self.stream.is_active):
                 raise ValidationError("New enrollments require an active year, section, class and selected stream.")
             if student.status not in (Student.Status.ACTIVE, Student.Status.PROMOTED, Student.Status.REPEATING):
@@ -219,6 +228,6 @@ class Enrollment(AuditedModel):
             if self.pk and self.marks.filter(assessment__date__gt=self.completion_date).exists():
                 raise ValidationError('Completion date cannot exclude existing assessment results.')
         if self.enrollment_date:
-            overlaps = Enrollment.objects.filter(student_id=self.student_id, academic_year_id=self.academic_year_id, enrollment_date__lte=self.completion_date or year.end_date).exclude(pk=self.pk)
+            overlaps = Enrollment.objects.filter(student_id=self.student_id, academic_year_id=self.academic_year_id, programme=self.programme, enrollment_date__lte=self.completion_date or year.end_date).exclude(pk=self.pk)
             if overlaps.filter(models.Q(completion_date__isnull=True) | models.Q(completion_date__gte=self.enrollment_date)).exists():
-                raise ValidationError("Enrollment dates cannot overlap for a student in the same academic year.")
+                raise ValidationError("Enrollment dates cannot overlap for a student in the same programme and academic year.")

@@ -53,7 +53,8 @@ class AssignmentForm(forms.ModelForm):
         if self.instance.pk:
             for name, field in self.fields.items():
                 field.disabled = True
-                field.queryset = field.queryset.model.objects.filter(pk=getattr(self.instance, name + "_id"))
+                if hasattr(field, "queryset"):
+                    field.queryset = field.queryset.model.objects.filter(pk=getattr(self.instance, name + "_id"))
         elif self.is_bound:
             self.fields["term"].queryset = self.fields["term"].queryset.filter(academic_year_id=selected_pk(self.data.get("academic_year")))
             self.fields["stream"].queryset = self.fields["stream"].queryset.filter(academic_class_id=selected_pk(self.data.get("academic_class")))
@@ -74,9 +75,16 @@ class TeachingAssignmentForm(AssignmentForm):
 
 
 class ClassTeacherAssignmentForm(AssignmentForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["report_group"].required = False
+
+    def clean_report_group(self):
+        return self.cleaned_data.get("report_group") or self.instance.report_group
+
     class Meta:
         model = ClassTeacherAssignment
-        fields = ("teacher", "academic_year", "term", "academic_class", "stream")
+        fields = ("report_group", "teacher", "academic_year", "term", "academic_class", "stream")
 
 
 class AssessmentTypeForm(forms.ModelForm):
