@@ -80,7 +80,16 @@ def endterm_pdf(report):
             values += ['Absent' if row.get('absent') else report_number(row.get('score'))]
         values += [row.get('grade')] + ([row.get('points')] if points else [])
         rows.append([p(value) for value in values])
-    marks_table = table(rows, [64*mm] + [(width-64*mm)/(len(columns)-1)]*(len(columns)-1), header=True, repeatRows=2,
+    if data.get('nursery_progress'):
+        from .nursery import NurseryPicture
+        columns = ['Learning area', 'Progress level', 'Teacher observation']
+        rows = [[p('LEARNING AND DEVELOPMENT', heading), '', ''], [p(c, heading) for c in columns]]
+        for row in data['subjects']:
+            area = table([[NurseryPicture(row.get('illustration')), p(row['subject'])]], [17*mm, 30*mm]) if row.get('illustration') else p(row['subject'])
+            if row.get('illustration'):
+                area.setStyle(TableStyle([('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 2), ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+            rows.append([area, p(row['grade']), p(row.get('observation', ''))])
+    marks_table = table(rows, ([52*mm, 32*mm, 102*mm] if data.get('nursery_progress') else [64*mm] + [(width-64*mm)/(len(columns)-1)]*(len(columns)-1)), header=True, repeatRows=2,
                         row_backgrounds=[colors.Color(1,1,1,alpha=0), colors.Color(248/255,241/255,243/255,alpha=.55)])
     marks_table.setStyle(TableStyle([('SPAN', (0,0),(-1,0)), ('LINEBELOW',(0,0),(-1,0),.6,gold), ('BACKGROUND',(0,1),(-1,1),burgundy)]))
     story.append(marks_table)
@@ -96,6 +105,8 @@ def endterm_pdf(report):
     story.append(Spacer(1, 3*mm))
     comments = []
     for key, label, comment in [('teacher', 'Class-teacher comment', report.teacher_comment), ('headteacher', 'Headteacher comment', report.headteacher_comment)]:
+        if key == 'teacher' and data.get('nursery_progress'):
+            continue
         cell = [p(label), Spacer(1, 2*mm), p(comment or 'Pending'), Spacer(1, 5*mm)]
         # if data.get(key + '_name'):
         #     cell.append(p(data[key + '_name'], small))
@@ -103,7 +114,7 @@ def endterm_pdf(report):
         #     cell.append(p('Date: ' + data[key + '_comment_date'], small))
         #cell += [Spacer(1, 3*mm), p('Signature: ____________________', small)]
         comments.append(cell)
-    comment_table = table([comments], [width/2]*2, splitInRow=1)
+    comment_table = table([comments], [width/len(comments)]*len(comments), splitInRow=0 if data.get('nursery_progress') else 1)
     comment_table.setStyle(TableStyle([('BACKGROUND', (0,0),(-1,-1),pale), ('BOX',(0,0),(-1,-1),.5,line), ('LINEAFTER',(0,0),(0,-1),.5,line)]))
     story += [comment_table, Spacer(1, 5*mm)]
     closing = [p('Next term begins: ' + data['next_term_start'])] if data.get('next_term_start') else []
@@ -124,7 +135,7 @@ def endterm_pdf(report):
         closing = key_content + closing
     # if report.published_at:
     #     closing.append(p('Published ' + report.published_at.strftime('%d %b %Y'), small))
-    stamp = table([[p('School stamp', small)], ['']], [48*mm], rowHeights=[10*mm, 16*mm])
+    stamp = table([[p('School stamp', small)], ['']], [48*mm], rowHeights=[8*mm, 12*mm] if data.get('nursery_progress') else [10*mm, 16*mm])
     stamp.setStyle(TableStyle([('BOX',(0,0),(-1,-1),.5,line)]))
     story.append(table([[closing, stamp]], [132*mm, 54*mm]))
 

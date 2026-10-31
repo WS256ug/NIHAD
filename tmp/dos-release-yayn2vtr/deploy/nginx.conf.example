@@ -1,0 +1,34 @@
+# Install in nginx's http context, adjusting the hostname and certificate paths.
+map $uri $nihad_log_path {
+    default $uri;
+    ~^/accounts/password/reset/ /accounts/password/reset/[redacted];
+}
+log_format nihad '$remote_addr [$time_local] "$request_method $nihad_log_path" $status $body_bytes_sent';
+
+server {
+    listen 80;
+    server_name school.example.org;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name school.example.org;
+    ssl_certificate /etc/letsencrypt/live/school.example.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/school.example.org/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 6m;
+    access_log /var/log/nginx/nihad-access.log nihad;
+    location /static/ { alias /srv/nihad/staticfiles/; }
+    location /media/ { return 404; }
+    location /private_media/ { return 404; }
+    location /backups/ { return 404; }
+    location ~ /\. { deny all; }
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 65s;
+    }
+}

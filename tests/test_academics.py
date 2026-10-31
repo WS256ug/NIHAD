@@ -126,8 +126,8 @@ class AcademicAccessTests(AcademicTestCase):
     def test_role_matrix_crud_and_csrf(self):
         for role, user in self.users.items():
             self.client.force_login(user)
-            reader = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
-            manager = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN)
+            reader = role in (User.Role.SUPER_ADMIN, User.Role.DOS, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+            manager = role in (User.Role.SUPER_ADMIN, User.Role.DOS, User.Role.SCHOOL_ADMIN)
             for kind in ("teachers", "subjects", "teaching", "class-teachers"):
                 self.assertEqual(self.client.get(reverse("academics:record_list", args=[kind])).status_code, 200 if reader else 403)
                 self.assertEqual(self.client.get(reverse("academics:record_create", args=[kind])).status_code, 200 if manager else 403)

@@ -26,6 +26,15 @@ COMMENTS = {
 
 def suggest_headteacher_comment(snapshot, school, *, assessment_id, enrollment_id):
     """Return auditable suggestion metadata; never treat absence as low performance."""
+    if snapshot.get('nursery_progress'):
+        from collections import Counter
+        levels = Counter(row['grade'] for row in snapshot.get('subjects', []) if not row.get('absent'))
+        summary = '; '.join(f"{label}: {count} learning area{'s' if count != 1 else ''}" for label, count in levels.items())
+        comment = ('Recorded progress - ' + summary + '. ' if summary else 'No learning areas were assessed. ')
+        comment += "Please follow the teacher observations for individual support and next steps."
+        if any(row.get('absent') for row in snapshot.get('subjects', [])):
+            comment += " Some learning areas were not assessed due to absence."
+        return {'comment': comment, 'levels': dict(levels), 'method': 'recorded_progress_levels'}
     if snapshot.get('mode') != 'numeric' or snapshot.get('has_absences'):
         return None
     if any(row.get('absent') for row in snapshot.get('subjects', [])):

@@ -1,0 +1,1 @@
+{% if is_form_dialog %}action="{{ request.get_full_path }}" hx-post="{{ request.get_full_path }}" hx-target="#configuration-dialog-content" hx-swap="innerHTML" hx-encoding="multipart/form-data" hx-indicator="#configuration-dialog-content" hx-disabled-elt="find button[type='submit']"{% endif %}

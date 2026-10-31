@@ -1,6 +1,6 @@
 from django.urls import reverse
 
-from .permissions import can_manage_accounts, can_manage_school, dashboard_url, effective_role
+from .permissions import can_manage_accounts, can_manage_school, can_manage_academic_structure, dashboard_url, effective_role
 from apps.students.permissions import can_manage_students, can_view_students
 from apps.academics.permissions import can_view_academics
 from apps.finance.permissions import can_manage_finance
@@ -13,7 +13,7 @@ def account_navigation(request):
         return {}
     labels = {
         "super_admin": "Dashboard", "school_admin": "Dashboard",
-        "headteacher": "Dashboard", "teacher": "Dashboard",
+        "dos": "Dashboard", "headteacher": "Dashboard", "teacher": "Dashboard",
         "bursar": "Dashboard", "student": "Student portal", "guardian": "Guardian portal",
     }
     links = [{"label": labels[role], "url": dashboard_url(request.user)}]
@@ -25,7 +25,7 @@ def account_navigation(request):
             links.append({"label": "Reports", "url": reverse("reports:list")})
     if can_manage_accounts(request.user):
         links.append({"label": "Accounts", "url": reverse("accounts:user_list")})
-    if can_manage_school(request.user):
+    if can_manage_academic_structure(request.user):
         links.append({"label": "School setup", "url": reverse("schools:overview")})
     if can_view_students(request.user):
         student_link = {"label": "Students", "url": reverse("students:list")}
@@ -61,4 +61,4 @@ def account_navigation(request):
             for child in link["children"]:
                 child["active"] = request.path.startswith(child["url"])
             link["active"] = any(child["active"] for child in link["children"])
-    return {"account_navigation": links, "can_manage_accounts": can_manage_accounts(request.user), "can_manage_school": can_manage_school(request.user), "can_view_students": can_view_students(request.user), "can_manage_students": can_manage_students(request.user)}
+    return {"can_manage_academic_structure": can_manage_academic_structure(request.user), "account_navigation": links, "can_manage_accounts": can_manage_accounts(request.user), "can_manage_school": can_manage_school(request.user), "can_view_students": can_view_students(request.user), "can_manage_students": can_manage_students(request.user)}

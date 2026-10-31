@@ -8,7 +8,7 @@ from .models import StudentReport
 
 def visible_reports(user):
     records = StudentReport.objects.filter(enrollment__student__school_id=1).select_related('assessment__assessment_type', 'assessment__term__academic_year', 'assessment__academic_class__section', 'enrollment__student', 'enrollment__stream')
-    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         return records
     if has_role(user, User.Role.TEACHER):
         scope = Q(pk__in=[])
@@ -29,8 +29,10 @@ def visible_reports(user):
 
 
 def can_comment(user, report):
+    if report.snapshot.get('nursery_progress'):
+        return False
     if not report.is_current or report.status != 'draft' or not report.snapshot:
         return False
-    if has_role(user, User.Role.SCHOOL_ADMIN):
+    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS):
         return True
     return has_role(user, User.Role.TEACHER) and assessment_assignments(report.assessment, user, ClassTeacherAssignment).filter(Q(stream__isnull=True) | Q(stream_id=report.enrollment.stream_id)).exists()

@@ -11,6 +11,7 @@ from .metrics import dashboard_metrics
 WORKSPACES = {
     User.Role.SUPER_ADMIN: ("Dashboard", "Manage access across your school.", "Manage school accounts and administration from one place."),
     User.Role.SCHOOL_ADMIN: ("Dashboard", "Keep your school connected.", "Manage student records, guardians, enrollment and school accounts."),
+    User.Role.DOS: ("Dashboard", "Manage your school academics.", "Manage subjects, allocations, assessments, grading, marks, reports and promotions."),
     User.Role.HEADTEACHER: ("Dashboard", "A clear view of your school.", "Review results and reports, approve comments, and manage promotion decisions."),
     User.Role.TEACHER: ("Dashboard", "Your classes and academic tasks.", "Enter marks for assigned subjects and add class-teacher comments where you are assigned."),
     User.Role.BURSAR: ("Dashboard", "Your school's financial records.", "Manage student charges, payments, receipts, expenses and income."),

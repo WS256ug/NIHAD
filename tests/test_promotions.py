@@ -108,7 +108,7 @@ class PromotionTests(ReportTestCase):
         batch = self.batch()
         for role, user in self.users.items():
             self.client.force_login(user)
-            allowed = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+            allowed = role in (User.Role.SUPER_ADMIN, User.Role.DOS, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
             for url in (reverse('promotions:list'), reverse('promotions:create'), reverse('promotions:edit', args=[batch.pk]), reverse('promotions:preview', args=[batch.pk])):
                 self.assertEqual(self.client.get(url).status_code, 200 if allowed else 403)
             if not allowed:

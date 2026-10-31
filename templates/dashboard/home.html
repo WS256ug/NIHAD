@@ -13,7 +13,7 @@
   <p class="dashboard-period">{{ school_period.current_academic_year }} &middot; {{ school_period.current_term.name }}</p>
   {% else %}
   <div class="dashboard-setup" role="status">Select an academic year and term to complete school setup.
-    {% if can_manage_school %}<a{% if school_period %} data-configuration-dialog hx-get="{% url 'schools:current_period' %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML"{% endif %} href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}" role="button" class="button outline small">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
+    {% if can_manage_academic_structure %}<a{% if school_period %} data-configuration-dialog hx-get="{% url 'schools:current_period' %}" hx-target="#configuration-dialog-content" hx-swap="innerHTML"{% endif %} href="{% if school_period %}{% url 'schools:current_period' %}{% else %}{% url 'schools:overview' %}{% endif %}" role="button" class="button outline small">Set academic period</a>{% else %}<span>Contact your school administrator.</span>{% endif %}
   </div>
   {% endif %}
   {% if quick_actions %}<nav class="dashboard-actions" aria-label="Quick actions">{% for action in quick_actions %}<a href="{{ action.url }}"{% if action.dialog %} data-configuration-dialog hx-get="{{ action.url }}" hx-target="#configuration-dialog-content" hx-swap="innerHTML"{% endif %} role="button" class="outline small button">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
@@ -52,7 +52,7 @@
       {% if can_manage_accounts %}
         <a href="{% url 'accounts:user_list' %}" role="button" class="button outline small">Manage accounts <span aria-hidden="true">→</span></a>
       {% endif %}
-      {% if can_manage_school %}
+      {% if can_manage_academic_structure %}
         <a href="{% url 'schools:overview' %}" role="button" class="outline button small">School setup</a>
       {% endif %}
       {% if can_view_students %}

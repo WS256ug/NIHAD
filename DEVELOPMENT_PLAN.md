@@ -711,3 +711,64 @@ explicit payment/charge reversals; its ten targeted tests pass.
 - Students with no Islamic results require an explicit placement. Already-assessed class mistakes need a reviewed academic correction rather than reassignment of preserved history. Nursery grading/report changes are outside this milestone.
 - Validation: all 355 tests in the full suite pass; the subsequent same-class isolation regression also passes (8 placement tests). Django system and migration-drift checks pass. Local database backed up and all four migrations applied successfully. Browser visual review and hosted verification remain pending.
 - Next milestone: stage and deploy the Namecheap Islamic placements package using NAMECHEAP_ISLAMIC_PLACEMENTS_UPDATE.md, run migrations, review migrated placements/teachers, and assign missing Islamic classes before marks entry.
+
+## Baby and Middle nursery progress reports (2026-10-29)
+
+- Completed exam-based progress entry: assigned teachers select a learning area and enter each learner's level and observation. Partial drafts are allowed; submission, approval, closing and report generation enforce complete observations for assessed learners. Absence remains explicit.
+- Nursery reports snapshot observations and illustration choices, omit the separate class-teacher comment/signature step, and go directly to headteacher review with a deterministic comment summarising recorded progress levels. Approval and publication remain explicit. Corrections use the existing administrator exam-correction workflow.
+- Added configurable learning-area cartoons, matching HTML/print and PDF output, and a nursery-only grading scheme option that does not replace default section grades. Existing numeric and historical reports remain unchanged.
+- Added migrations academics 0010 and 0011 and the idempotent setup_nursery_progress command. Local migrations applied. This local database currently has no Baby/Middle classes; no class placements or existing assessments were changed.
+- Validation: all 364 tests pass, including eight new nursery tests; Django check and makemigrations --check pass. The generated one-page, eight-area sample PDF was rendered and visually inspected.
+- Next milestone: configure Baby/Middle classes, teaching assignments and exams using NURSERY_PROGRESS_REPORTS.md; perform staff acceptance testing and deploy the migrations, application files and static assets to Namecheap.
+
+## Hosted Top missing grades repair (2026-10-29)
+
+- User confirmed hosted assessment 18 (Top / Islamic Studies / Mid Term) has no grading scheme, is open and has no reports. Top must use Primary grading.
+- Extended correct_assessment_grades with --source-scheme and expected-scheme 0 to copy a confirmed active numeric source into the target section, retaining bands, points and compatible aggregation/divisions. Required subjects from another section cause a clear rejection. All marks and other assessment links are preserved; the change is transactional and audited, with rollback preview by default.
+- Prepared an isolated command-only deployment package and NAMECHEAP_TOP_GRADING_FIX.md, compatible with the existing hosted models and independent of the nursery changes.
+- Validation: all 368 tests pass, including preview rollback, missing-link repair across sections, stale retry, source validity and report guards. Django check, migration-drift and diff checks pass.
+- Next milestone: identify the actual hosted Primary source scheme, upload the command, preview and apply the repair to assessment 18, then verify grades on the hosted marks page. No hosted mutation has been performed locally.
+
+## Baby / Lillies roster import (2026-10-30)
+
+- Added import_student_roster, a preview-first atomic management command for the supplied CSV layout. It uses normal student registration, guardian linking, numbering and enrollment services, with explicit administrator/year/section/class/stream arguments.
+- User explicitly authorised temporary DOB 2026-01-01 for all students and retaining the CSV guardian relationships. The importer records temporary DOB and correction notes in each student's audit trail, preserves full-name order, separates slash-listed guardians, preserves shared contacts without guessing phone ownership, and marks missing surnames as not supplied.
+- Apply requires the previewed CSV SHA-256. Existing name-token matches, duplicate rows, ambiguous guardians, invalid dates or wrong placements stop the whole batch; re-imports cannot silently duplicate matching students. No accounts or Islamic placements are provisioned.
+- Reviewed source contains 34 students and 40 guardian-name entries. All 34 passed a full isolated database preview with zero records retained. Two source rows (27 and 29) have unusual phone lengths retained for correction.
+- Validation: all 375 tests pass, including seven importer regressions; system and migration-drift checks pass. No schema changes. Prepared command-only deployment package and NAMECHEAP_STUDENT_ROSTER_IMPORT.md; private CSV excluded from the package.
+- Next milestone: run the hosted preview for the actual Baby/Lillies placement, confirm printed target and potential existing matches, then apply using the approved file hash. Hosted import has not been performed locally. Administrator must subsequently correct temporary DOBs, incomplete guardian names and contact ownership. Supplied admission/enrollment date is 2026-10-30 and will exclude earlier exams unless corrected with factual dates.
+
+## Middle Class roster import (2026-10-30)
+
+- Extended import_student_roster to accept optional Class/Stream columns, the supplied RelationShip header spelling, and an explicit --admission-date for missing CSV dates. Existing Baby CSV remains supported.
+- Stream is selected per row; class/stream overrides are checked against source placement. Source row numbers may repeat across streams; audit/output source labels include stream. All stream configuration is checked before registration writes.
+- User confirmed 2026-10-30 admission/enrollment, with the previously authorised temporary 2026-01-01 birth date and unchanged relationships. Source has 25 students: Daises 14, Lavenders 11. Exact supplied spellings are retained.
+- Validation: actual source passed an isolated full registration preview with zero retained students; all 378 tests pass, including three new multi-stream/default-date regressions. Django system and migration checks pass. No schema changes.
+- Prepared namecheap-middle-roster-import-20261030.zip and NAMECHEAP_MIDDLE_ROSTER_IMPORT.md; private CSV is excluded. Next milestone: ensure hosted Middle/Daises/Lavenders exist, run hosted preview, apply reviewed file hash and verify each stream. No hosted write performed locally.
+
+
+## Baby and Middle import reference (2026-10-30)
+
+- Added STUDENT_ROSTER_IMPORT_REFERENCE.md covering source preparation, authorised data defaults, importer implementation/service reuse, exact cPanel paths and commands, package versions, troubleshooting, tests and future maintenance. Linked it from both deployment guides.
+- Hosted evidence confirms successful Baby (34) and Middle (25: Daises 14, Lavenders 11) previews. Lillies was configured after the initial missing-stream error. Final apply success output has not been supplied; preview numbers alone are not treated as proof of committed imports.
+- Added a read-only audit-hash verification procedure to distinguish committed records from rolled-back previews without repeating an import or exposing student contacts in output.
+- Documentation-only change; checked links, command/file references and whitespace. Historical test results are labelled as such; application tests were not rerun.
+- Next milestone: confirm hosted apply completion using final success output and the documented audit check, then correct authorised temporary birth dates and flagged guardian/contact details.
+
+
+## Director of Studies role (2026-10-31)
+
+- Added DOS as a distinct staff role, selectable by administrators, with its own dashboard and academic navigation. Existing Headteacher permissions are unchanged.
+- Enabled full academic structure, teacher profiles/allocations, subjects, assessments, grading, marks/review, reports/approval/publication/corrections and promotions. Student academic records are readable; account and guardian administration remain restricted.
+- Financial endpoints and services remain inaccessible to DOS. School profile editing, including currency and fee-clearance policy, remains administrator-only; academic structure and current period have a separate permission helper.
+- Added accounts migration 0006 and applied it locally. No hosted deployment or account provisioning performed. Usage and deployment notes are in DOS_ROLE.md.
+- Validation: all 382 tests pass, including DOS page access, financial/account denial, school policy service protection, report lifecycle and promotion history. Updated existing exhaustive role matrices for DOS. Django check, migration-drift and whitespace checks pass.
+- Next milestone: deploy the application and accounts migration to hosting, restart, and assign the Director of Studies role to the intended staff account.
+
+
+## DOS manual hosting update (2026-10-31)
+
+- User chose a manual update after hosting access was unavailable. Prepared artifacts/namecheap-dos-update-20261031.zip and NAMECHEAP_DOS_UPDATE.md. No hosted writes performed.
+- Isolated DOS changes against deployed Islamic placements baseline a57248a, excluding unfinished nursery work and leaving roster/grade-repair commands untouched. Package contains 21 application files plus documentation and read-only hash preflight.
+- All 360 isolated baseline tests, Django checks and migration-drift checks pass. ZIP integrity and baseline/mismatch/already-installed preflight paths verified.
+- Next milestone: upload to a private staging folder, run compatibility check, back up hosted code/database, copy update, run accounts migration 0006, restart and verify DOS access.

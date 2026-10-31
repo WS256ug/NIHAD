@@ -38,7 +38,7 @@ def save_or_show_errors(form, operation):
     return False
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_GET
 def overview(request):
@@ -63,7 +63,7 @@ def profile(request):
     return render(request, "schools/form.html", {"form": form, "page_title": "School profile", "cancel_url": reverse("schools:overview")})
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_GET
 def record_list(request, kind):
@@ -89,7 +89,7 @@ def record_list(request, kind):
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def record_form(request, kind, pk=None):
@@ -112,7 +112,7 @@ def record_form(request, kind, pk=None):
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def record_status(request, kind, pk, activate):
@@ -127,7 +127,7 @@ def record_status(request, kind, pk, activate):
     return render(request, "schools/status.html", {"form": form, "record": record, "kind": kind, "activate": activate})
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def current_period(request):
@@ -146,7 +146,7 @@ def current_period(request):
     return render(request, "schools/current_period.html", {"form": form})
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_GET
 def term_options(request):

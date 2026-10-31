@@ -1,0 +1,2 @@
+{% extends 'base.html' %}{% block title %}Please wait before trying again{% endblock %}
+{% block content %}<section class="account-page workspace-card"><h1>Please wait before trying again</h1><p>There have been too many attempts. Try again in approximately {{ retry_minutes }} minute{{ retry_minutes|pluralize }}.</p><p>Contact the school if you need help accessing your account.</p></section>{% endblock %}

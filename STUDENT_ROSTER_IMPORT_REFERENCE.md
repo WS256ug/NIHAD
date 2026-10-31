@@ -1,0 +1,334 @@
+# Baby and Middle Class imports — implementation and operating reference
+
+Recorded: 30 October 2026. Application: `nihad.ugatec.com` on Namecheap cPanel.
+
+This document records the source preparation, code written, deployment steps, commands and verification used for the Baby and Middle class rosters. It is a reference for future imports, not an instruction to rerun these same imports.
+
+## 1. Scope and evidence
+
+| Roster | Academic year | Section / class | Stream | Records validated |
+| --- | --- | --- | --- | ---: |
+| Baby | 2026/27 | Nursery / Baby | Lillies | 34 |
+| Middle | 2026/27 | Nursery / Middle | Daises | 14 |
+| Middle | 2026/27 | Nursery / Middle | Lavenders | 11 |
+| Total | | | | 59 |
+
+Both hosted previews were supplied in the conversation and passed. The Baby preview displayed provisional numbers NBS-0108 through NBS-0141; the Middle preview displayed NBS-0142 through NBS-0166. These are preview observations, not guarantees of final numbers.
+
+The final `Imported ...` success output for either class was not supplied before this document was written. The later number sequence is consistent with earlier registrations having occurred, but is not proof of which records committed. Use section 8 to verify the actual hosted imports before marking them complete. Do not rerun `--apply` simply to check completion.
+
+## 2. How the source records were prepared
+
+### Baby
+
+1. Two photographed paper-register pages were reviewed.
+2. An initial transcription preserved 38 visible source rows, including crossed-out rows, corrections, possible duplicates and uncertain handwriting.
+3. The user then supplied `baby_class_lillies_roster.csv`, containing 34 Active student rows. That CSV became the import source; the importer did not silently reinterpret or remove rows using the photographs.
+4. The CSV was read and validated locally, then exercised through the actual registration services in an isolated test database. The preview rolled back with zero students retained.
+
+Review record: [Baby transcription](output/student-review/baby-lillies-review.md).
+
+### Middle
+
+1. The user supplied `middle_class_roster.csv`, containing 25 Active students.
+2. Unlike Baby, it included `Class` and `Stream`, used the heading `RelationShip`, and had no admission-date column.
+3. The importer was extended to accept these differences and route each learner into the stream specified on their row.
+4. The user explicitly confirmed 30 October 2026 as the admission/enrollment date. The complete source also passed an isolated database preview with no retained records.
+
+The exact supplied stream spelling is **Daises**, not Daisies. The Baby stream is **Lillies**. Configuration and source names must agree.
+
+### CSV headers
+
+Baby source:
+
+```csv
+No,Student Name,Gender,Religion,Phone Contact,Parent / Guardian Name,Relationship,Status,admission dates
+```
+
+Middle source:
+
+```csv
+Stream,No,Student Name,Class,Religion,Gender,Phone Contact,Parent / Guardian Name,RelationShip,Status
+```
+
+The updated reader supports both layouts. It rejects unexpected or duplicate headers and malformed row lengths. `Class`, `Stream` and `admission dates` are optional, but missing placement/date information must be supplied explicitly through command options. Only explicitly Active rows are accepted.
+
+## 3. User-approved data decisions
+
+| Field | Decision used |
+| --- | --- |
+| Birth date | **2026-01-01 for every imported learner**, explicitly authorised as temporary; school administrators will correct it. |
+| Baby admission date | Read from the CSV: 2026-10-30; the supplied time component was discarded. |
+| Middle admission date | Explicit command default 2026-10-30, confirmed by the user. |
+| Enrollment date | Admission date unless `--enrollment-date` is explicitly supplied; it cannot precede admission. |
+| Student name | Full displayed name retains supplied token order. First token becomes first name, last token becomes last name, and intervening tokens become middle name. |
+| Gender | Supplied M/F or Male/Female values map to the system choices; not inferred from names. |
+| Religion | Muslim/Islam/Moslem maps to stored `Moslem`, displayed as Islam. Christian remains Christian. |
+| Guardian relationship | Retained exactly as supplied, including the same value for each guardian when a row lists two names. |
+| Multiple guardians | Split names on `/`; first listed guardian is primary. Emergency-contact status is not inferred. |
+| Multiple phone numbers | Preserve the complete list for each listed guardian; do not infer which person owns each number. |
+| Missing guardian surname | Use the visible marker `(not supplied)` to satisfy the existing required-name fields; no surname is invented. |
+| Missing leading phone zero | Restore only nine-digit contacts beginning with 7. Unexpected digit-only lengths remain unchanged and receive a review warning. |
+| Student registration number | Generated by the existing school numbering service, not taken from CSV row numbers. |
+| Programme | Main enrollment only. Religion does not automatically create Islamic Studies enrollment. |
+| Accounts | No guardian accounts, student portal accounts or passwords are created by this command. |
+
+Temporary birth dates and import warnings are recorded in each student's audit history. The birth date itself is stored as a normal date, so profiles/reports will use it until corrected. These temporary values are specific to this authorised import; do not assume the same birth date for future cohorts.
+
+Admission/enrollment on 30 October 2026 excludes students from exams held before that date. Correct factual admission dates before importing if earlier participation is needed; do not backdate just to bypass eligibility rules.
+
+## 4. Code written and existing code reused
+
+### Added files
+
+- [Management package initializer](apps/students/management/__init__.py).
+- [Commands package initializer](apps/students/management/commands/__init__.py).
+- [import_student_roster.py](apps/students/management/commands/import_student_roster.py): parsing, validation, placement, preview/apply control and audit metadata.
+- [test_roster_import.py](tests/test_roster_import.py): importer regression coverage.
+
+### Existing application services reused
+
+- [Student and enrollment forms](apps/students/forms.py): `StudentRegistrationForm` and `EnrollmentForm` validate supplied values and permitted relationships/placements.
+- [Student services](apps/students/services.py): `require_manager`, `save_student`, `add_guardian_contact`, `enroll_student`.
+- [School services](apps/schools/services.py): `lock_school` serialises application writes on the school record; `write_record` validates models, records the acting user and writes audit history.
+- [Student models](apps/students/models.py): `Student`, `StudentNumber`, `Guardian`, `StudentGuardian`, `Enrollment`.
+
+No database schema migration, third-party dependency or nursery-report deployment was needed for the importer. The Middle update replaced the same command file and remains compatible with the Baby format.
+
+### Functions and responsibilities
+
+| Function / method | Purpose |
+| --- | --- |
+| `name_key(value)` | Case-fold and sort complete name tokens to flag exact/reordered name duplicates. |
+| `name_parts(value, guardian=False)` | Map supplied names into the existing required model fields. |
+| `phone_contacts(value)` | Preserve contact lists, restore clear missing leading zeros and report unusual numeric formats. |
+| `read_roster(path, admission_date=None)` | Decode UTF-8/UTF-8 BOM CSV, validate headers/rows, normalise values, identify repeated rows, and return SHA-256 of the original bytes. |
+| `Command.handle()` | Parse dates, enforce the apply hash and call the transactional importer. |
+| `Command.import_rows()` | Authorise the actor, resolve active placement, reject duplicate students, create contacts/students/enrollments through services, and commit or roll back the batch. |
+
+Relevant implementation excerpts (the linked source file is authoritative):
+
+```python
+def name_key(value):
+    return tuple(sorted(value.casefold().split()))
+
+# An apply operation must refer to the exact reviewed file bytes.
+if options['apply'] and options.get('expected_sha256') != digest:
+    raise CommandError('File hash does not match --expected-sha256. Run a new preview first.')
+```
+
+The entire import is wrapped by `@transaction.atomic`. Preview runs the real validated writes inside that transaction, then rolls them back:
+
+```python
+if not options['apply']:
+    transaction.set_rollback(True)
+
+if options['apply']:
+    transaction.on_commit(lambda: self.stdout.write(self.style.SUCCESS(message)))
+```
+
+Thus a success message is emitted after commit for apply. Preview restores students, guardian/link records, enrollments, audit entries and the transactional student-number counter. Database-internal auto-increment sequences may still consume IDs on some engines; those are not a guarantee of final student registration numbers.
+
+The Middle extension added:
+
+- Case-insensitive normalisation of `RelationShip` to `Relationship`.
+- Explicit `--admission-date` fallback for missing dates; populated CSV dates take precedence.
+- Per-row class validation and stream selection.
+- Repeated source numbers allowed across different streams; duplicate numbers within one stream are rejected.
+- Stream-qualified source labels such as `Daises/1` in the output and audit history.
+- Validation of all required streams before registration begins.
+
+### Duplicate and safety behaviour
+
+Existing same-school students with identical full-name tokens are flagged even if name order differs. This is not fuzzy matching and cannot identify every misspelling or renamed student. It can also flag different people who share a name; review those cases rather than removing the check blindly.
+
+Guardian reuse requires matching name and complete phone-list text. Shared phone numbers alone do not merge people. Multiple matching existing guardians stop the import for review. No existing student is overwritten.
+
+A bad row, wrong placement, unauthorised actor, detected duplicate or audit failure aborts the whole batch. The checksum protects file contents only; it does not encode the selected year, stream or date options. Keep those options consistent with the reviewed preview.
+
+## 5. Deployment and upload steps taken
+
+Code packages prepared:
+
+- `artifacts/namecheap-student-roster-import-20261030.zip` — original Baby importer.
+- `artifacts/namecheap-middle-roster-import-20261030.zip` — updated importer supporting both formats; use this newer package for future work with either format.
+
+Both contain the command, its package initializers, instructions and a SHA-256 manifest. Private CSV files are excluded. Do not overwrite the updated importer with the older Baby package.
+
+In cPanel File Manager:
+
+1. Upload/extract the code package into `/home/ugatrrvu/nihad.ugatec.com`, the application directory containing `manage.py`, preserving nested folders.
+2. Open `/home/ugatrrvu` and create `private-imports` beside `public_html`, not inside a public document root.
+3. Upload the source files into that folder:
+
+```text
+/home/ugatrrvu/private-imports/baby_class_lillies_roster.csv
+/home/ugatrrvu/private-imports/middle_class_roster.csv
+```
+
+Here `~` means `/home/ugatrrvu`; uploading a CSV only stores a file. Registration occurs when the management command successfully commits.
+
+In the school application, confirm the active year **2026/27**, section **Nursery**, classes **Baby** and **Middle**, and streams belonging to the correct class:
+
+- Baby: **Lillies**.
+- Middle: **Daises**, **Lavenders**.
+
+The first Baby attempt failed because Lillies did not exist as an active stream. The user created it through School setup, then the hosted preview passed. The later Middle preview confirmed both streams and the 14/11 split.
+
+## 6. Exact hosted commands
+
+These commands reproduce the reviewed configuration. **Do not apply a roster already imported.** Verify first using section 8. For a new file, use the hash from that file's new preview rather than the historical hashes below.
+
+### Activate the hosted environment
+
+```bash
+source /home/ugatrrvu/virtualenv/nihad.ugatec.com/3.13/bin/activate
+cd /home/ugatrrvu/nihad.ugatec.com
+```
+
+The actor used was `ws`. An active School Admin or Super Admin account is required. Production settings select the hosted database; omitting them may use development settings.
+
+### Baby preview
+
+```bash
+python manage.py import_student_roster --file ~/private-imports/baby_class_lillies_roster.csv --actor ws --academic-year '2026/27' --section-name 'Nursery' --class-name 'Baby' --stream-name 'Lillies' --temporary-birth-date 2026-01-01 --settings=config.settings.production
+```
+
+Observed hosted result:
+
+```text
+Target: 2026/27 / Nursery / Baby / Lillies
+CSV SHA256: c6f981a4424270b4b5fd7f878161f207f83cf4824a5c5a5476c4483a50c65087
+PREVIEW PASSED: 34 students validated. No records saved. Preview registration numbers are provisional.
+```
+
+The newer command prints stream counts on separate lines; this does not change placement.
+
+### Baby apply
+
+After a successful preview and the normal database backup:
+
+```bash
+python manage.py import_student_roster --file ~/private-imports/baby_class_lillies_roster.csv --actor ws --academic-year '2026/27' --section-name 'Nursery' --class-name 'Baby' --stream-name 'Lillies' --temporary-birth-date 2026-01-01 --expected-sha256 c6f981a4424270b4b5fd7f878161f207f83cf4824a5c5a5476c4483a50c65087 --settings=config.settings.production --apply
+```
+
+Expected final success line, not yet captured in the supplied transcript:
+
+```text
+Imported 34 students with guardian contacts and Main enrollments.
+```
+
+### Middle preview
+
+Do not pass `--stream-name` here: the CSV controls the two streams.
+
+```bash
+python manage.py import_student_roster --file ~/private-imports/middle_class_roster.csv --actor ws --academic-year '2026/27' --section-name 'Nursery' --class-name 'Middle' --admission-date 2026-10-30 --temporary-birth-date 2026-01-01 --settings=config.settings.production
+```
+
+Observed hosted result:
+
+```text
+Target: 2026/27 / Nursery / Middle
+  Daises: 14 students
+  Lavenders: 11 students
+CSV SHA256: ec176e75f3a86556967a281c5f57ddda591673d1cf2411a5b3e030a5a51fd34c
+PREVIEW PASSED: 25 students validated. No records saved. Preview registration numbers are provisional.
+```
+
+### Middle apply
+
+```bash
+python manage.py import_student_roster --file ~/private-imports/middle_class_roster.csv --actor ws --academic-year '2026/27' --section-name 'Nursery' --class-name 'Middle' --admission-date 2026-10-30 --temporary-birth-date 2026-01-01 --expected-sha256 ec176e75f3a86556967a281c5f57ddda591673d1cf2411a5b3e030a5a51fd34c --settings=config.settings.production --apply
+```
+
+Expected final success line, not yet captured in the supplied transcript:
+
+```text
+Imported 25 students with guardian contacts and Main enrollments.
+```
+
+Keep a space between each option and its value, especially `--temporary-birth-date 2026-01-01`. Do not copy a visually joined `--temporary-birth-date2026-01-01` from pasted terminal text.
+
+## 7. Troubleshooting encountered or supported
+
+| Message / symptom | Meaning and action |
+| --- | --- |
+| `Expected exactly one active stream; found 0` | Create/activate the stream under the correct class, or use the exact existing spelling. Nothing committed. |
+| `unrecognized arguments: --admission-date` | Hosted importer is the older version. Extract the newer Middle package into the correct application root. |
+| Header/column error | Check CSV export, header spelling, commas and quoting. The updated command handles both documented layouts. |
+| Missing admission date | Supply a factual approved date through the CSV or `--admission-date`; do not invent one. |
+| `Possible existing students` | Review existing records. The command deliberately stops instead of merging or duplicating students. |
+| Multiple matching guardians | Review ambiguous existing contacts; automatic reuse would be unsafe. |
+| Hash mismatch | File bytes changed, possibly due to re-export or line endings. Run a new preview and review it before using the new hash. |
+| `REVIEW:` lines | Nonfatal retained-data issues, such as missing surnames, shared contacts or unusual phone lengths. They remain in audit history on apply. |
+| Output shows students but lacks final success | Do not assume commit and do not immediately rerun. Check remaining terminal output and then inspect the database using section 8. |
+| Students absent from an earlier exam | Their enrollment starts 30 October 2026. Check actual admission/enrollment dates and exam date. |
+
+## 8. Verify a completed import without rerunning it
+
+In the application, open Students and filter the correct year/class/stream. Check representative profiles, guardian links and enrollment history. Existing students may already be in a stream, so a stream's total count alone is not an import receipt.
+
+The following **read-only** hosted command looks for the per-student import audit entries recorded using the source-file hashes. It outputs counts and placement summaries without printing learner names or contacts:
+
+```bash
+python manage.py shell --settings=config.settings.production <<'PY'
+from django.contrib.admin.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
+from apps.students.models import Student, Enrollment
+
+sources = {
+    'Baby': ('c6f981a4424270b4b5fd7f878161f207f83cf4824a5c5a5476c4483a50c65087', 34),
+    'Middle': ('ec176e75f3a86556967a281c5f57ddda591673d1cf2411a5b3e030a5a51fd34c', 25),
+}
+content_type = ContentType.objects.get_for_model(Student)
+for label, (digest, expected) in sources.items():
+    ids = list(LogEntry.objects.filter(
+        content_type=content_type,
+        change_message__startswith=f'Roster import SHA256 {digest},'
+    ).values_list('object_id', flat=True).distinct())
+    students = Student.objects.filter(school_id=1, pk__in=ids)
+    print(label, 'students linked to this import:', students.count(), 'expected:', expected)
+    placements = Enrollment.objects.filter(
+        student__in=students, academic_year__name='2026/27', programme='main'
+    ).values('academic_class__name', 'stream__name', 'status').annotate(count=Count('pk'))
+    print('Placements:', list(placements))
+PY
+```
+
+An uncommitted preview leaves no such audit entries. If records or audit history have subsequently been changed/removed, investigate rather than treating a short count as permission to re-import. Retain successful apply output and record verification date/operator in the deployment log.
+
+## 9. Tests and checks performed
+
+- Baby version: 7 importer regression tests and 375 tests in the full suite passed.
+- Middle extension: 10 importer tests and 378 full-suite tests passed.
+- Both real CSVs passed isolated test-database previews with zero students retained after rollback.
+- Django system checks, migration-drift checks and diff whitespace checks passed at implementation time.
+- Code ZIPs were checked for archive integrity; private CSV data was excluded.
+
+Coverage includes preview rollback of student/contact/enrollment/audit records and numbering, successful apply, retained relationships, temporary DOB audit notes, stale file hashes, permissions, late-row rollback, repeated imports, reordered-name duplicates, sibling guardian reuse, single-name guardians, unusual phone digits, multiple streams, missing-stream failure and required date defaults.
+
+To rerun locally, use the project's virtual environment:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py test tests.test_roster_import --noinput
+.\.venv\Scripts\python.exe manage.py check
+.\.venv\Scripts\python.exe manage.py makemigrations --check
+```
+
+These are historical test results, not a claim that production verification is complete or that tests were rerun for this documentation-only update.
+
+## 10. Follow-up work and future imports
+
+1. Confirm final hosted commits using success output and the audit check above.
+2. Correct temporary birth dates, missing guardian surnames and uncertain phone ownership through authorised editing screens.
+3. Review the unusual phone lengths flagged in Baby source rows 27 and 29.
+4. Confirm first/middle/last-name component assignments where source surname order differs from the application's convention.
+5. Create student portal access through its existing workflow if required; distribute credentials securely. Parents use student credentials, not separate guardian accounts.
+6. Assign Islamic Studies placements separately where required.
+7. For another cohort, prepare its reviewed CSV, identify actual dates/class/streams, preview on hosting and use that preview's file hash. Do not copy these cohorts' temporary DOB or historical hashes as universal defaults.
+
+Preserve records with academic/financial history. The importer provides no delete/undo command. If a committed import needs correction, use reviewed application corrections; do not delete the cohort or restore an old database over newer activity without accounting for subsequent work.
+
+Related deployment guides: [Baby](NAMECHEAP_STUDENT_ROSTER_IMPORT.md), [Middle](NAMECHEAP_MIDDLE_ROSTER_IMPORT.md). Milestones are tracked in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md).

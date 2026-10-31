@@ -28,7 +28,7 @@ def all_sheet_assignments(assessment):
 
 def sheet_assignments(assessment, actor):
     records = all_sheet_assignments(assessment)
-    if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         return records
     return records.filter(teacher__user=actor) if has_role(actor, User.Role.TEACHER) else records.none()
 
@@ -55,6 +55,7 @@ class SheetControlForm(forms.Form):
 
 
 class SheetRowForm(forms.Form):
+    observation = forms.CharField(required=False, max_length=2000, widget=forms.Textarea(attrs={"rows": 2}))
     score = forms.DecimalField(required=False, min_value=0, max_digits=7, decimal_places=2)
     level = forms.ModelChoiceField(required=False, queryset=GradeRule.objects.none())
     is_absent = forms.BooleanField(required=False, label="Absent")
@@ -62,9 +63,10 @@ class SheetRowForm(forms.Form):
 
     def __init__(self, *args, assessment, enrollment, mark, **kwargs):
         self.enrollment, self.mark = enrollment, mark
+        self.nursery_progress = assessment.nursery_progress
         kwargs["prefix"] = f"mark-{enrollment.pk}"
         kwargs["initial"] = {"score": mark.score if mark else None, "level": mark.level_id if mark else None,
-                             "is_absent": mark.is_absent if mark else False, "expected_revision": mark.revision if mark else 0}
+                             "observation": mark.observation if mark else "", "is_absent": mark.is_absent if mark else False, "expected_revision": mark.revision if mark else 0}
         super().__init__(*args, **kwargs)
         if assessment.grading_scheme_id and assessment.grading_scheme.mode == "descriptive":
             self.fields.pop("score")
@@ -79,6 +81,10 @@ class SheetRowForm(forms.Form):
         field.widget.attrs.update({"data-mark-value": "", "aria-label": f"Result for {enrollment.student.full_name}"})
         self.fields["is_absent"].widget.attrs.update({"aria-label": f"Absent: {enrollment.student.full_name}"})
         self.maximum = assessment.maximum_score
+        if not assessment.nursery_progress:
+            self.fields.pop("observation")
+        else:
+            self.fields["observation"].widget.attrs["aria-label"] = f"Teacher observation for {enrollment.student.full_name}"
 
     def clean(self):
         data = super().clean()
@@ -89,6 +95,8 @@ class SheetRowForm(forms.Form):
             self.add_error("score", f"Enter a mark from 0 to {self.maximum}.")
         if self.mark and not data.get("is_absent") and score is None and level is None:
             raise ValidationError("Enter a result or mark the student absent. A saved result cannot be cleared.")
+        if self.nursery_progress and data.get("observation") and not data.get("is_absent") and level is None:
+            self.add_error("level", "Choose a progress level for this observation.")
         return data
 
     def has_result(self):
@@ -113,6 +121,10 @@ def sheet_snapshot(assessment, assignment, exam_set=None):
     marks = dict(Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment_id__in=ids).values_list("enrollment_id", "revision"))
     if not ids or len(marks) != len(ids):
         raise ValidationError("Every student needs a result or an Absent status before this sheet can be submitted or approved.")
+    if assessment.nursery_progress:
+        for mark in Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment_id__in=ids):
+            if not mark.is_absent and (not mark.level_id or not mark.observation.strip()):
+                raise ValidationError("Every assessed learner needs a progress level and teacher observation before submission.")
     return [[pk, marks[pk]] for pk in ids]
 
 
@@ -120,7 +132,7 @@ def sheet_snapshot(assessment, assignment, exam_set=None):
 def save_sheet(assessment, assignment, row_forms, control, actor, exam_set=None):
     from .services import save_mark
 
-    if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.TEACHER):
+    if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.TEACHER):
         raise PermissionDenied
     lock_school()
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)
@@ -155,11 +167,11 @@ def save_sheet(assessment, assignment, row_forms, control, actor, exam_set=None)
             continue
         data = row.cleaned_data.copy()
         data["level"] = data["level"].pk if data.get("level") else ""
-        previous_value = (current.score, current.level_id, current.is_absent) if current else None
+        previous_value = (current.score, current.level_id, current.is_absent, current.observation) if current else None
         form = MarkForm(data, instance=current, assessment=assessment, enrollment=row.enrollment, subject=assignment.subject, assignment=assignment, exam_set=exam_set)
         if not form.is_valid():
             raise ValidationError([f"{row.enrollment.student.full_name}: {error}" for errors in form.errors.values() for error in errors])
-        if previous_value == (form.cleaned_data.get("score"), form.cleaned_data.get("level").pk if form.cleaned_data.get("level") else None, form.cleaned_data["is_absent"]):
+        if previous_value == (form.cleaned_data.get("score"), form.cleaned_data.get("level").pk if form.cleaned_data.get("level") else None, form.cleaned_data["is_absent"], form.cleaned_data.get("observation", "")):
             continue
         save_mark(form, actor)
     submission = submission or MarkSubmission(assessment=assessment, exam_set=exam_set, assignment=assignment)
@@ -177,7 +189,7 @@ def save_sheet(assessment, assignment, row_forms, control, actor, exam_set=None)
 
 @transaction.atomic
 def review_sheet(assessment, assignment, form, actor, exam_set=None):
-    if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if not has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         raise PermissionDenied
     lock_school()
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)

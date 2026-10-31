@@ -4,13 +4,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
-from apps.accounts.permissions import can_manage_school
+from apps.accounts.permissions import can_manage_school, can_manage_academic_structure
 
 from .models import School
 
 
 def require_manager(actor):
-    if not can_manage_school(actor):
+    if not can_manage_academic_structure(actor):
         raise PermissionDenied
 
 
@@ -40,6 +40,8 @@ def write_record(record, actor, message, update_fields=None):
 def save_configuration(form, actor):
     require_manager(actor)
     record = form.save(commit=False)
+    if isinstance(record, School) and not can_manage_school(actor):
+        raise PermissionDenied
     if isinstance(record, School) and record._state.adding:
         # The fixed primary key rejects concurrent first-time setup.
         return write_record(record, actor, "Created school profile.")

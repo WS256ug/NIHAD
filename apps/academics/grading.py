@@ -49,6 +49,10 @@ def calculate_results(scheme, marks, maximum):
                 raise ValidationError('Every numeric subject needs a score.')
             percentage, rule = grade_score(mark.score, maximum, rules)
             row.update(score=str(mark.score), percentage=str(rounded(percentage)), grade=rule.label, points=rule.points)
+        if scheme.mode == "descriptive" and mark.assessment.nursery_progress:
+            if not mark.is_absent and not mark.observation.strip():
+                raise ValidationError("Complete each learner's teacher observations before generating reports.")
+            row.update(observation=mark.observation, illustration=mark.subject.illustration)
         subjects.append(row)
     result = {'mode': scheme.mode, 'scheme': scheme.name, 'subjects': subjects, 'total': None, 'average': None, 'aggregate': None, 'division': None, 'aggregate_subjects': []}
     if scheme.mode == 'descriptive':

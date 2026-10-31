@@ -11,11 +11,11 @@ from .models import DivisionRule, GradeRule, GradingScheme
 
 def current_scheme(section):
     # Newest configuration is authoritative, including incomplete setup.
-    return GradingScheme.objects.filter(section=section).order_by("-pk").first()
+    return GradingScheme.objects.filter(section=section, nursery_only=False).order_by("-pk").first()
 
 
 def current_rules(queryset):
-    latest = GradingScheme.objects.filter(section_id=OuterRef("scheme__section_id")).order_by("-pk")
+    latest = GradingScheme.objects.filter(section_id=OuterRef("scheme__section_id"), nursery_only=False).order_by("-pk")
     return queryset.filter(scheme_id=Subquery(latest.values("pk")[:1]))
 
 

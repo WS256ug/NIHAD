@@ -29,12 +29,12 @@ def selected_exam_set(request, assessment):
 
 def available_subjects(assessment, actor):
     subjects = Subject.objects.filter(section_id=assessment.academic_class.section_id, report_group=assessment.report_group)
-    if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER) or assessment_assignments(assessment, actor, ClassTeacherAssignment).exists():
+    if has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER) or assessment_assignments(assessment, actor, ClassTeacherAssignment).exists():
         return subjects
     return subjects.filter(pk__in=assessment_assignments(assessment, actor).values("subject_id"))
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def roster(request, pk):
@@ -50,8 +50,8 @@ def roster(request, pk):
     enrollments = list(sheet_enrollments(assessment, assignment)) if assignment else []
     marks = {mark.enrollment_id: mark for mark in Mark.objects.filter(assessment=assessment, exam_set=exam_set, subject=assignment.subject, enrollment__in=enrollments).select_related("level")} if assignment else {}
     submission = assessment.mark_submissions.filter(assignment=assignment, exam_set=exam_set).first() if assignment else None
-    reviewer = has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
-    editable = bool(assignment and assessment.status == "open" and has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.TEACHER) and (not assessment.requires_mark_review or not submission or submission.status in ("draft", "returned")))
+    reviewer = has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER)
+    editable = bool(assignment and assessment.status == "open" and has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.TEACHER) and (not assessment.requires_mark_review or not submission or submission.status in ("draft", "returned")))
     reviewing = request.method == "POST" and "review-action" in request.POST
     if request.method == "POST" and (not assignment or (reviewing and (not reviewer or not assessment.requires_mark_review)) or (not reviewing and not editable)):
         raise PermissionDenied
@@ -105,23 +105,23 @@ def roster(request, pk):
         "can_edit": editable, "can_review": assessment.requires_mark_review and reviewer and assessment.status == "open" and submission and submission.status in ("submitted", "approved"),
         "can_manage_academics": can_manage_academics(request.user),
         "unassigned_subjects": Subject.objects.filter(section_id=assessment.academic_class.section_id, report_group=assessment.report_group).exclude(pk__in=all_sheet_assignments(assessment).values("subject_id")) if reviewer else Subject.objects.none(),
-        "completed": len(marks), "total": len(enrollments),
+        "completed": sum(1 for mark in marks.values() if not assessment.nursery_progress or mark.is_absent or mark.observation.strip()), "total": len(enrollments),
         "sheet_unsaved": request.method == "POST" and not reviewing,
         "descriptive": assessment.grading_scheme_id and assessment.grading_scheme.mode == "descriptive",
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def entry(request):
     records = visible_assessments(request.user).filter(status="open")
-    if has_role(request.user, User.Role.TEACHER) and not has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(request.user, User.Role.TEACHER) and not has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         records = [assessment for assessment in records if sheet_assignments(assessment, request.user).exists()]
     return render(request, "academics/marks_entry.html", {"assessments": records})
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.TEACHER)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def mark_form(request, pk, subject_pk, enrollment_pk):
@@ -141,7 +141,7 @@ def mark_form(request, pk, subject_pk, enrollment_pk):
     return form_page(request, form, f"{enrollment.student.full_name} / {subject.name}", reverse("academics:marks", args=[pk]) + f"?subject={subject.pk}" + (f"&exam_set={exam_set.pk}" if exam_set else ""), explanation=f"{assessment}. Maximum score: {assessment.maximum_score}.")
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def assessment_status(request, pk, status):

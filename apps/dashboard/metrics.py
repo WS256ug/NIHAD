@@ -31,7 +31,7 @@ def dashboard_metrics(user, role):
     cards = result['metrics']
     def card(label, value, url, description='Current records', progress=None):
         cards.append({'label': label, 'value': value, 'url': url, 'description': description, 'progress': progress})
-    if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         card('Students', Student.objects.filter(school_id=1).count(), reverse('students:list'))
         card('Active classes', AcademicClass.objects.filter(section__school_id=1, is_active=True).count(), reverse('academics:overview'))
         card('Active teachers', Teacher.objects.filter(school_id=1, employment_status='active', user__is_active=True).count(), reverse('academics:record_list', args=['teachers']))
@@ -98,7 +98,9 @@ def dashboard_metrics(user, role):
         actions.append({'label': 'Create assessment', 'url': reverse('academics:record_create', args=['assessments']), 'dialog': True})
     if role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.BURSAR):
         actions.append({'label': 'Record payment', 'url': reverse('finance:overview') + '?outstanding=1'})
-    if role == User.Role.HEADTEACHER:
+    if role == User.Role.DOS:
+        actions.append({"label": "Create assessment", "url": reverse("academics:record_create", args=["assessments"]), "dialog": True})
+    if role in (User.Role.HEADTEACHER, User.Role.DOS):
         actions.append({'label': 'Review reports', 'url': reverse('reports:list') + '?status=review'})
     if role == User.Role.TEACHER:
         actions.append({'label': 'Enter marks', 'url': reverse('academics:marks_entry')})

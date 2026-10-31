@@ -334,7 +334,7 @@ class StudentViewTests(StudentTestCase):
         for role, user in self.users.items():
             self.client.force_login(user)
             manager = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN)
-            reader = manager or role == User.Role.HEADTEACHER
+            reader = manager or role in (User.Role.HEADTEACHER, User.Role.DOS)
             for name, args in reading + managing:
                 allowed = reader if (name, args) in reading else manager
                 url = reverse(f"students:{name}", args=args)
@@ -515,7 +515,7 @@ class StudentPhotoTests(StudentTestCase):
         for role, user in self.users.items():
             self.client.force_login(user)
             response = self.client.get(reverse("students:photo", args=[student.pk]))
-            if role in (User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, User.Role.HEADTEACHER):
+            if role in (User.Role.SCHOOL_ADMIN, User.Role.SUPER_ADMIN, User.Role.HEADTEACHER, User.Role.DOS):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response["Content-Type"], "image/jpeg")
                 self.assertIn("no-store", response["Cache-Control"])

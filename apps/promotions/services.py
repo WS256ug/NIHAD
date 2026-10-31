@@ -9,7 +9,7 @@ from .models import PromotionBatch, PromotionDecision, higher_classes
 
 
 def can_manage_promotions(actor):
-    return has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+    return has_role(actor, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER)
 
 
 def require_manager(actor):

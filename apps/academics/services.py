@@ -34,8 +34,8 @@ def save_academic(form, actor):
     if isinstance(record, Assessment):
         from .section_grades import current_scheme
         previous = Assessment.objects.get(pk=record.pk) if record.pk else None
-        scheme = previous.grading_scheme if previous and previous.grading_scheme_id else current_scheme(record.academic_class.section)
-        record.grading_scheme = previous.grading_scheme if previous and previous.grading_scheme_id else (scheme if scheme and scheme.is_active else None)
+        scheme = (record.grading_scheme if record.nursery_progress else None) or current_scheme(record.academic_class.section)
+        record.grading_scheme = (scheme if scheme and scheme.is_active else None) if record.nursery_progress else (previous.grading_scheme if previous and previous.grading_scheme_id else (scheme if scheme and scheme.is_active else None))
         if previous and previous.marks.exists() and record.grading_scheme and record.grading_scheme.mode == "descriptive" and previous.marks.filter(level__isnull=True).exists():
             raise ValidationError("Existing numeric marks cannot use descriptive learning levels.")
     if isinstance(record, GradingScheme) and (record.in_use() or record.is_active):
@@ -71,7 +71,7 @@ def set_assessment_status(assessment, status, actor):
         raise ValidationError("This assessment status transition is not available.")
     if status == "open" and record.reports.filter(is_current=True).exists():
         raise ValidationError("Use the report correction workflow to reopen an assessment with generated reports.")
-    if status == "closed" and (record.requires_mark_review or record.two_exam_sets):
+    if status == "closed" and (record.requires_mark_review or record.two_exam_sets or record.nursery_progress):
         from .mark_sheets import require_approved_sheets
         require_approved_sheets(record)
     record.status = status
@@ -103,5 +103,6 @@ def save_mark(form, actor):
     record.score = proposed.score
     record.level = proposed.level
     record.is_absent = proposed.is_absent
+    record.observation = proposed.observation.strip()
     record.revision = expected + 1
     return write_record(record, actor, "Saved assessment mark.")

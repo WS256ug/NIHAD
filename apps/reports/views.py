@@ -19,7 +19,7 @@ from .models import StudentReport
 from .pdf import report_pdf
 from .permissions import can_comment, visible_reports
 
-READ_ROLES = (User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+READ_ROLES = (User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 REPORT_READ_ROLES = (*READ_ROLES, User.Role.GUARDIAN, User.Role.STUDENT)
 
 
@@ -75,18 +75,18 @@ def detail(request, pk, output='html'):
         response['Content-Disposition'] = f'attachment; filename="report-{report.enrollment.student.student_id}-v{report.version}.pdf"'
         return response
     from .presentation import report_summary
-    return render(request, 'reports/midterm.html' if report.screen_only else 'reports/endterm.html', {
+    return render(request, 'reports/midterm.html' if report.screen_only and not report.snapshot.get('nursery_progress') else 'reports/endterm.html', {
         'summary_items': report_summary(report.snapshot),
         'report': report, 'data': report.snapshot, 'screen_only': report.screen_only, 'print_view': output == 'print',
         'can_comment': can_comment(request.user, report),
-        'can_review': has_role(request.user, User.Role.HEADTEACHER) and report.is_current and report.status == 'review',
-        'can_publish': has_role(request.user, User.Role.SCHOOL_ADMIN) and report.is_current and report.status == 'approved',
+        'can_review': has_role(request.user, User.Role.HEADTEACHER, User.Role.DOS) and report.is_current and report.status == 'review',
+        'can_publish': has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.DOS) and report.is_current and report.status == 'approved',
         'versions': visible_reports(request.user).filter(assessment=report.assessment, enrollment=report.enrollment),
         'portal_view': portal,
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def assessment_action(request, pk, action):
@@ -111,11 +111,11 @@ def report_action(request, pk, action):
             raise PermissionDenied
         form_type, title = TeacherCommentForm, 'Class-teacher comment'
     elif action == 'review':
-        if not has_role(request.user, User.Role.HEADTEACHER):
+        if not has_role(request.user, User.Role.HEADTEACHER, User.Role.DOS):
             raise PermissionDenied
         form_type, title = ReviewForm, 'Headteacher review'
     else:
-        if not has_role(request.user, User.Role.SCHOOL_ADMIN):
+        if not has_role(request.user, User.Role.SCHOOL_ADMIN, User.Role.DOS):
             raise PermissionDenied
         form_type, title = ConfigurationStatusForm, 'Publish approved report'
     form_kwargs = {}
@@ -138,6 +138,9 @@ def report_action(request, pk, action):
             )
         form_kwargs['suggested_comment'] = report.headteacher_comment or (suggestion['comment'] if suggestion else '')
     form = form_type(request.POST if request.method == 'POST' else None, **form_kwargs)
+    if action == 'review' and report.snapshot.get('nursery_progress'):
+        form.fields['decision'].choices = [('approve', 'Approve report')]
+        form.fields['decision'].help_text = 'For observation corrections, ask a School Admin to reopen this exam using report correction.'
     if request.method == 'POST' and form.is_valid():
         if action == 'comment':
             operation = lambda: services.teacher_comment(report, form.cleaned_data['comment'], request.user)

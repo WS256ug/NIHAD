@@ -9,6 +9,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         SUPER_ADMIN = "super_admin", "Super Admin"
         SCHOOL_ADMIN = "school_admin", "School Admin"
+        DOS = "dos", "Director of Studies (DOS)"
         HEADTEACHER = "headteacher", "Headteacher"
         TEACHER = "teacher", "Teacher"
         BURSAR = "bursar", "Bursar / Finance"
@@ -46,7 +47,7 @@ class User(AbstractUser):
             ),
             models.CheckConstraint(
                 condition=models.Q(role__in=[
-                    "super_admin", "school_admin", "headteacher", "teacher", "bursar", "guardian", "student",
+                    "super_admin", "school_admin", "dos", "headteacher", "teacher", "bursar", "guardian", "student",
                 ]),
                 name="accounts_user_valid_role",
             ),

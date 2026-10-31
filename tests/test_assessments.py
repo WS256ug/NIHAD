@@ -112,7 +112,7 @@ class AssessmentTests(AssessmentTestCase):
     def test_role_matrix_and_csrf_on_marks(self):
         for role, user in self.users.items():
             self.client.force_login(user)
-            can_write = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.TEACHER)
+            can_write = role in (User.Role.SUPER_ADMIN, User.Role.DOS, User.Role.SCHOOL_ADMIN, User.Role.TEACHER)
             self.assertEqual(self.client.get(self.mark_url()).status_code, 200 if can_write else 403)
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.teacher.user)

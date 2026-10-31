@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from .models import User
 
-STANDARD_ROLES = (User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, User.Role.GUARDIAN)
+STANDARD_ROLES = (User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER, User.Role.BURSAR, User.Role.GUARDIAN)
 
 
 def effective_role(user):
@@ -57,6 +57,10 @@ def can_manage_accounts(user):
 
 def can_manage_school(user):
     return has_role(user, User.Role.SCHOOL_ADMIN)
+
+
+def can_manage_academic_structure(user):
+    return has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS)
 
 
 def assignable_roles(user):

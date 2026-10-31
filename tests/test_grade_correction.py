@@ -65,3 +65,64 @@ class GradeCorrectionTests(GradingTestCase):
         self.assertEqual(GradingScheme.objects.count(), count)
         self.assessment.refresh_from_db()
         self.assertEqual(self.assessment.grading_scheme_id, self.scheme.pk)
+
+class MissingGradeSchemeTests(GradingTestCase):
+    def setUp(self):
+        super().setUp()
+        from apps.schools.models import Section
+        from apps.academics.models import GradeRule, DivisionRule
+        section = Section.objects.create(school=self.school, name='Source section')
+        self.source = GradingScheme.objects.create(section=section, name='Source primary bands', aggregate_mode='all', is_active=True)
+        for rule in self.scheme.rules.all():
+            GradeRule.objects.create(scheme=self.source, label=rule.label, minimum=rule.minimum, maximum=rule.maximum, points=rule.points, sort_order=rule.sort_order)
+        DivisionRule.objects.create(scheme=self.source, label='I', minimum=1, maximum=4)
+        self.saved_mark = self.mark('98')
+        self.assessment.grading_scheme = None
+        self.assessment.save()
+
+    def run_copy(self, **kwargs):
+        call_command('correct_assessment_grades', assessment=self.assessment.pk,
+                     expected_scheme=0, source_scheme=self.source.pk, actor=self.actor.username,
+                     stdout=StringIO(), **kwargs)
+
+    def test_copy_into_target_section_preserves_marks_and_preview_rolls_back(self):
+        before = GradingScheme.objects.count()
+        self.run_copy()
+        self.assertEqual(GradingScheme.objects.count(), before)
+        self.assessment.refresh_from_db()
+        self.assertIsNone(self.assessment.grading_scheme_id)
+        self.run_copy(apply=True)
+        self.assessment.refresh_from_db()
+        self.saved_mark.refresh_from_db()
+        self.assertEqual(str(self.saved_mark.score), '98.00')
+        target = self.assessment.grading_scheme
+        self.assertEqual(target.section_id, self.assessment.academic_class.section_id)
+        self.assertNotEqual(target.pk, self.source.pk)
+        fields = ('label', 'minimum', 'maximum', 'points')
+        self.assertEqual(list(target.rules.order_by('minimum').values(*fields)), list(self.source.rules.order_by('minimum').values(*fields)))
+        self.assertEqual(target.divisions.count(), 1)
+        from decimal import Decimal
+        self.assertEqual(grade_score(Decimal('98'), Decimal('100'), target.rules.all())[1].label, 'Excellent')
+        with self.assertRaises(CommandError):
+            self.run_copy(apply=True)
+
+    def test_invalid_or_inactive_source_rejected_without_linking(self):
+        self.source.is_active = False
+        self.source.save()
+        with self.assertRaises(CommandError):
+            self.run_copy(apply=True)
+        self.assessment.refresh_from_db()
+        self.assertIsNone(self.assessment.grading_scheme_id)
+
+    def test_cross_section_required_subjects_are_not_silently_reassigned(self):
+        from apps.academics.models import Subject
+        subject = Subject.objects.create(section=self.source.section, code='REQ', name='Required')
+        self.source.required_subjects.add(subject)
+        with self.assertRaisesMessage(CommandError, 'required subjects'):
+            self.run_copy(apply=True)
+
+    def test_existing_reports_prevent_missing_scheme_repair(self):
+        from apps.reports.models import StudentReport
+        StudentReport.objects.create(assessment=self.assessment, enrollment=self.enrollment)
+        with self.assertRaises(CommandError):
+            self.run_copy(apply=True)

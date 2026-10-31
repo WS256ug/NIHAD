@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="login-layout">
+  {% include 'includes/login_logo.html' %}
+  <section id="sign-in-panel" class="sign-in-panel" aria-labelledby="sign-in-title">
+    <span class="eyebrow">Welcome back</span>
+    <h2 id="sign-in-title">Staff sign-in</h2>
+    <p class="muted">Use the account provided by your school administrator. <a href="{% url 'students:portal_login' %}">Student / guardian portal</a></p>
+    <form method="post" action="{% url 'accounts:login' %}"
+          hx-post="{% url 'accounts:login' %}" hx-select="#sign-in-panel"
+          hx-target="#sign-in-panel" hx-swap="outerHTML"
+          hx-disabled-elt="find button[type='submit']" hx-indicator="#sign-in-progress">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% if form.non_field_errors %}
+        <div role="alert" class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div class="form-field">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="sign-in-button">
+        Sign in <span aria-hidden="true">→</span>
+      </button>
+      <span id="sign-in-progress" class="htmx-indicator" role="status">Signing you in…</span>
+    </form>
+    <p class="sign-in-help"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a><br>For account access, contact your school administrator.</p>
+  </section>
+</div>
+{% endblock %}

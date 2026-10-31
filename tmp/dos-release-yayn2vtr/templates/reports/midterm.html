@@ -1,0 +1,38 @@
+{% extends 'reports/detail.html' %}
+{% block report_body %}
+{% if data %}
+<article class="midterm-report" aria-label="{{ data.assessment }} results">
+  <section class="workspace-card midterm-header">
+    <div><span class="eyebrow">{{ data.school }}</span><h2>{{ data.student }}</h2><p class="muted">{{ data.assessment }} &middot; {{ data.year }} &middot; {{ data.term }}</p></div>
+    <span class="role-badge">Online report</span>
+    <dl class="midterm-student">
+      <div><dt>Registration number</dt><dd>{{ data.registration_number }}</dd></div>
+      <div><dt>Class</dt><dd>{{ data.class }}{% if data.stream %} &middot; {{ data.stream }}{% endif %}</dd></div>
+      <div><dt>Assessment date</dt><dd>{{ data.date }}</dd></div>
+    </dl>
+  </section>
+  {% if data.mode == 'numeric' and data.average != None %}
+  <section class="midterm-summary" aria-label="Result summary">
+    <div class="workspace-card"><span>Total marks</span><strong>{{ data.total|report_number }}</strong></div>
+    <div class="workspace-card"><span>Average</span><strong>{{ data.average|report_number }}%</strong></div>
+    {% if data.aggregate != None %}<div class="workspace-card"><span>Aggregate</span><strong>{{ data.aggregate }}</strong></div><div class="workspace-card"><span>Division</span><strong>{{ data.division }}</strong></div>{% endif %}
+    {% if data.position != None %}<div class="workspace-card"><span>Position</span><strong>{{ data.position }} / {{ data.cohort_size }}</strong></div>{% endif %}
+  </section>
+  {% endif %}
+  <section class="workspace-card midterm-results">
+    <h2>Subject results</h2>
+    {% if data.has_absences %}<p role="status">Absence is recorded below. Overall results and position are not calculated for an incomplete assessment.</p>{% endif %}
+    <div class="table-scroll"><table>
+      <caption>{{ data.assessment }} subject results{% if data.mode == 'numeric' %} &middot; Marks out of {{ data.maximum_score|report_number }}{% endif %}</caption>
+      <thead><tr><th scope="col">Subject / learning area</th>{% if data.mode == 'numeric' %}<th scope="col">Mark</th>{% endif %}<th scope="col">Grade / level</th>{% if data.aggregate != None %}<th scope="col">Points</th>{% endif %}</tr></thead>
+      <tbody>{% for row in data.subjects %}<tr><th scope="row">{{ row.subject }}</th>{% if data.mode == 'numeric' %}<td>{% if row.absent %}Absent{% else %}{{ row.score|report_number }}{% endif %}</td>{% endif %}<td><span class="midterm-grade">{{ row.grade }}</span></td>{% if data.aggregate != None %}<td>{% if row.points != None %}{{ row.points }}{% else %}&mdash;{% endif %}</td>{% endif %}</tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <section class="midterm-comments" aria-label="Teacher feedback">
+    <div class="workspace-card"><h2>Class-teacher comment</h2><div>{{ report.teacher_comment|default:'Pending'|linebreaksbr }}</div></div>
+    <div class="workspace-card"><h2>Headteacher comment</h2><div>{{ report.headteacher_comment|default:'Pending'|linebreaksbr }}</div></div>
+  </section>
+  {% if report.published_at %}<p class="muted">Published {{ report.published_at }}</p>{% endif %}
+</article>
+{% else %}<section class="workspace-card"><p>This revision awaits completed marks and report generation.</p></section>{% endif %}
+{% endblock %}

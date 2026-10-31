@@ -12,7 +12,7 @@ from .forms import BatchForm, ConfirmBatchForm, DecisionForms, RevisionForm
 from .models import PromotionBatch
 from .services import confirm_batch, create_batch, eligible_enrollments, save_decisions
 
-ROLES = (User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER)
+ROLES = (User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER)
 
 
 def batches():

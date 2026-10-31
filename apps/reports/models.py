@@ -52,7 +52,7 @@ class StudentReport(AuditedModel):
                 preserve_fields(self, ('snapshot', 'teacher_comment', 'headteacher_comment', 'status', 'published_at'))
             elif previous.status == self.Status.APPROVED:
                 preserve_fields(self, ('snapshot', 'teacher_comment', 'headteacher_comment'))
-        if self.status != self.Status.DRAFT and (not self.snapshot or not self.teacher_comment.strip()):
+        if self.status != self.Status.DRAFT and (not self.snapshot or (not self.snapshot.get('nursery_progress') and not self.teacher_comment.strip())):
             raise ValidationError('Complete results and a class-teacher comment are required.')
         if self.status in (self.Status.APPROVED, self.Status.PUBLISHED) and not self.headteacher_comment.strip():
             raise ValidationError('Approval requires a headteacher comment.')

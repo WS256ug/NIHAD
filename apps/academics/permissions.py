@@ -7,11 +7,11 @@ from .participation import eligible_enrollments
 
 
 def can_manage_academics(user):
-    return has_role(user, User.Role.SCHOOL_ADMIN)
+    return has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS)
 
 
 def can_view_academics(user):
-    return has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+    return has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 
 
 def teacher_assignments(user, model=TeachingAssignment):
@@ -34,7 +34,7 @@ def enrollment_scope(assignment):
 
 def visible_enrollments(user):
     records = Enrollment.objects.filter(student__school_id=1)
-    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         return records
     if not has_role(user, User.Role.TEACHER):
         return records.none()
@@ -53,7 +53,7 @@ def assessment_assignments(assessment, user, model=TeachingAssignment, subject=N
         records = records.filter(report_group=assessment.report_group)
     if assessment.stream_id:
         records = records.filter(Q(stream__isnull=True) | Q(stream_id=assessment.stream_id))
-    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         records = records.filter(teacher__user=user)
     if subject and model == TeachingAssignment:
         records = records.filter(subject=subject)
@@ -62,7 +62,7 @@ def assessment_assignments(assessment, user, model=TeachingAssignment, subject=N
 
 def visible_assessments(user):
     records = Assessment.objects.filter(term__academic_year__school_id=1).select_related("term__academic_year", "academic_class__section", "assessment_type", "stream")
-    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         return records
     if not has_role(user, User.Role.TEACHER):
         return records.none()
@@ -83,7 +83,7 @@ def assessment_enrollments(assessment, user, subject=None):
     records = eligible_enrollments(assessment)
     if assessment.stream_id:
         records = records.filter(stream_id=assessment.stream_id)
-    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         scope = Q(pk__in=[])
         for model in (TeachingAssignment, ClassTeacherAssignment):
             for assignment in assessment_assignments(assessment, user, model, subject):
@@ -95,6 +95,6 @@ def assessment_enrollments(assessment, user, subject=None):
 def mark_assignment(assessment, enrollment, subject, user):
     if not eligible_enrollments(assessment).filter(pk=enrollment.pk).exists():
         return None
-    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.TEACHER):
+    if not has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.TEACHER):
         return None
     return assessment_assignments(assessment, user, subject=subject).filter(Q(stream__isnull=True) | Q(stream_id=enrollment.stream_id)).first()

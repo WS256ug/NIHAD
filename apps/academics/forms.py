@@ -25,7 +25,7 @@ class TeacherForm(forms.ModelForm):
 class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
-        fields = ("section", "code", "name", "report_group")
+        fields = ("section", "code", "name", "report_group", "illustration")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
@@ -98,12 +98,18 @@ class AssessmentTypeForm(forms.ModelForm):
 
 
 class AssessmentForm(forms.ModelForm):
+    nursery_scheme = forms.ModelChoiceField(queryset=GradingScheme.objects.none(), required=False, label="Nursery progress levels", help_text="Choose a descriptive grading scheme when enabling nursery progress reports. Other exams keep their section grades.")
     class Meta:
         model = Assessment
-        fields = ("assessment_type", "report_group", "term", "academic_class", "stream", "date", "maximum_score", "requires_mark_review", "two_exam_sets", "set_one_weight")
+        fields = ("assessment_type", "report_group", "term", "academic_class", "stream", "date", "maximum_score", "nursery_progress", "requires_mark_review", "two_exam_sets", "set_one_weight")
 
     def __init__(self, *args, school, actor, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["nursery_scheme"].queryset = GradingScheme.objects.filter(section__school=school, is_active=True, mode="descriptive")
+        self.initial["nursery_scheme"] = self.instance.grading_scheme_id if self.instance.nursery_progress else None
+        if self.instance.pk and (self.instance.marks.exists() or self.instance.reports.exists()):
+            self.fields["nursery_scheme"].disabled = True
+            self.fields["nursery_progress"].disabled = True
         self.fields["set_one_weight"].required = False
         self.fields["report_group"].required = False
         if self.instance.pk:
@@ -130,8 +136,8 @@ class AssessmentForm(forms.ModelForm):
         if data.get("set_one_weight") is None:
             data["set_one_weight"] = self.instance.set_one_weight
         academic_class = data.get("academic_class")
-        if academic_class and not self.instance.grading_scheme_id:
-            scheme = current_scheme(academic_class.section)
+        if academic_class:
+            scheme = (data.get("nursery_scheme") if data.get("nursery_progress") else None) or self.instance.grading_scheme or current_scheme(academic_class.section)
             self.instance.grading_scheme = scheme if scheme and scheme.is_active else None
         return data
 
@@ -141,10 +147,14 @@ class MarkForm(forms.ModelForm):
 
     class Meta:
         model = Mark
-        fields = ("score", "level", "is_absent")
+        fields = ("score", "level", "is_absent", "observation")
 
     def __init__(self, *args, assessment, enrollment, subject, assignment, exam_set=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if not assessment.nursery_progress:
+            self.fields.pop("observation")
+        else:
+            self.fields["observation"].widget = forms.Textarea(attrs={"rows": 2})
         self.instance.exam_set = exam_set
         self.instance.assessment = assessment
         self.instance.enrollment = enrollment

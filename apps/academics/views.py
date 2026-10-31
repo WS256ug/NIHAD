@@ -28,7 +28,7 @@ def scoped_records(spec, user):
     records = spec.model.objects.filter(**{spec.scope + "_id": 1}).select_related(*spec.related)
     if spec.model._meta.model_name in ("graderule", "divisionrule"):
         records = current_rules(records)
-    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER):
+    if has_role(user, User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER):
         return records
     if spec.model._meta.model_name == "assessment":
         return visible_assessments(user)
@@ -43,14 +43,14 @@ def scoped_records(spec, user):
     return records.filter(teacher__user=user, is_active=True)
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def overview(request):
     return render(request, "academics/overview.html", {"resources": RESOURCES, "can_manage_academics": can_manage_academics(request.user)})
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def record_list(request, kind):
@@ -71,7 +71,7 @@ def record_list(request, kind):
     return render(request, "academics/grades.html" if grades else "academics/record_list.html", {"spec": spec, "kind": kind, "query": query, "selected_status": status, "page_obj": Paginator(records, 20).get_page(request.GET.get("page")), "can_manage_academics": can_manage_academics(request.user)})
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def record_form(request, kind, pk=None):
@@ -100,7 +100,7 @@ def record_form(request, kind, pk=None):
     return form_page(request, form, f"{'Edit' if pk else 'Create'} {spec.singular}", reverse("academics:record_list", args=[kind]), explanation=explanation if kind != "subjects" else None)
 
 
-@role_required(User.Role.SCHOOL_ADMIN)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS)
 @never_cache
 @require_http_methods(["GET", "POST"])
 def record_status(request, kind, pk, active):

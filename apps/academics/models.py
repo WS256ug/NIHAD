@@ -57,6 +57,12 @@ class ReportGroup(models.TextChoices):
 
 
 class Subject(AuditedModel):
+    illustration = models.CharField(max_length=12, blank=True, choices=[
+        ("social", "Sharing and play"), ("environment", "Home and environment"),
+        ("hygiene", "Hand washing"), ("numbers", "Counting blocks"),
+        ("language", "Reading"), ("oral", "Conversation"),
+        ("writing", "Drawing"), ("physical", "Ball games"),
+    ], help_text="Optional nursery report illustration.")
     report_group = models.CharField(max_length=10, choices=ReportGroup.choices, default=ReportGroup.MAIN)
     section = models.ForeignKey("schools.Section", on_delete=models.PROTECT, related_name="subjects")
     code = models.CharField(max_length=20)
@@ -205,6 +211,7 @@ class AssessmentType(AuditedModel):
 
 
 class Assessment(AuditedModel):
+    nursery_progress = models.BooleanField(default=False, verbose_name="Nursery progress report", help_text="Use progress levels and teacher observations entered through the exam. Select a descriptive grading scheme.")
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         OPEN = "open", "Open for marks"
@@ -245,12 +252,16 @@ class Assessment(AuditedModel):
         super().clean()
         if self._state.adding and self.assessment_type_id and self.assessment_type.two_exam_sets and not (self.grading_scheme_id and self.grading_scheme.mode == "descriptive"):
             self.two_exam_sets = True
+        if self.nursery_progress and (not self.grading_scheme_id or self.grading_scheme.mode != "descriptive"):
+            raise ValidationError("Nursery progress reports require a descriptive grading scheme.")
         if self.set_one_weight is not None and not Decimal("0") < self.set_one_weight < Decimal("100"):
             raise ValidationError({"set_one_weight": "Enter a percentage greater than 0 and less than 100."})
         if self.two_exam_sets and self.grading_scheme_id and self.grading_scheme.mode != "numeric":
             raise ValidationError("Two exam sets require numeric grading. Keep descriptive assessments separate.")
         if self.pk and not self._state.adding and (self.marks.exists() or self.reports.exists() or self.mark_submissions.exists()):
             previous = Assessment.objects.get(pk=self.pk)
+            if self.nursery_progress != previous.nursery_progress:
+                raise ValidationError("Report format cannot change after results or submissions exist.")
             if (self.two_exam_sets, self.set_one_weight) != (previous.two_exam_sets, previous.set_one_weight):
                 raise ValidationError("Exam sets and weights cannot change after marks or reports exist.")
         preserve_fields(self, ("assessment_type_id", "term_id", "academic_class_id", "stream_id", "report_group"))
@@ -311,6 +322,7 @@ def validate_exam_set(record):
 
 
 class Mark(AuditedModel):
+    observation = models.TextField(blank=True, max_length=2000)
     exam_set = models.ForeignKey(ExamSet, on_delete=models.PROTECT, null=True, blank=True, related_name="marks")
     assessment = models.ForeignKey(Assessment, on_delete=models.PROTECT, related_name="marks")
     enrollment = models.ForeignKey("students.Enrollment", on_delete=models.PROTECT, related_name="marks")
@@ -410,6 +422,7 @@ class MarkSubmission(AuditedModel):
 
 
 class GradingScheme(AuditedModel):
+    nursery_only = models.BooleanField(default=False, help_text="Available for nursery progress exams without replacing default section grades.")
     class Mode(models.TextChoices):
         NUMERIC = "numeric", "Numeric grades"
         DESCRIPTIVE = "descriptive", "Descriptive learning levels"
@@ -442,7 +455,9 @@ class GradingScheme(AuditedModel):
         super().clean()
         preserve_fields(self, ("section_id",))
         if self.in_use():
-            preserve_fields(self, ("name", "mode", "aggregate_mode", "best_n", "is_active"))
+            preserve_fields(self, ("name", "mode", "aggregate_mode", "best_n", "is_active", "nursery_only"))
+        if self.nursery_only and self.mode != self.Mode.DESCRIPTIVE:
+            raise ValidationError("Nursery-only schemes require descriptive levels.")
         if self.mode == self.Mode.DESCRIPTIVE and self.aggregate_mode != self.Aggregate.NONE:
             raise ValidationError("Descriptive learning levels do not use numeric aggregates.")
         if self.aggregate_mode == self.Aggregate.BEST and not self.best_n:

@@ -27,7 +27,7 @@ def generate_reports(assessment, actor):
     assessment = Assessment.objects.select_for_update().get(pk=assessment.pk)
     if assessment.status != 'closed':
         raise ValidationError('Close marks entry before generating reports.')
-    if assessment.requires_mark_review or assessment.two_exam_sets:
+    if assessment.requires_mark_review or assessment.two_exam_sets or assessment.nursery_progress:
         from apps.academics.mark_sheets import require_approved_sheets
         require_approved_sheets(assessment)
     if not assessment.grading_scheme_id:
@@ -62,6 +62,7 @@ def generate_reports(assessment, actor):
     for enrollment in enrollments:
         result = results[enrollment.pk]
         snapshot = {
+            'nursery_progress': assessment.nursery_progress,
             'schema_version': 1, 'school': school.name, 'motto': school.motto,
             'school_address': school.address, 'school_phone': school.phone,
             'gender': enrollment.student.get_gender_display(), 'date_of_birth': enrollment.student.date_of_birth.isoformat(),
@@ -90,6 +91,10 @@ def generate_reports(assessment, actor):
         if suggestion:
             report.snapshot['teacher_comment_suggestion'] = suggestion.copy()
             report.snapshot['headteacher_comment_suggestion'] = suggestion
+        if assessment.nursery_progress:
+            report.teacher_comment = ''
+            report.status = 'review'
+            report.snapshot.pop('teacher_comment_suggestion', None)
         reports.append(write_record(report, actor, 'Generated report snapshot from completed marks.'))
     return reports
 
@@ -124,7 +129,7 @@ def teacher_comment(report, comment, actor):
 
 @transaction.atomic
 def review_report(report, comment, approve, actor):
-    if not has_role(actor, User.Role.HEADTEACHER):
+    if not has_role(actor, User.Role.HEADTEACHER, User.Role.DOS):
         raise PermissionDenied
     school = lock_school()
     report = current_report(report)
@@ -140,6 +145,8 @@ def review_report(report, comment, approve, actor):
     report.snapshot = {**report.snapshot, 'headteacher_name': actor.get_full_name() or actor.username, 'headteacher_comment_date': timezone.localdate().isoformat()}
     report.headteacher_comment = comment.strip()
     report.status = 'approved' if approve else 'draft'
+    if not approve and report.snapshot.get('nursery_progress'):
+        raise ValidationError('Use the assessment correction workflow to return nursery observations for correction.')
     return write_record(report, actor, 'Approved report.' if approve else 'Returned report for correction.')
 
 

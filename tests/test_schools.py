@@ -281,11 +281,12 @@ class ConfigurationViewTests(SchoolTestCase):
             urls += [reverse(f"schools:{action}", args=[kind, record.pk]) for action in ("record_edit", "record_activate", "record_deactivate")]
         for role, user in self.users.items():
             self.client.force_login(user)
-            allowed = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN)
+            allowed = role in (User.Role.SUPER_ADMIN, User.Role.SCHOOL_ADMIN, User.Role.DOS)
             for url in urls:
                 with self.subTest(role=role, url=url):
-                    self.assertEqual(self.client.get(url).status_code, 200 if allowed else 403)
-                    if not allowed:
+                    page_allowed = allowed and not (role == User.Role.DOS and url == reverse("schools:profile"))
+                    self.assertEqual(self.client.get(url).status_code, 200 if page_allowed else 403)
+                    if not page_allowed:
                         self.assertEqual(self.client.post(url, {}).status_code, 403)
             if role == User.Role.STUDENT:
                 continue

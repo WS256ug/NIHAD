@@ -34,7 +34,7 @@ def form_page(request, form, title, cancel_url, **context):
     return render(request, "students/form.html", {"form": form, "page_title": title, "cancel_url": cancel_url, **context})
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_list(request):
@@ -71,7 +71,7 @@ def student_list(request):
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_detail(request, pk):
@@ -83,7 +83,7 @@ def student_detail(request, pk):
     })
 
 
-@role_required(User.Role.SCHOOL_ADMIN, User.Role.HEADTEACHER, User.Role.TEACHER)
+@role_required(User.Role.SCHOOL_ADMIN, User.Role.DOS, User.Role.HEADTEACHER, User.Role.TEACHER)
 @never_cache
 @require_GET
 def student_photo(request, pk):

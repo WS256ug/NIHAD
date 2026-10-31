@@ -380,3 +380,20 @@ main:focus { outline: none; }
   .endterm-marks { font-size: 8pt; }
   .endterm-marks th, .endterm-marks td { padding: 1.8mm; }
 }
+
+/* Nursery illustrations are clipped from one locally hosted atlas. */
+.nursery-picture { display: inline-block; width: 56px; height: 56px; flex-shrink: 0; vertical-align: middle; margin-right: 8px; background-image: url('../img/nursery-learning-atlas.png'); background-size: 200% 400%; background-repeat: no-repeat; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+.nursery-picture-social { background-position: 0 0; }
+.nursery-picture-environment { background-position: 100% 0; }
+.nursery-picture-hygiene { background-position: 0 33.3333%; }
+.nursery-picture-numbers { background-position: 100% 33.3333%; }
+.nursery-picture-language { background-position: 0 66.6667%; }
+.nursery-picture-oral { background-position: 100% 66.6667%; }
+.nursery-picture-writing { background-position: 0 100%; }
+.nursery-picture-physical { background-position: 100% 100%; }
+.nursery-results td:last-child { white-space: normal; overflow-wrap: anywhere; width: 48%; }
+.nursery-results tr { break-inside: avoid; }
+.nursery-report .endterm-comments { grid-template-columns: 1fr; }
+.nursery-picture-hygiene, .nursery-picture-numbers { background-size: 200% 428.5024%; background-position-y: 32.6471%; }
+.nursery-picture-language, .nursery-picture-oral { background-size: 200% 383.9827%; background-position-y: 65.3963%; }
+.nursery-picture-writing, .nursery-picture-physical { background-size: 200% 390.7489%; }

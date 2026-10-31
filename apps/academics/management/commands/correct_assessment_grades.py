@@ -21,9 +21,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--assessment', type=int, required=True)
-        parser.add_argument('--expected-scheme', type=int, required=True)
+        parser.add_argument('--expected-scheme', type=int, required=True, help='Current scheme ID; use 0 only when no scheme is linked.')
+        parser.add_argument('--source-scheme', type=int, help='Copy an existing active numeric scheme, including its grade bands.')
         parser.add_argument('--actor', required=True, help='School administrator username')
-        parser.add_argument('--rules', required=True, help='JSON grade-band file')
+        parser.add_argument('--rules', help='JSON grade-band file; omit when using --source-scheme')
         parser.add_argument('--apply', action='store_true')
 
     @transaction.atomic
@@ -43,23 +44,36 @@ class Command(BaseCommand):
             raise CommandError('Assessment not found in this school.')
         if assessment.status != 'open' or assessment.reports.exists():
             raise CommandError('Requires an open assessment with no generated reports. Existing reports require the report correction workflow.')
-        source = assessment.grading_scheme
-        if not source or source.mode != 'numeric' or source.pk != options['expected_scheme']:
-            raise CommandError('Expected numeric grading scheme does not match; inspect the assessment again.')
+        current = assessment.grading_scheme
+        if (assessment.grading_scheme_id or 0) != options['expected_scheme']:
+            raise CommandError('Expected grading scheme does not match; inspect the assessment again.')
+        if bool(options.get('source_scheme')) == bool(options.get('rules')):
+            raise CommandError('Provide either --source-scheme or --rules, not both.')
+        source = (GradingScheme.objects.select_for_update().filter(
+            pk=options['source_scheme'], section__school=school, is_active=True).first()
+            if options.get('source_scheme') else current)
+        if not source or source.mode != 'numeric':
+            raise CommandError('Choose a numeric source scheme; --source-scheme must be active and belong to this school.')
+        if options.get('source_scheme'):
+            source.validate_configuration()
+        if source.section_id != assessment.academic_class.section_id and source.required_subjects.exists():
+            raise CommandError('The source has required subjects in another section. Configure their Top-class equivalents before copying this aggregation scheme.')
         if assessment.marks.filter(level__isnull=False).exists():
             raise CommandError('Assessment contains descriptive results.')
-        bands = json.loads(Path(options['rules']).read_text(encoding='utf-8-sig'))
+        fields = ('label', 'minimum', 'maximum', 'points')
+        bands = (list(source.rules.order_by('sort_order', 'pk').values(*fields))
+                 if options.get('source_scheme') else json.loads(Path(options['rules']).read_text(encoding='utf-8-sig')))
         if not isinstance(bands, list) or not bands:
             raise CommandError('Rules must be a nonempty JSON list.')
-        fields = ('label', 'minimum', 'maximum', 'points')
         if any(not isinstance(band, dict) or set(band) != set(fields) for band in bands):
             raise CommandError('Each rule requires label, minimum, maximum and points.')
-        old = list(source.rules.order_by('minimum').values(*fields))
-        self.stdout.write(f'Assessment {assessment.pk}: {assessment}; current scheme {source.pk}')
+        old = list(current.rules.order_by('minimum').values(*fields)) if current else []
+        self.stdout.write(f'Assessment {assessment.pk}: {assessment}; current scheme {assessment.grading_scheme_id}')
+        self.stdout.write(f'Source scheme: {source.pk} / {source.section} / {source.name}')
         self.stdout.write(f'Current bands: {old}')
         self.stdout.write(f'Proposed bands: {bands}')
         target = write_record(GradingScheme(
-            section=source.section, name=f'Corrected grades {uuid4().hex[:12]}',
+            section=assessment.academic_class.section, name=f'Corrected grades {uuid4().hex[:12]}',
             mode='numeric', aggregate_mode=source.aggregate_mode, best_n=source.best_n,
         ), actor, 'Created grading correction version.')
         target.required_subjects.set(source.required_subjects.all())
@@ -78,7 +92,7 @@ class Command(BaseCommand):
         LogEntry.objects.create(user=actor, content_type=ContentType.objects.get_for_model(assessment),
                                 object_id=str(assessment.pk), object_repr=str(assessment)[:200],
                                 action_flag=CHANGE,
-                                change_message=f'Corrected grading scheme {source.pk} -> {target.pk}; marks preserved.')
+                                change_message=f'Corrected grading scheme {options["expected_scheme"] or "None"} -> {target.pk}; copied source {source.pk}; marks preserved.')
         if not options['apply']:
             transaction.set_rollback(True)
             self.stdout.write('PREVIEW ONLY: validation passed; no changes saved.')

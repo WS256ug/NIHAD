@@ -1,0 +1,86 @@
+{
+  "apps/accounts/models.py": {
+    "before": "ef460aabf60cb411040ac47dc03c1b9f4c52c9dd92b42566a8631c0d76b7b612",
+    "after": "457b1c7cb2e1f984e1f30e91f6c32800f73b9e14a02ae8c6709504c9526aa9ee"
+  },
+  "apps/accounts/permissions.py": {
+    "before": "c85d03da7a34be584b9fc81719afaa37996ebcb6ef0b2d04cddb56f191226a34",
+    "after": "c3eca90e6f6dfa8482b10b9047a3b9c4831ade75c4e1462bd878a0c470676c0b"
+  },
+  "apps/accounts/context_processors.py": {
+    "before": "1b28b85e85ec9fa77a52c78d52fce37d0be624dfc2d5e0a57006c91a41148d5b",
+    "after": "2c1b03b5d6420aa5599402f199532365ee01b8ca8031dabe2bf2bfc5cc5589b2"
+  },
+  "apps/dashboard/views.py": {
+    "before": "f6e29c639de889b153541b23ecb974750971f8c298c07e4311d8f01fcf062312",
+    "after": "61625871c8300b4e692116b1c7bf4301b7ef0388da5a6983e4b43f4fc564855b"
+  },
+  "apps/dashboard/metrics.py": {
+    "before": "9bfa2a833b00c78b59ecb85932b0be2d660010d9b24de20f781f15f24664a6c1",
+    "after": "f76b61d95daa076452a3ac4eb7cfb63185c058826875ffacbdf128965a85fd9c"
+  },
+  "apps/academics/permissions.py": {
+    "before": "4c5915781bcca4965a722796a21d64ba2fca7ff3adf8a7c92d3aa38ca5cb943d",
+    "after": "ba2c52427d5887ed1ca451de39d3ee3461fa91e405e5471db72420b6892670c3"
+  },
+  "apps/academics/views.py": {
+    "before": "fb2630c70bba071f9e985184f70556fd0828460c5d54653ef9217405edd9131a",
+    "after": "da1297e5d55c0b3fb5b8b4a4f9448321ad6375eb91fc2840b1351128e7127766"
+  },
+  "apps/academics/marks.py": {
+    "before": "2e7df39de015340454ca0f67d9a54973cb0df36a2481d808ce2d3c824e1d1682",
+    "after": "a01fd38fb4c20c5d013740ee2879f8180304bb8635de17d5176b241836030c34"
+  },
+  "apps/academics/mark_sheets.py": {
+    "before": "9727bf1e151f28df9868eb5ff6407a39dd23b4ee3b096220b60dfc87352e5d48",
+    "after": "09ed5b10559438145163faf2ec7b3ad662b2b8ed64d8d0983df6d8e1ae24ec70"
+  },
+  "apps/reports/permissions.py": {
+    "before": "13a46f3b1fc782e8359d6c3b57b9d7dd966ad739958cfee9d4bf3a05ee9cacbe",
+    "after": "30f19016130acc0a3313d1101da1b6371f3ee846cb9700221e2c858580e1e178"
+  },
+  "apps/reports/views.py": {
+    "before": "169f5586b636cc83dd97010db5c42f96f729c80650859ecdc7e79b4f17dc4177",
+    "after": "322631b74c8f340d9ccd9625d18e48ec4dbcfce515490b5e4b5a728983638f10"
+  },
+  "apps/reports/services.py": {
+    "before": "adb94d9fa9c5051cae0db19af5b32821c337bea4996d2ec96aea203a45cecb66",
+    "after": "2d1024eef0ee191e8cc2f42b53442a26efaef97ea74b9984cf2580afa40ae023"
+  },
+  "apps/promotions/services.py": {
+    "before": "f0a5924b080a904b07fa21c427d91ddea47e882f299d657981b3f726e28d9a29",
+    "after": "9ecb6ed44832c89857e78d845166cefd93b551c3fa2299da40d17f55c7594bcc"
+  },
+  "apps/promotions/views.py": {
+    "before": "64e2c5f7be04823668b7eb0973f444ad04bff3755561d43257c4f3733a279e03",
+    "after": "3be21eb4c21f03440599664be5a1081e77210c7c93058f1e26902b56d16b5fae"
+  },
+  "apps/students/permissions.py": {
+    "before": "0a31d0ee299f272a97c028134939266b75b5a1a3b93ed25cfdb88e2d765206dc",
+    "after": "03c057a38f7dcb61623151618c46769b423073354e764d0b52c2b05ecaa2bb5d"
+  },
+  "apps/students/views.py": {
+    "before": "4a0fb482e95aa1218a8cea65b9f1b314fed0c8145881518d0c70de8d81f04f82",
+    "after": "e48afadbbfa6c5ca7c152ff863f0293ec11740f1930cac3f50a1899d98c6523e"
+  },
+  "apps/schools/views.py": {
+    "before": "3b7f2dbde0d86821659286f71832d850806ef34c6169507f75be899bab588913",
+    "after": "4aada416280fcfcac1ffa7b205c4b9a8ad05f2f7ea1615f0829d4dda95ca0bf7"
+  },
+  "apps/schools/services.py": {
+    "before": "b7841cec396efe3011c72b84734f6a3d561e6f7891051d6b008dbd6ff522939e",
+    "after": "e6fe41bb2d7b41dc35e2bd9f7eafb587730498d50ccad5617da6e6583ee0b2c1"
+  },
+  "templates/dashboard/home.html": {
+    "before": "e5c39d6dbfe9847ce30cd2d487aef9aabff60a1b117567497bdc9c0f576a9ad2",
+    "after": "e330dae62cba4b7a9c606cf307c1836b4f4d0a14d05cfe66b96045a915633517"
+  },
+  "templates/schools/overview.html": {
+    "before": "02222e45ff80bd13efeca0d684bda0ed9fbe04a36f5121eaeb82fb3fc30a3daa",
+    "after": "619590e4b58f7fb665a090d40aada1f30bf06520febf778926d02526b2abc265"
+  },
+  "apps/accounts/migrations/0006_remove_user_accounts_user_valid_role_alter_user_role_and_more.py": {
+    "before": null,
+    "after": "364eab41b9840f6b77e5e41b0a8e764a5e8341cedbd9d101e29e3bc4751de0b1"
+  }
+}

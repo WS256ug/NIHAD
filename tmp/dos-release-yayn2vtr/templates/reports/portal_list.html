@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="workspace">
+  <header class="page-heading"><h1>Reports</h1></header>
+  {% for student in blocked_students %}
+  <section class="workspace-card">
+    <h2>Fee clearance required</h2>
+    <p>{{ student.full_name }}: Balance {{ school.currency_code }} {{ student.balance|report_number }}. Clear the outstanding balance to view published reports.</p>
+    <a href="{% url 'students:family_fees' student.pk %}">Fees and payments</a>
+  </section>
+  {% endfor %}
+  <section class="workspace-card">
+    <div class="table-scroll"><table>
+      <caption>{{ page_obj.paginator.count }} report{{ page_obj.paginator.count|pluralize }} available</caption>
+      <thead><tr>{% if user.role == 'guardian' %}<th>Student</th>{% endif %}<th>Year</th><th>Term</th><th>Assessment</th><th>Action</th></tr></thead>
+      <tbody>{% for report in page_obj %}<tr>
+        {% if user.role == 'guardian' %}<th scope="row">{{ report.enrollment.student.full_name }}</th>{% endif %}
+        <td>{{ report.assessment.term.academic_year.name }}</td>
+        <td>{{ report.assessment.term.name }}</td>
+        <td>{{ report.assessment.assessment_type.name }}{% if report.assessment.report_group == 'islamic' %}<small class="table-secondary">Islamic Studies</small>{% endif %}</td>
+        <td><a href="{% url 'reports:detail' report.pk %}">View</a>{% if not report.screen_only %} &middot; <a href="{% url 'reports:print' report.pk %}">Print</a> &middot; <a href="{% url 'reports:pdf' report.pk %}">Download PDF</a>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="{% if user.role == 'guardian' %}5{% else %}4{% endif %}">{% if blocked_students %}No reports available to view until fee clearance.{% else %}No published reports yet.{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if page_obj.has_other_pages %}<nav class="pagination" aria-label="Report pages">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
+  </section>
+</div>
+{% endblock %}
